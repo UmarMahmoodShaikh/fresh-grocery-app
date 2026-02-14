@@ -1,25 +1,115 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Modal,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Modal,
+    Pressable,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function Home() {
   const userName = "John Doe"; // TODO: Get from user context/auth
   const [notificationsVisible, setNotificationsVisible] = useState(false);
+  const [tourVisible, setTourVisible] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
   const router = useRouter();
 
+  const tourSteps = [
+    {
+      title: "Scan Products",
+      description:
+        "📸 Tap here to scan product barcodes instantly and get detailed information!",
+      target: "scanner",
+      icon: "scan-outline",
+      iconColor: "#2D6A4F",
+      iconBg: "#D1FAE5",
+    },
+    {
+      title: "My Cart",
+      description:
+        "🛒 View and manage your shopping cart. Add, remove, or update quantities easily!",
+      target: "cart",
+      icon: "cart-outline",
+      iconColor: "#4A90E2",
+      iconBg: "#DBEAFE",
+    },
+    {
+      title: "Order History",
+      description: "📜 Check your order history and track past purchases!",
+      target: "history",
+      icon: "time-outline",
+      iconColor: "#9B59B6",
+      iconBg: "#F3E8FF",
+    },
+    {
+      title: "Account Settings",
+      description:
+        "👤 Manage your profile, payment methods, saved addresses, and app settings!",
+      target: "account",
+      icon: "person-outline",
+      iconColor: "#FF6B35",
+      iconBg: "#FFF4ED",
+    },
+  ];
+
+  useEffect(() => {
+    console.log("Homepage mounted, checking tour status...");
+    checkFirstTimeUser();
+  }, []);
+
+  const checkFirstTimeUser = async () => {
+    try {
+      const hasSeenTour = await AsyncStorage.getItem("hasSeenTour");
+      console.log("Has seen tour:", hasSeenTour);
+
+      if (!hasSeenTour) {
+        console.log("First time user! Starting tour in 1 second...");
+        setTimeout(() => {
+          console.log("Starting custom tour now...");
+          setTourVisible(true);
+          setCurrentStep(0);
+        }, 1000);
+      } else {
+        console.log("User has already seen the tour");
+      }
+    } catch (error) {
+      console.error("Error checking tour status:", error);
+    }
+  };
+
+  const handleTourNext = () => {
+    if (currentStep < tourSteps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      handleTourComplete();
+    }
+  };
+
+  const handleTourSkip = () => {
+    handleTourComplete();
+  };
+
+  const handleTourComplete = async () => {
+    try {
+      await AsyncStorage.setItem("hasSeenTour", "true");
+      console.log("Tour completed and saved!");
+      setTourVisible(false);
+      setCurrentStep(0);
+    } catch (error) {
+      console.error("Error saving tour status:", error);
+    }
+  };
+
   const handleScanProduct = () => {
-    // TODO: Navigate to scanner screen
     console.log("Navigate to scanner");
+    router.push("/scanner");
   };
 
   const handleMyCart = () => {
@@ -152,6 +242,70 @@ export default function Home() {
         </View>
       </Modal>
 
+      {/* Custom Guided Tour Modal */}
+      <Modal
+        visible={tourVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleTourSkip}
+      >
+        <View style={styles.tourOverlay}>
+          {/* Tour Tooltip */}
+          <View style={styles.tourTooltip}>
+            {/* Step Indicator */}
+            <View style={styles.tourHeader}>
+              <Text style={styles.tourStepIndicator}>
+                Step {currentStep + 1} of {tourSteps.length}
+              </Text>
+              <TouchableOpacity onPress={handleTourSkip}>
+                <Ionicons name="close-circle" size={24} color="#FF6B35" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Feature Icon */}
+            <View
+              style={[
+                styles.tourIconContainer,
+                { backgroundColor: tourSteps[currentStep].iconBg },
+              ]}
+            >
+              <Ionicons
+                name={tourSteps[currentStep].icon as any}
+                size={48}
+                color={tourSteps[currentStep].iconColor}
+              />
+            </View>
+
+            {/* Tour Content */}
+            <Text style={styles.tourTitle}>{tourSteps[currentStep].title}</Text>
+            <Text style={styles.tourDescription}>
+              {tourSteps[currentStep].description}
+            </Text>
+
+            {/* Tour Navigation */}
+            <View style={styles.tourButtons}>
+              <TouchableOpacity
+                style={styles.tourSkipButton}
+                onPress={handleTourSkip}
+              >
+                <Text style={styles.tourSkipText}>Skip Tour</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.tourNextButton}
+                onPress={handleTourNext}
+              >
+                <Text style={styles.tourNextText}>
+                  {currentStep < tourSteps.length - 1 ? "Next" : "Got it!"}
+                </Text>
+                {currentStep < tourSteps.length - 1 && (
+                  <Ionicons name="arrow-forward" size={18} color="white" />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Header Section */}
       <LinearGradient colors={["#FF6B35", "#F77F00"]} style={styles.header}>
         <View style={styles.headerTop}>
@@ -247,48 +401,80 @@ export default function Home() {
             <Text style={styles.sectionTitle}>Quick Actions</Text>
             <View style={styles.actionsGrid}>
               {/* Scan Product */}
-              <TouchableOpacity
-                style={styles.actionCard}
-                onPress={handleScanProduct}
-              >
-                <View style={[styles.actionIcon, styles.scanIcon]}>
-                  <Ionicons name="scan-outline" size={28} color="#2D6A4F" />
-                </View>
-                <Text style={styles.actionText}>Scan Product</Text>
-              </TouchableOpacity>
+              <Pressable style={styles.actionCard} onPress={handleScanProduct}>
+                {({ pressed }) => (
+                  <>
+                    <View
+                      style={[
+                        styles.actionIcon,
+                        styles.scanIcon,
+                        pressed && { backgroundColor: "#059669" },
+                      ]}
+                    >
+                      <Ionicons name="scan-outline" size={28} color="#2D6A4F" />
+                    </View>
+                    <Text style={styles.actionText}>Scan Product</Text>
+                  </>
+                )}
+              </Pressable>
 
               {/* My Cart */}
-              <TouchableOpacity
-                style={styles.actionCard}
-                onPress={handleMyCart}
-              >
-                <View style={[styles.actionIcon, styles.cartIcon]}>
-                  <Ionicons name="cart-outline" size={28} color="#4A90E2" />
-                </View>
-                <Text style={styles.actionText}>My Cart</Text>
-              </TouchableOpacity>
+              <Pressable style={styles.actionCard} onPress={handleMyCart}>
+                {({ pressed }) => (
+                  <>
+                    <View
+                      style={[
+                        styles.actionIcon,
+                        styles.cartIcon,
+                        pressed && { backgroundColor: "#2563EB" },
+                      ]}
+                    >
+                      <Ionicons name="cart-outline" size={28} color="#4A90E2" />
+                    </View>
+                    <Text style={styles.actionText}>My Cart</Text>
+                  </>
+                )}
+              </Pressable>
 
               {/* History */}
-              <TouchableOpacity
-                style={styles.actionCard}
-                onPress={handleHistory}
-              >
-                <View style={[styles.actionIcon, styles.historyIcon]}>
-                  <Ionicons name="time-outline" size={28} color="#9B59B6" />
-                </View>
-                <Text style={styles.actionText}>History</Text>
-              </TouchableOpacity>
+              <Pressable style={styles.actionCard} onPress={handleHistory}>
+                {({ pressed }) => (
+                  <>
+                    <View
+                      style={[
+                        styles.actionIcon,
+                        styles.historyIcon,
+                        pressed && { backgroundColor: "#9333EA" },
+                      ]}
+                    >
+                      <Ionicons name="time-outline" size={28} color="#9B59B6" />
+                    </View>
+                    <Text style={styles.actionText}>History</Text>
+                  </>
+                )}
+              </Pressable>
 
               {/* Account */}
-              <TouchableOpacity
-                style={styles.actionCard}
-                onPress={handleAccount}
-              >
-                <View style={[styles.actionIcon, styles.accountIcon]}>
-                  <Ionicons name="person-outline" size={28} color="#FF6B35" />
-                </View>
-                <Text style={styles.actionText}>Account</Text>
-              </TouchableOpacity>
+              <Pressable style={styles.actionCard} onPress={handleAccount}>
+                {({ pressed }) => (
+                  <>
+                    <View
+                      style={[
+                        styles.actionIcon,
+                        styles.accountIcon,
+                        pressed && { backgroundColor: "#EA580C" },
+                      ]}
+                    >
+                      <Ionicons
+                        name="person-outline"
+                        size={28}
+                        color="#FF6B35"
+                      />
+                    </View>
+                    <Text style={styles.actionText}>Account</Text>
+                  </>
+                )}
+              </Pressable>
             </View>
           </View>
 
@@ -808,5 +994,107 @@ const styles = StyleSheet.create({
     color: "#DC2626",
     fontSize: 14,
     fontWeight: "600",
+  },
+  // Custom Tour Styles
+  tourOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  tourTooltip: {
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 24,
+    width: "90%",
+    maxWidth: 400,
+    shadowColor: "#FF6B35",
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 10,
+    borderWidth: 2,
+    borderColor: "#FF6B35",
+  },
+  tourHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  tourStepIndicator: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FF6B35",
+    backgroundColor: "#FFF4ED",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  tourIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+    marginVertical: 16,
+  },
+  tourTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#1F2937",
+    marginBottom: 12,
+  },
+  tourDescription: {
+    fontSize: 16,
+    color: "#6B7280",
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  tourButtons: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  tourSkipButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  tourSkipText: {
+    color: "#6B7280",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  tourNextButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    backgroundColor: "#FF6B35",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+    shadowColor: "#FF6B35",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  tourNextText: {
+    color: "white",
+    fontSize: 15,
+    fontWeight: "bold",
   },
 });

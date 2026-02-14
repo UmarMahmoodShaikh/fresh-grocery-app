@@ -1,14 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React from "react";
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function Account() {
@@ -53,6 +55,32 @@ export default function Account() {
 
   const handleAppSettings = () => {
     console.log("Navigate to App Settings");
+  };
+
+  const handleShowTour = async () => {
+    try {
+      // Clear the tour status
+      await AsyncStorage.removeItem("hasSeenTour");
+      console.log("Tour status cleared!");
+
+      Alert.alert(
+        "App Tour Reset",
+        "Go back to the homepage to see the guided tour!",
+        [
+          {
+            text: "Go to Homepage",
+            onPress: () => router.push("/(tabs)"),
+          },
+          {
+            text: "OK",
+            style: "cancel",
+          },
+        ],
+      );
+    } catch (error) {
+      console.error("Error resetting tour:", error);
+      Alert.alert("Error", "Failed to reset tour. Please try again.");
+    }
   };
 
   return (
@@ -187,6 +215,18 @@ export default function Account() {
             <View style={styles.menuContent}>
               <Text style={styles.menuTitle}>Help & Support</Text>
               <Text style={styles.menuSubtitle}>Get help and contact us</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          {/* Show App Tour */}
+          <TouchableOpacity style={styles.menuItem} onPress={handleShowTour}>
+            <View style={[styles.menuIcon, { backgroundColor: "#FEF3C7" }]}>
+              <Ionicons name="bulb-outline" size={22} color="#F59E0B" />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={styles.menuTitle}>Show App Tour</Text>
+              <Text style={styles.menuSubtitle}>Replay the guided tour</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
           </TouchableOpacity>
