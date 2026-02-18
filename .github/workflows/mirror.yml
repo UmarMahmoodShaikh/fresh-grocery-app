@@ -9,20 +9,11 @@ jobs:
   mirror:
     runs-on: ubuntu-latest
     steps:
-      - name: Check secret exists
-        env:
-          PAT: ${{ secrets.PERSONAL_TOKEN }}
-        run: |
-          if [ -z "$PAT" ]; then
-            echo "SECRET IS EMPTY - this is the problem"
-          else
-            echo "Secret length: ${#PAT}"
-          fi
-
       - name: Checkout with full history
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false  # 👈 THIS is the key fix
 
       - name: Mirror push to personal repo
         env:
