@@ -1,0 +1,20 @@
+name: Mirror to Personal Repo
+
+on:
+  push:
+    branches:
+      - '**'  # Mirror all branches
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout with full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history, all branches and tags
+
+      - name: Mirror push to personal repo
+        run: |
+          git remote add personal https://x-access-token:${{ secrets.MIRROR_PAT }}@github.com/UmarMahmoodShaikh/fresh-grocery-app.git
+          git push personal --mirror
