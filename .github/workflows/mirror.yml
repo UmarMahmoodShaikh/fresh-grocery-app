@@ -16,7 +16,7 @@ jobs:
 
       - name: Mirror push to personal repo
         env:
-          PAT: ${{ secrets.MIRROR_PAT }}
+          PAT: ${{ secrets.PERSONAL_TOKEN }}
         run: |
           git config --global credential.helper store
           echo "https://UmarMahmoodShaikh:${PAT}@github.com" > ~/.git-credentials
