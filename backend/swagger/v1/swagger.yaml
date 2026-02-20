@@ -1,0 +1,198 @@
+openapi: 3.0.1
+info:
+  title: GroceryStore API V1
+  version: v1
+  description: API for GroceryStore application with Products, Orders, and Users
+paths:
+  /api/v1/auth/login:
+    post:
+      summary: Login user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: successful
+  /api/v1/auth/signup:
+    post:
+      summary: Register new user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '201':
+          description: user created
+  /api/v1/products:
+    get:
+      summary: List all products
+      tags:
+        - Products
+      responses:
+        '200':
+          description: successful
+    post:
+      summary: Create a product
+      tags:
+        - Products
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    price:
+                      type: number
+                    stock:
+                      type: integer
+                    description:
+                      type: string
+                    category:
+                      type: string
+                    brand:
+                      type: string
+      responses:
+        '201':
+          description: product created
+  /api/v1/products/{id}:
+    get:
+      summary: Get a product
+      tags:
+        - Products
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: successful
+    patch:
+      summary: Update a product
+      tags:
+        - Products
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: successful
+    delete:
+      summary: Delete a product
+      tags:
+        - Products
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: no content
+  /api/v1/orders:
+    get:
+      summary: List orders
+      tags:
+        - Orders
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: successful
+    post:
+      summary: Create an order
+      tags:
+        - Orders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order:
+                  type: object
+                  properties:
+                    total:
+                      type: number
+                    delivery_address:
+                      type: string
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      product_id:
+                        type: integer
+                      quantity:
+                        type: integer
+                      price:
+                        type: number
+      responses:
+        '201':
+          description: order created
+  /api/v1/orders/{id}/update_status:
+    patch:
+      summary: Update order status (Admin only)
+      tags:
+        - Orders
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [pending, processing, shipped, delivered, cancelled]
+      responses:
+        '200':
+          description: status updated
+components:
+  securitySchemes:
+    Bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+servers:
+  - url: http://localhost:5001
+    description: Development server

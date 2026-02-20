@@ -1,8 +1,9 @@
+import { authApi, getStoredUser } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   SafeAreaView,
@@ -14,27 +15,43 @@ import {
 } from "react-native";
 
 export default function Account() {
-  const userName = "John Doe";
-  const userEmail = "john.doe@example.com";
-  const userPhone = "+1 (555) 123-4567";
-  const memberSince = "January 2025";
+  const [userName, setUserName] = useState("User");
+  const [userEmail, setUserEmail] = useState("");
+  const [userPhone, setUserPhone] = useState("");
+  const [memberSince, setMemberSince] = useState("");
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const user = await getStoredUser();
+      if (user) {
+        const name = [user.first_name, user.last_name].filter(Boolean).join(" ");
+        setUserName(name || user.email?.split("@")[0] || "User");
+        setUserEmail(user.email || "");
+        setUserPhone(user.formatted_phone || user.phone || "");
+        if (user.created_at) {
+          const date = new Date(user.created_at);
+          setMemberSince(date.toLocaleDateString("en-US", { month: "long", year: "numeric" }));
+        }
+      }
+    };
+    loadUser();
+  }, []);
 
   const handleBack = () => {
     router.back();
   };
 
-  const handleLogout = () => {
-    // TODO: Implement logout logic
-    console.log("Logout");
+  const handleLogout = async () => {
+    await authApi.logout();
     router.replace("/(auth)/login");
   };
 
   const handlePersonalInfo = () => {
-    console.log("Navigate to Personal Info");
+    router.push("/profile");
   };
 
   const handleSavedAddresses = () => {
-    console.log("Navigate to Saved Addresses");
+    router.push("/addresses");
   };
 
   const handlePaymentMethods = () => {
@@ -81,6 +98,10 @@ export default function Account() {
       console.error("Error resetting tour:", error);
       Alert.alert("Error", "Failed to reset tour. Please try again.");
     }
+  };
+
+  const handleHistory = () => {
+    router.push("/(tabs)/history");
   };
 
   return (
@@ -155,6 +176,21 @@ export default function Account() {
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
           </TouchableOpacity>
 
+          {/* Order History */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleHistory}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: "#F3E8FF" }]}>
+              <Ionicons name="receipt-outline" size={22} color="#7C3AED" />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={styles.menuTitle}>Order History</Text>
+              <Text style={styles.menuSubtitle}>View all past orders</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
+
           {/* Payment Methods */}
           <TouchableOpacity
             style={styles.menuItem}
@@ -179,27 +215,12 @@ export default function Account() {
               <Ionicons
                 name="notifications-outline"
                 size={22}
-                color="#FF6B35"
+                color="#2D6A4F"
               />
             </View>
             <View style={styles.menuContent}>
               <Text style={styles.menuTitle}>Notifications</Text>
               <Text style={styles.menuSubtitle}>Customize your alerts</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-          </TouchableOpacity>
-
-          {/* Privacy & Security */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={handlePrivacySecurity}
-          >
-            <View style={[styles.menuIcon, { backgroundColor: "#FEE2E2" }]}>
-              <Ionicons name="lock-closed-outline" size={22} color="#EF4444" />
-            </View>
-            <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Privacy & Security</Text>
-              <Text style={styles.menuSubtitle}>Manage security settings</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
           </TouchableOpacity>
@@ -247,30 +268,32 @@ export default function Account() {
         </View>
 
         {/* Activity Stats */}
-        <LinearGradient
-          colors={["#A855F7", "#EC4899"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.activityCard}
-        >
-          <Text style={styles.activityTitle}>Your Activity</Text>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>24</Text>
-              <Text style={styles.statLabel}>Orders</Text>
+        <View style={styles.activityCardWrapper}>
+          <LinearGradient
+            colors={["#A855F7", "#EC4899"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.activityCard}
+          >
+            <Text style={styles.activityTitle}>Your Activity</Text>
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>24</Text>
+                <Text style={styles.statLabel}>Orders</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>$486</Text>
+                <Text style={styles.statLabel}>Spent</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>15</Text>
+                <Text style={styles.statLabel}>Saved</Text>
+              </View>
             </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>$486</Text>
-              <Text style={styles.statLabel}>Spent</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>15</Text>
-              <Text style={styles.statLabel}>Saved</Text>
-            </View>
-          </View>
-        </LinearGradient>
+          </LinearGradient>
+        </View>
 
         {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -280,6 +303,7 @@ export default function Account() {
 
         {/* App Version */}
         <Text style={styles.appVersion}>GroceryGo v1.0.0</Text>
+        <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -293,71 +317,61 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
   },
+  profileCard: {
+    backgroundColor: "#fff",
+    padding: 24,
+    paddingTop: 48, // Extra padding for back button
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+    marginBottom: 16,
+    position: "relative",
+  },
   backButton: {
     position: "absolute",
-    top: 20,
+    top: 24, // Positioned safely from the top
     left: 20,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "white",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F3F4F6",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 10,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  profileCard: {
-    backgroundColor: "white",
-    marginHorizontal: 20,
-    marginTop: 15,
-    borderRadius: 20,
-    padding: 24,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    zIndex: 10, // Ensure it's above other elements
   },
   avatarContainer: {
     marginBottom: 16,
+    position: "relative",
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#52B788",
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#E0F2FE", // Light blue background
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 4,
+    borderColor: "#BAE6FD",
   },
   avatarText: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "white",
+    fontSize: 36,
+    fontFamily: "Outfit-Bold",
+    color: "#0369A1", // Dark blue text
   },
   profileName: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#111827",
+    fontSize: 24,
+    fontFamily: "Outfit-Bold",
+    color: "#1F2937",
     marginBottom: 4,
   },
   memberSince: {
-    fontSize: 13,
+    fontSize: 14,
+    fontFamily: "Outfit-Regular",
     color: "#6B7280",
     marginBottom: 16,
   },
   contactInfo: {
-    width: "100%",
+    alignItems: "center",
     gap: 8,
   },
   contactItem: {
@@ -367,92 +381,91 @@ const styles = StyleSheet.create({
   },
   contactText: {
     fontSize: 14,
-    color: "#374151",
+    fontFamily: "Outfit-Medium",
+    color: "#4B5563",
   },
   menuSection: {
-    backgroundColor: "white",
-    marginHorizontal: 20,
-    marginTop: 20,
-    borderRadius: 16,
-    padding: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: "#fff",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    marginBottom: 16,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "#F3F4F6",
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
-    gap: 12,
+    paddingVertical: 12,
   },
   menuIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
+    marginRight: 16,
   },
   menuContent: {
     flex: 1,
   },
   menuTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#111827",
+    fontSize: 16,
+    fontFamily: "Outfit-Medium",
+    color: "#1F2937",
     marginBottom: 2,
   },
   menuSubtitle: {
-    fontSize: 12,
+    fontSize: 13,
+    fontFamily: "Outfit-Regular",
     color: "#6B7280",
   },
+  activityCardWrapper: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
   activityCard: {
-    marginHorizontal: 20,
-    marginTop: 20,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 24,
     shadowColor: "#A855F7",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowRadius: 12,
+    elevation: 8,
   },
   activityTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "white",
+    fontFamily: "Outfit-Bold",
+    color: "#fff",
     marginBottom: 20,
-    textAlign: "center",
+    opacity: 0.9,
   },
   statsRow: {
     flexDirection: "row",
-    justifyContent: "space-around",
+    justifyContent: "space-between",
     alignItems: "center",
   },
   statItem: {
     alignItems: "center",
+    flex: 1,
   },
   statNumber: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "white",
+    fontSize: 24,
+    fontFamily: "Outfit-Bold",
+    color: "#fff",
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 13,
-    color: "rgba(255, 255, 255, 0.9)",
+    fontFamily: "Outfit-Medium",
+    color: "#FDF4FF",
+    opacity: 0.8,
   },
   statDivider: {
     width: 1,
-    height: 40,
-    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    height: 30,
+    backgroundColor: "#FDF4FF",
+    opacity: 0.2,
   },
   logoutButton: {
     flexDirection: "row",
@@ -460,23 +473,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#FEF2F2",
     marginHorizontal: 20,
-    marginTop: 20,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 16,
+    marginBottom: 24,
     gap: 8,
-    borderWidth: 1,
-    borderColor: "#FEE2E2",
   },
   logoutText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: "Outfit-Bold",
     color: "#DC2626",
   },
   appVersion: {
     textAlign: "center",
-    fontSize: 12,
+    fontSize: 13,
+    fontFamily: "Outfit-Regular",
     color: "#9CA3AF",
-    marginTop: 16,
-    marginBottom: 24,
+    marginBottom: 32,
   },
 });

@@ -1,0 +1,65 @@
+.category-row-section {
+    margin-bottom: 40px;
+}
+
+.category-row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.category-row-header h2 {
+    font-size: 1.5rem;
+    color: #111827;
+    margin: 0;
+    font-weight: 700;
+}
+
+.btn-view-all {
+    background: none;
+    border: none;
+    color: var(--primary-color, #0aad0a);
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.btn-view-all:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+}
+
+.horizontal-scroll-container {
+    display: flex;
+    overflow-x: auto;
+    gap: 20px;
+    padding-bottom: 20px;
+    /* Space for scrollbar */
+    padding-left: 4px;
+    /* Space for shadow */
+    scroll-behavior: smooth;
+
+    /* Hide scrollbar for clean look in Webkit */
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+.horizontal-scroll-container::-webkit-scrollbar {
+    height: 6px;
+}
+
+.horizontal-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.horizontal-scroll-container::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 20px;
+}
+
+.horizontal-card-wrapper {
+    flex: 0 0 auto;
+    width: 240px;
+    /* Fixed width for consistent cards */
+}

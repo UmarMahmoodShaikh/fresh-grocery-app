@@ -5,10 +5,11 @@ import {
   Pineapple,
   Strawberry,
 } from "@/components/FruitDecorations";
+import { authApi } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -25,6 +26,7 @@ import {
 export default function SignUpScreen() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -58,11 +60,17 @@ export default function SignUpScreen() {
 
     setIsLoading(true);
     try {
-      // TODO: Implement actual registration logic
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
-      Alert.alert("Success", "Account created successfully!", [
-        { text: "OK", onPress: () => router.replace("/(tabs)") },
-      ]);
+      const nameParts = fullName.trim().split(" ");
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+      const result = await authApi.signup(email, password, firstName, lastName, phone || undefined);
+      if (result.error) {
+        Alert.alert("Error", result.error);
+      } else {
+        Alert.alert("Success", "Account created successfully!", [
+          { text: "OK", onPress: () => router.replace("/(tabs)") },
+        ]);
+      }
     } catch (error) {
       Alert.alert("Error", "Failed to create account. Please try again.");
     } finally {
@@ -77,7 +85,7 @@ export default function SignUpScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
-        colors={["#FF6B35", "#F77F00", "#FFAA00"]}
+        colors={["#2D6A4F", "#52B788", "#74C69D"]}
         style={styles.gradient}
       >
         {/* Decorative Elements */}
@@ -98,7 +106,7 @@ export default function SignUpScreen() {
               {/* Logo */}
               <View style={styles.logoContainer}>
                 <View style={styles.logoCircle}>
-                  <Ionicons name="bag-check" size={32} color="#FF6B35" />
+                  <Ionicons name="bag-check" size={32} color="#2D6A4F" />
                 </View>
               </View>
 
@@ -153,6 +161,30 @@ export default function SignUpScreen() {
                       autoCorrect={false}
                     />
                   </View>
+                </View>
+
+                {/* Phone Number Input */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.labelText}>Phone Number</Text>
+                  <View style={styles.inputWrapper}>
+                    <Ionicons
+                      name="call-outline"
+                      size={20}
+                      color="#9CA3AF"
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="06 12 34 56 78"
+                      placeholderTextColor="#9CA3AF"
+                      value={phone}
+                      onChangeText={setPhone}
+                      keyboardType="phone-pad"
+                    />
+                  </View>
+                  <Text style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4, marginLeft: 4 }}>
+                    French format (0x xx xx xx xx) — saved as +33
+                  </Text>
                 </View>
 
                 {/* Password Input */}
@@ -395,13 +427,13 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   signUpButton: {
-    backgroundColor: "#FF6B35",
+    backgroundColor: "#2D6A4F",
     borderRadius: 10,
     paddingVertical: 13,
     alignItems: "center",
     marginBottom: 12,
     marginTop: 4,
-    shadowColor: "#FF6B35",
+    shadowColor: "#2D6A4F",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -429,7 +461,7 @@ const styles = StyleSheet.create({
   },
   signInLink: {
     fontSize: 14,
-    color: "#FF6B35",
+    color: "#2D6A4F",
     fontWeight: "600",
   },
   checkboxContainer: {
@@ -451,8 +483,8 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   checkboxChecked: {
-    backgroundColor: "#FF6B35",
-    borderColor: "#FF6B35",
+    backgroundColor: "#2D6A4F",
+    borderColor: "#2D6A4F",
   },
   agreementText: {
     flex: 1,
@@ -461,7 +493,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   linkText: {
-    color: "#FF6B35",
+    color: "#2D6A4F",
     fontWeight: "600",
   },
   // Decorative fruit positions

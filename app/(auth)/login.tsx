@@ -4,10 +4,11 @@ import {
   Pineapple,
   Strawberry,
 } from "@/components/FruitDecorations";
+import { authApi } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -34,9 +35,17 @@ export default function LoginScreen() {
 
     setIsLoading(true);
     try {
-      // TODO: Implement actual authentication logic
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
-      router.replace("/(tabs)");
+      const result = await authApi.login(email, password);
+      if (result.error) {
+        Alert.alert("Error", result.error);
+      } else {
+        const userRole = result.data?.user?.role;
+        if (userRole === "admin") {
+          router.replace("/(admin)");
+        } else {
+          router.replace("/(tabs)");
+        }
+      }
     } catch (error) {
       Alert.alert("Error", "Failed to sign in. Please try again.");
     } finally {
@@ -55,7 +64,7 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
-        colors={["#FF6B35", "#F77F00", "#FFAA00"]}
+        colors={["#2D6A4F", "#52B788", "#74C69D"]}
         style={styles.gradient}
       >
         {/* Decorative Elements */}
@@ -72,7 +81,7 @@ export default function LoginScreen() {
             {/* Logo */}
             <View style={styles.logoContainer}>
               <View style={styles.logoCircle}>
-                <Ionicons name="bag-check" size={32} color="#FF6B35" />
+                <Ionicons name="bag-check" size={32} color="#2D6A4F" />
               </View>
             </View>
 
@@ -296,16 +305,16 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     fontSize: 12,
-    color: "#FF6B35",
+    color: "#2D6A4F",
     fontWeight: "600",
   },
   signInButton: {
-    backgroundColor: "#FF6B35",
+    backgroundColor: "#2D6A4F",
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
     marginBottom: 20,
-    shadowColor: "#FF6B35",
+    shadowColor: "#2D6A4F",
     shadowOffset: {
       width: 0,
       height: 4,
@@ -333,7 +342,7 @@ const styles = StyleSheet.create({
   },
   signUpLink: {
     fontSize: 14,
-    color: "#FF6B35",
+    color: "#2D6A4F",
     fontWeight: "600",
   },
   // Decorative fruit positions

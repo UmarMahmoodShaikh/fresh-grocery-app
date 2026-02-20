@@ -1,0 +1,319 @@
+.home-landing {
+  padding-bottom: 3rem;
+  animation: fadeIn 0.5s ease-out;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+/* Hero Slider */
+.hero-slider {
+  position: relative;
+  height: 500px;
+  /* Taller for impact */
+  border-radius: 20px;
+  overflow: hidden;
+  margin: 20px 0;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+}
+
+.slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0 80px;
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
+  color: white;
+}
+
+.slide.active {
+  opacity: 1;
+  z-index: 1;
+}
+
+.slide-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  /* Darken for text readability */
+  z-index: 1;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 600px;
+  animation: slideUpFade 0.8s ease-out;
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-badge {
+  background: #0aad0a;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  display: inline-block;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.hero-content h1 {
+  font-size: 4rem;
+  /* Larger title */
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 0 0 20px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.hero-content p {
+  font-size: 1.3rem;
+  margin-bottom: 35px;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1.5;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.cta-button {
+  display: inline-block;
+  background: #0aad0a;
+  color: white;
+  padding: 14px 34px;
+  border-radius: 50px;
+  /* Pill shape */
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-decoration: none;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(10, 173, 10, 0.4);
+}
+
+.cta-button:hover {
+  background: #088d08;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(10, 173, 10, 0.5);
+}
+
+/* Slider Indicators */
+.slider-dots {
+  position: absolute;
+  bottom: 25px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  z-index: 10;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.dot.active {
+  background: #fff;
+  transform: scale(1.2);
+}
+
+.dot:hover {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* Sections */
+.landing-section {
+  margin-top: 50px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.section-header h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.view-all {
+  color: var(--accent-color);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.view-all:hover {
+  text-decoration: underline;
+}
+
+/* Unified Card Styles for Home (Categories/Brands) */
+.category-card-home,
+.brand-card-home {
+  flex: 0 0 auto;
+  width: 250px;
+  /* Exact match to product card */
+  height: 100%;
+  /* Ensure full height in flex row */
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  /* Match product card */
+  text-decoration: none;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.category-card-home:hover,
+.brand-card-home:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+  /* Match product card hover */
+  border-color: transparent;
+}
+
+/* Card Image Wrapper - Mimic ProductCard .product-image-wrapper */
+.card-image-wrapper {
+  position: relative;
+  width: 100%;
+  padding-top: 100%;
+  /* 1:1 Aspect Ratio */
+  background: var(--bg-hover);
+  overflow: hidden;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card-image-wrapper img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 1rem;
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.card-image-wrapper span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: bold;
+  color: var(--accent-color);
+}
+
+.category-card-home:hover img,
+.brand-card-home:hover img {
+  transform: scale(1.05);
+  /* Match product card hover */
+}
+
+/* Card Body */
+.card-body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  background: var(--bg-card);
+  align-items: flex-start;
+  /* Left align text like products */
+  justify-content: center;
+  min-height: 80px;
+  /* Ensure visual consistency */
+}
+
+.category-card-home h3,
+.brand-card-home h3 {
+  margin: 0 0 0.25rem 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+  /* Match product title size */
+  font-weight: 600;
+  text-transform: capitalize;
+  line-height: 1.4;
+}
+
+.card-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Unified Horizontal Scroll Container */
+.home-scroll-container {
+  display: flex;
+  flex-wrap: nowrap;
+  /* FORCE NO WRAP */
+  overflow-x: auto;
+  gap: 20px;
+  padding: 10px 0;
+  padding-right: 20px;
+  padding-bottom: 20px;
+  scrollbar-width: none;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+  /* Smooth scroll on iOS */
+}
+
+.home-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Ensure children don't shrink */
+.home-scroll-container>* {
+  flex: 0 0 auto !important;
+  /* Force fixed width */
+}
+
+/* Specific adjustment for Product Cards inside this container */
+.home-scroll-container.products-scroll>.product-card {
+  width: 250px;
+}
+
+/* Dark Mode Adjustments */
+[data-theme='dark'] .hero-section {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+}

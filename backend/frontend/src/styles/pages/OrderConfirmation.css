@@ -1,0 +1,283 @@
+.confirmation-page {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 600px;
+}
+
+.confirmation-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  padding: 3rem 2rem;
+  text-align: center;
+  width: 100%;
+}
+
+.success-section {
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.success-icon {
+  font-size: 4rem;
+  color: #27ae60;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.confirmation-card h1 {
+  color: #27ae60;
+  font-size: 2rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.confirmation-message {
+  color: #666;
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.order-details {
+  margin-bottom: 2rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.detail-item {
+  text-align: center;
+}
+
+.detail-item label {
+  display: block;
+  font-size: 0.85rem;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.detail-value {
+  display: block;
+  font-size: 1.1rem;
+  color: #333;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.detail-value.status {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  text-transform: capitalize;
+}
+
+.detail-value.status.pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.detail-value.status.processing {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+.detail-value.status.shipped {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.detail-value.status.delivered {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.detail-value.total {
+  color: #27ae60;
+  font-size: 1.4rem;
+}
+
+.items-section {
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 2px solid #e0e0e0;
+  text-align: left;
+}
+
+.items-section h2 {
+  margin-top: 0;
+  font-size: 1.2rem;
+  color: #333;
+  margin-bottom: 1.5rem;
+}
+
+.items-list {
+  background-color: #f9f9f9;
+  padding: 1rem;
+  border-radius: 6px;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.order-item:last-child {
+  border-bottom: none;
+}
+
+.item-name {
+  color: #333;
+  font-weight: 500;
+}
+
+.item-qty {
+  color: #999;
+  font-size: 0.9rem;
+  margin-left: 0.5rem;
+}
+
+.item-price {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.confirmation-footer {
+  text-align: left;
+}
+
+.next-steps {
+  background-color: #e8f5e9;
+  border-left: 4px solid #27ae60;
+  padding: 1.5rem;
+  border-radius: 4px;
+  margin-bottom: 2rem;
+}
+
+.next-steps h3 {
+  margin-top: 0;
+  color: #27ae60;
+}
+
+.next-steps ul {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.next-steps li {
+  padding: 0.5rem 0;
+  color: #333;
+  font-weight: 500;
+}
+
+.continue-shopping-btn,
+.back-home-btn {
+  display: block;
+  width: 100%;
+  padding: 1rem 1.5rem;
+  background-color: #27ae60;
+  color: white;
+  text-decoration: none;
+  text-align: center;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s;
+  font-size: 1rem;
+}
+
+.continue-shopping-btn:hover,
+.back-home-btn:hover {
+  background-color: #229954;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.2);
+}
+
+.error-state {
+  text-align: center;
+}
+
+.error-icon {
+  font-size: 3.5rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.error-state h2 {
+  color: #e74c3c;
+  font-size: 1.8rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.error-state p {
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.back-home-btn {
+  background-color: #3498db;
+}
+
+.back-home-btn:hover {
+  background-color: #2980b9;
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+}
+
+@media (max-width: 768px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .confirmation-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .success-icon {
+    font-size: 3rem;
+  }
+
+  .confirmation-card h1 {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .confirmation-page {
+    padding: 1rem;
+    min-height: auto;
+  }
+
+  .confirmation-card {
+    padding: 1.5rem 1rem;
+  }
+
+  .detail-value {
+    font-size: 1rem;
+  }
+
+  .detail-value.total {
+    font-size: 1.2rem;
+  }
+
+  .next-steps {
+    padding: 1rem;
+  }
+
+  .next-steps li {
+    font-size: 0.95rem;
+  }
+}

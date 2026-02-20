@@ -1,0 +1,225 @@
+.orders-page-container {
+    padding: 2rem;
+    background-color: var(--fc-bg);
+    min-height: 100vh;
+    color: var(--fc-text);
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    background: var(--fc-surface);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--fc-border);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    color: var(--fc-text-sec);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0.5rem;
+}
+
+.back-btn:hover {
+    color: var(--fc-primary);
+    text-decoration: underline;
+}
+
+.page-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    color: var(--fc-text);
+}
+
+.status-filter {
+    padding: 0.8rem 1.2rem;
+    border: 1px solid var(--fc-border);
+    border-radius: 8px;
+    font-size: 1rem;
+    background-color: var(--fc-bg);
+    color: var(--fc-text);
+}
+
+.orders-table-wrapper {
+    background: var(--fc-surface);
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    border: 1px solid var(--fc-border);
+}
+
+.orders-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.orders-table th {
+    background-color: var(--fc-bg);
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--fc-text-sec);
+    border-bottom: 2px solid var(--fc-border);
+}
+
+.orders-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--fc-border);
+    vertical-align: middle;
+    color: var(--fc-text);
+}
+
+.order-row:hover {
+    background-color: var(--fc-bg);
+    cursor: pointer;
+}
+
+.customer-cell {
+    display: flex;
+    flex-direction: column;
+}
+
+.customer-name {
+    font-weight: 500;
+    color: var(--fc-text);
+}
+
+.customer-email {
+    font-size: 0.85rem;
+    color: var(--fc-text-sec);
+}
+
+.status-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.status-badge.pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-badge.preparing {
+    background-color: #e2e3e5;
+    color: #383d41;
+}
+
+.status-badge.ready {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-badge.delivered {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-badge.cancelled {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+[data-theme='dark'] .status-badge.pending {
+    background: rgba(217, 119, 6, 0.2);
+    color: #fbbf24;
+}
+
+[data-theme='dark'] .status-badge.preparing {
+    background: rgba(75, 85, 99, 0.2);
+    color: #9ca3af;
+}
+
+[data-theme='dark'] .status-badge.ready {
+    background: rgba(6, 182, 212, 0.2);
+    color: #22d3ee;
+}
+
+[data-theme='dark'] .status-badge.delivered {
+    background: rgba(5, 150, 105, 0.2);
+    color: #34d399;
+}
+
+[data-theme='dark'] .status-badge.cancelled {
+    background: rgba(220, 38, 38, 0.2);
+    color: #f87171;
+}
+
+.view-btn {
+    background-color: var(--fc-bg);
+    border: 1px solid var(--fc-border);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    color: var(--fc-text);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.view-btn:hover {
+    background-color: var(--fc-border);
+    color: var(--fc-primary);
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 2rem;
+    gap: 1rem;
+}
+
+.page-btn {
+    padding: 0.6rem 1.2rem;
+    background-color: var(--fc-surface);
+    border: 1px solid var(--fc-border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--fc-text);
+}
+
+.page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.page-btn:not(:disabled):hover {
+    background-color: var(--fc-bg);
+    border-color: var(--fc-primary);
+    color: var(--fc-primary);
+}
+
+.page-info {
+    color: var(--fc-text-sec);
+}
+
+.loading-spinner,
+.error-message,
+.text-center {
+    text-align: center;
+    padding: 2rem;
+}
+
+.font-mono {
+    font-family: monospace;
+    color: var(--fc-text-sec);
+}
+
+.font-bold {
+    font-weight: 600;
+}
