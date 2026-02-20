@@ -1,40 +1,102 @@
-# Welcome to your Expo app 👋
+# GroceryGo 🛒
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A smart grocery shopping companion built with **React Native (Expo)** for the mobile frontend and **Ruby on Rails** for the backend API.
 
-## Get started
+## Project Structure
 
-1. Install dependencies
+```
+├── app/                  ← Expo Router screens (auth, tabs)
+├── components/           ← Reusable React Native components
+├── constants/            ← Theme & color constants
+├── hooks/                ← Custom React hooks
+├── services/             ← API service layer (api.ts)
+├── assets/               ← Images and icons
+├── backend/              ← Ruby on Rails API server
+│   ├── app/              ← Rails controllers, models, views
+│   ├── config/           ← Rails configuration
+│   ├── db/               ← Database migrations & seeds
+│   ├── spec/             ← RSpec tests
+│   └── frontend/         ← Web admin dashboard (React + Vite)
+├── package.json          ← Expo/React Native dependencies
+├── app.json              ← Expo configuration
+└── tsconfig.json         ← TypeScript configuration
+```
 
-   ```bash
-   npm install
-   ```
+## Prerequisites
 
-2. Start the app
+- **Node.js** 18+
+- **Ruby** 3.1+
+- **PostgreSQL** (or a Supabase account)
+- **Expo CLI**: `npm install -g expo-cli`
 
-   ```bash
-   npx expo start
-   ```
+## Getting Started
 
-In the output, you'll find options to open the app in a
+### 1. Install Frontend Dependencies
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+```bash
+npm install
+```
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### 2. Setup Backend
 
-## Learn more
+```bash
+cd backend
+bundle install
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Create a `.env` file in the `backend/` directory:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```env
+DATABASE_URL=your_supabase_postgresql_url
+PORT=5001
+```
 
-## Join the community
+Run database migrations and seed data:
 
-Join our community of developers creating universal apps.
+```bash
+rails db:create db:migrate
+rails db:sync_products
+rails db:seed
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### 3. Run Both Servers
+
+**Terminal 1 — Backend (Rails API on port 5001):**
+
+```bash
+cd backend
+rails s -p 5001
+```
+
+**Terminal 2 — Frontend (Expo dev server):**
+
+```bash
+npx expo start
+```
+
+Then scan the QR code with Expo Go or press `i` for iOS simulator / `a` for Android emulator.
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Mobile Frontend | React Native, Expo, Expo Router |
+| Backend API | Ruby on Rails 7.2.3 (API mode) |
+| Database | Supabase / PostgreSQL |
+| Authentication | JWT (JSON Web Tokens) |
+| Admin CMS | ActiveAdmin |
+| Barcode Scanner | expo-camera + Open Food Facts API |
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/auth/login` | User login (returns JWT) |
+| POST | `/api/v1/auth/signup` | User registration |
+| GET | `/api/v1/auth/me` | Get current user |
+| GET | `/api/v1/products` | List all products |
+| GET | `/api/v1/products/:id` | Get product details |
+| GET | `/api/v1/categories` | List categories |
+| GET | `/api/v1/orders` | List user orders |
+| POST | `/api/v1/orders` | Create an order |
+| GET | `/api/v1/invoices` | List invoices |

@@ -1,0 +1,10 @@
+<div style="margin-top: 20px;">
+  <% Order.statuses.keys.each do |status_key| %>
+    <%= link_to status_key.titleize, 
+        update_status_admin_order_path(order, status: status_key), 
+        method: :patch,
+        data: { turbo_method: :patch },
+        class: "button #{order.status == status_key ? 'primary' : ''}", 
+        style: "margin-right: 10px;" %>
+  <% end %>
+</div>

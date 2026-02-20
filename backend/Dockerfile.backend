@@ -1,0 +1,42 @@
+# Dockerfile for Rails Backend
+ARG RUBY_VERSION=3.1.6
+FROM ruby:${RUBY_VERSION}-slim
+
+WORKDIR /rails
+
+# Install dependencies
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y \
+    build-essential \
+    git \
+    postgresql-client \
+    libpq-dev \
+    curl \
+    libjemalloc2 \
+    libvips \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Set Ruby environment
+ENV BUNDLE_PATH="/usr/local/bundle" \
+    BUNDLE_APP_CONFIG="/rails/.bundle" \
+    RAILS_ENV=production
+
+# Copy Gemfile and Gemfile.lock
+COPY Gemfile Gemfile.lock ./
+
+# Install gems
+RUN bundle install --no-deployment
+
+# Copy application code
+COPY . .
+
+# Create log directory
+RUN mkdir -p log && \
+    chmod -R 755 log
+
+# Expose port
+EXPOSE 5000
+
+# Start the Rails server
+CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0", "-p", "5000"]

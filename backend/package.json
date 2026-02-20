@@ -1,0 +1,13 @@
+{
+    "name": "fresh-grocery-app-root",
+    "private": true,
+    "engines": {
+        "node": "18.x"
+    },
+    "scripts": {
+        "build": "cd frontend && npm install && npm run build && cp -a dist/* ../public/"
+    },
+    "cacheDirectories": [
+        "frontend/node_modules"
+    ]
+}

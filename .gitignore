@@ -41,3 +41,18 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Backend (Ruby on Rails)
+backend/tmp/
+backend/log/
+backend/storage/
+backend/.env
+backend/.env.*
+backend/vendor/bundle/
+backend/public/packs/
+backend/public/packs-test/
+backend/node_modules/
+backend/frontend/node_modules/
+backend/frontend/dist/
+
+.idea/

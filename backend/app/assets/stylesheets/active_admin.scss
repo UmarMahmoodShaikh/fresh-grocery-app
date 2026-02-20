@@ -1,0 +1,474 @@
+// Consistent Flat Emerald Dark Theme for ActiveAdmin
+@import "active_admin/mixins";
+@import "active_admin/base";
+
+// Global Colors
+$bg-main: #0b0e14;
+$bg-panel: #161b22;
+$bg-header: #020617;
+$bg-input: #0d1117;
+$border-main: #30363d;
+$emerald-primary: #10b981;
+$emerald-hover: #059669;
+$text-primary: #f0f6fc;
+$text-secondary: #8b949e;
+$danger-red: #ef4444;
+
+// Global Typography & Shadow Removal
+html,
+body {
+    background-color: $bg-main !important;
+    color: $text-primary !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    -webkit-font-smoothing: antialiased;
+}
+
+// FORCE NO SHADOWS GLOBALLY
+body.active_admin,
+body.active_admin * {
+    text-shadow: none !important;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+}
+
+body.active_admin {
+    background-color: $bg-main !important;
+
+    // --- HEADER ---
+    #header {
+        background: $bg-header !important;
+        border-bottom: 1px solid $border-main !important;
+        background-image: none !important;
+        padding: 0 40px !important;
+        height: 60px !important;
+        display: flex !important;
+        align-items: center !important;
+
+        #tabs {
+            height: 100% !important;
+
+            li {
+                height: 100% !important;
+
+                a {
+                    color: $text-secondary !important;
+                    font-weight: 500 !important;
+                    background: transparent !important;
+                    border: none !important;
+                    padding: 0 20px !important;
+                    height: 100% !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    font-family: 'Inter', sans-serif !important;
+
+                    &:hover {
+                        color: #fff !important;
+                    }
+                }
+
+                &.current>a {
+                    color: $emerald-primary !important;
+                    border-bottom: 2px solid $emerald-primary !important;
+                }
+            }
+        }
+
+        #utility_nav {
+            li a {
+                color: $text-secondary !important;
+                font-family: 'Inter', sans-serif !important;
+
+                &:hover {
+                    color: #fff !important;
+                }
+            }
+
+            .logout a {
+                background: rgba(255, 255, 255, 0.05) !important;
+                border: 1px solid $border-main !important;
+                border-radius: 6px !important;
+                padding: 6px 15px !important;
+                margin-left: 10px !important;
+            }
+        }
+    }
+
+    // --- TITLE BAR ---
+    #title_bar {
+        background: $bg-main !important;
+        border-bottom: 1px solid $border-main !important;
+        padding: 30px 40px !important;
+
+        .breadcrumb {
+            color: $text-secondary !important;
+            font-family: 'Inter', sans-serif !important;
+
+            a {
+                color: $emerald-primary !important;
+                background: transparent !important;
+            }
+        }
+
+        h2 {
+            color: #fff !important;
+            font-size: 20px !important;
+            font-weight: 700 !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+
+        .action_items .action_item a {
+            background: $emerald-primary !important;
+            border: none !important;
+            color: #fff !important;
+            border-radius: 6px !important;
+            font-weight: 600 !important;
+            padding: 8px 18px !important;
+            font-family: 'Inter', sans-serif !important;
+
+            &:hover {
+                background: $emerald-hover !important;
+            }
+        }
+    }
+
+    // --- MAIN CONTENT AREA ---
+    #active_admin_content {
+        background: $bg-main !important;
+        padding: 40px !important;
+    }
+
+    // --- PANELS & DASHBOARD CARDS ---
+    .panel {
+        background: $bg-panel !important;
+        border: 1px solid $border-main !important;
+        border-radius: 8px !important;
+        margin-bottom: 30px !important;
+
+        h3 {
+            background: rgba(255, 255, 255, 0.02) !important;
+            color: #fff !important;
+            border-bottom: 1px solid $border-main !important;
+            padding: 15px 20px !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            font-size: 0.85rem !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+
+        .panel_contents {
+            padding: 20px !important;
+            color: $text-secondary !important;
+            font-family: 'Inter', sans-serif !important;
+
+            table {
+                background: transparent !important;
+                border: none !important;
+                width: 100% !important;
+
+                tr {
+                    background: transparent !important;
+                }
+
+                td,
+                th {
+                    border-color: $border-main !important;
+                }
+            }
+        }
+    }
+
+    // --- TABLES (Global Fix for White Patches) ---
+    table.index_table,
+    table,
+    .index_as_table table {
+        background: $bg-panel !important;
+        border: 1px solid $border-main !important;
+        color: $text-primary !important;
+        border-collapse: collapse !important;
+
+        thead th {
+            background: #161b22 !important;
+            color: $text-secondary !important;
+            border-bottom: 2px solid $border-main !important;
+            padding: 12px 20px !important;
+            text-align: left !important;
+            font-size: 0.75rem !important;
+            text-transform: uppercase !important;
+        }
+
+        tbody tr,
+        tr {
+            background: $bg-panel !important;
+
+            td {
+                background: transparent !important;
+                border-bottom: 1px solid $border-main !important;
+                color: $text-primary !important;
+                padding: 15px 20px !important;
+
+                a {
+                    color: $emerald-primary !important;
+                    font-weight: 500 !important;
+                    text-decoration: none !important;
+                }
+            }
+
+            &.odd td,
+            &.even td {
+                background: transparent !important;
+            }
+
+            &:hover td {
+                background: rgba(16, 185, 129, 0.05) !important;
+            }
+        }
+
+        td.col-actions {
+            display: flex !important;
+            gap: 5px !important;
+
+            a {
+                background: #21262d !important;
+                border: 1px solid $border-main !important;
+                color: #fff !important;
+                padding: 4px 10px !important;
+                border-radius: 4px !important;
+                font-size: 0.8rem !important;
+
+                &:hover {
+                    background: #30363d !important;
+                }
+            }
+        }
+    }
+
+    // Attributes Tables on Show Pages
+    .attributes_table table {
+        border: 1px solid $border-main !important;
+        background: $bg-panel !important;
+
+        th {
+            width: 20% !important;
+            background: rgba(255, 255, 255, 0.02) !important;
+            color: $text-secondary !important;
+            border-right: 1px solid $border-main !important;
+        }
+
+        td {
+            background: transparent !important;
+            color: $text-primary !important;
+        }
+    }
+
+    // --- FORMS ---
+    form fieldset.inputs {
+        background: $bg-panel !important;
+        border: 1px solid $border-main !important;
+        border-radius: 8px !important;
+        padding: 30px !important;
+        margin-bottom: 20px !important;
+
+        ol>li {
+            padding: 15px 0 !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+            display: flex !important;
+            align-items: flex-start !important;
+            float: none !important;
+            width: 100% !important;
+
+            label {
+                color: $text-primary !important;
+                font-weight: 600 !important;
+                width: 20% !important;
+                float: none !important;
+                padding-top: 10px !important;
+                font-family: 'Inter', sans-serif !important;
+            }
+
+            input[type="text"],
+            input[type="password"],
+            input[type="email"],
+            input[type="number"],
+            select,
+            textarea {
+                background: $bg-input !important;
+                color: #fff !important;
+                border: 1px solid $border-main !important;
+                border-radius: 6px !important;
+                padding: 12px !important;
+                width: 75% !important;
+                box-sizing: border-box !important;
+                font-family: 'Inter', sans-serif !important;
+
+                &:focus {
+                    border-color: $emerald-primary !important;
+                    outline: none !important;
+                }
+            }
+
+            textarea {
+                height: 150px !important;
+            }
+        }
+    }
+
+    form fieldset.actions {
+        background: transparent !important;
+        border: none !important;
+        padding: 10px 0 !important;
+
+        ol {
+            display: flex !important;
+            gap: 10px !important;
+
+            li.action {
+                padding: 0 !important;
+
+                input[type="submit"] {
+                    background: $emerald-primary !important;
+                    color: #fff !important;
+                    padding: 10px 24px !important;
+                    border-radius: 6px !important;
+                    border: none !important;
+                    font-weight: 600 !important;
+                    cursor: pointer !important;
+                    font-family: 'Inter', sans-serif !important;
+
+                    &:hover {
+                        background: $emerald-hover !important;
+                    }
+                }
+
+                &.cancel a {
+                    background: #21262d !important;
+                    border: 1px solid $border-main !important;
+                    color: #fff !important;
+                    padding: 10px 24px !important;
+                    border-radius: 6px !important;
+                    text-decoration: none !important;
+                    display: inline-block !important;
+                    font-family: 'Inter', sans-serif !important;
+                }
+            }
+        }
+    }
+
+    // --- LOGIN PAGE ---
+    &.logged_out {
+        background-color: $bg-main !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        min-height: 100vh !important;
+
+        #login {
+            background: $bg-panel !important;
+            border: 1px solid $border-main !important;
+            border-radius: 12px !important;
+            width: 400px !important;
+
+            h2 {
+                background: transparent !important;
+                color: #fff !important;
+                padding: 30px !important;
+                border-bottom: 1px solid $border-main !important;
+                text-align: center !important;
+                font-family: 'Inter', sans-serif !important;
+            }
+
+            form {
+                padding: 30px !important;
+
+                ol>li {
+                    flex-direction: column !important;
+
+                    label {
+                        width: 100% !important;
+                        margin-bottom: 8px !important;
+                        padding: 0 !important;
+                    }
+
+                    input {
+                        width: 100% !important;
+                    }
+                }
+
+                input[type="submit"] {
+                    width: 100% !important;
+                }
+            }
+        }
+    }
+}
+
+// Sidebar Filters Fix
+#sidebar {
+    border-left: 1px solid $border-main !important;
+    padding: 30px !important;
+
+    .sidebar_section {
+        background: $bg-panel !important;
+        border: 1px solid $border-main !important;
+        border-radius: 8px !important;
+        margin-bottom: 24px !important;
+
+        h3 {
+            background: rgba(255, 255, 255, 0.02) !important;
+            color: #fff !important;
+            padding: 12px 16px !important;
+            border-bottom: 1px solid $border-main !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+
+        .filter_form_column label {
+            font-size: 0.85rem !important;
+            color: $text-secondary !important;
+            margin-bottom: 5px !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+
+        input,
+        select {
+            background: $bg-input !important;
+            color: #fff !important;
+            border: 1px solid $border-main !important;
+            border-radius: 4px !important;
+            margin-bottom: 12px !important;
+            width: 100% !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+    }
+}
+
+// Status Tags
+.status_tag {
+    border-radius: 2em !important;
+    padding: 2px 10px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    border: none !important;
+
+    &.pending {
+        background: rgba(245, 158, 11, 0.1) !important;
+        color: #f59e0b !important;
+    }
+
+    &.delivered {
+        background: rgba(16, 185, 129, 0.1) !important;
+        color: #10b981 !important;
+    }
+
+    &.cancelled {
+        background: rgba(239, 68, 68, 0.1) !important;
+        color: #ef4444 !important;
+    }
+}
+
+#footer {
+    background: $bg-header !important;
+    border-top: 1px solid $border-main !important;
+    color: $text-secondary !important;
+    padding: 20px 40px !important;
+    font-family: 'Inter', sans-serif !important;
+}
