@@ -1,137 +1,255 @@
+import { useCart } from "@/context/CartContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
-import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function Cart() {
-  const router = useRouter();
+export default function CartScreen() {
+    const { cartItems, cartTotal, updateQuantity, removeFromCart, clearCart } = useCart();
+    const router = useRouter();
 
-  const handleStartShopping = () => {
-    // Navigate back to the home screen or scanner
-    router.push("/(tabs)");
-  };
+    const handleCheckout = () => {
+        if (cartItems.length === 0) {
+            Alert.alert("Error", "Your cart is empty");
+            return;
+        }
+        Alert.alert("Checkout", "Checkout flow not set up yet.");
+    };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable
-          style={styles.headerBackButton}
-          onPress={() => router.push("/(tabs)")}
-        >
-          <Ionicons name="arrow-back" size={24} color="#1F2937" />
-        </Pressable>
-        <Text style={styles.headerTitle}>My Cart</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+    const renderItem = ({ item }: { item: any }) => (
+        <View style={styles.cartItem}>
+            <View style={styles.imageContainer}>
+                {item.image_url ? (
+                    <Image source={{ uri: item.image_url }} style={styles.image} />
+                ) : (
+                    <Ionicons name="cube-outline" size={32} color="#ccc" />
+                )}
+            </View>
+            <View style={styles.itemInfo}>
+                <Text style={styles.itemName} numberOfLines={2}>
+                    {item.name}
+                </Text>
+                <Text style={styles.itemPrice}>€{Number(item.price * item.quantity).toFixed(2)}</Text>
 
-      {/* Main Content (Empty State) */}
-      <View style={styles.content}>
-        {/* Icon Container */}
-        <View style={styles.iconContainer}>
-          <Ionicons name="bag-handle-outline" size={60} color="#9CA3AF" />
+                <View style={styles.quantityContainer}>
+                    <TouchableOpacity onPress={() => updateQuantity(item.id, item.quantity - 1)} style={styles.qtyBtn}>
+                        <Ionicons name="remove" size={16} color="#374151" />
+                    </TouchableOpacity>
+                    <Text style={styles.qtyText}>{item.quantity}</Text>
+                    <TouchableOpacity onPress={() => updateQuantity(item.id, item.quantity + 1)} style={styles.qtyBtn}>
+                        <Ionicons name="add" size={16} color="#374151" />
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            <TouchableOpacity onPress={() => removeFromCart(item.id)} style={styles.deleteBtn}>
+                <Ionicons name="trash-outline" size={20} color="#EF4444" />
+            </TouchableOpacity>
         </View>
+    );
 
-        {/* Text */}
-        <Text style={styles.emptyTitle}>Your cart is empty</Text>
-        <Text style={styles.emptySubtitle}>
-          Start scanning products to add them to your cart
-        </Text>
+    if (cartItems.length === 0) {
+        return (
+            <SafeAreaView style={styles.emptyContainer}>
+                <Ionicons name="cart-outline" size={80} color="#D1D5DB" />
+                <Text style={styles.title}>My Cart</Text>
+                <Text style={styles.subtitle}>Your cart is currently empty.</Text>
+                <TouchableOpacity style={styles.shopNowBtn} onPress={() => router.push("/(tabs)")}>
+                    <Text style={styles.shopNowText}>Start Shopping</Text>
+                </TouchableOpacity>
+            </SafeAreaView>
+        );
+    }
 
-        {/* Action Button */}
-        <Pressable
-          style={({ pressed }) => [
-            styles.shoppingButton,
-            pressed && styles.shoppingButtonPressed,
-          ]}
-          onPress={handleStartShopping}
-        >
-          <Text style={styles.shoppingButtonText}>Start Shopping</Text>
-        </Pressable>
-      </View>
-    </SafeAreaView>
-  );
+    return (
+        <SafeAreaView style={styles.container}>
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>My Cart</Text>
+                <TouchableOpacity onPress={() => Alert.alert(
+                    "Clear Cart",
+                    "Are you sure you want to remove all items?",
+                    [
+                        { text: "Cancel", style: "cancel" },
+                        { text: "Clear", onPress: clearCart, style: "destructive" }
+                    ]
+                )}>
+                    <Text style={styles.clearText}>Clear</Text>
+                </TouchableOpacity>
+            </View>
+
+            <FlatList
+                data={cartItems}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={renderItem}
+                contentContainerStyle={styles.listContainer}
+                showsVerticalScrollIndicator={false}
+            />
+
+            <View style={styles.footer}>
+                <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>Total</Text>
+                    <Text style={styles.totalValue}>€{cartTotal.toFixed(2)}</Text>
+                </View>
+                <TouchableOpacity style={styles.checkoutBtn} onPress={handleCheckout}>
+                    <Text style={styles.checkoutText}>Proceed to Checkout</Text>
+                </TouchableOpacity>
+            </View>
+        </SafeAreaView>
+    );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
-  headerBackButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#F3F4F6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#1F2937",
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  content: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 40,
-  },
-  iconContainer: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: "#F3F4F6",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 32,
-  },
-  emptyTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#1F2937",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  emptySubtitle: {
-    fontSize: 16,
-    color: "#6B7280",
-    textAlign: "center",
-    lineHeight: 24,
-    marginBottom: 40,
-  },
-  shoppingButton: {
-    backgroundColor: "#FF6B35",
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 30, // Pill shape
-    shadowColor: "#FF6B35",
-    shadowOffset: {
-      width: 0,
-      height: 4,
+    emptyContainer: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#F9FAFB",
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  shoppingButtonPressed: {
-    backgroundColor: "#E55A28",
-  },
-  shoppingButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
+    title: {
+        fontSize: 24,
+        fontWeight: "bold",
+        color: "#1F2937",
+        marginTop: 16,
+        marginBottom: 8,
+    },
+    subtitle: {
+        fontSize: 16,
+        color: "#6B7280",
+        marginBottom: 24,
+    },
+    shopNowBtn: {
+        backgroundColor: "#2D6A4F",
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 8,
+    },
+    shopNowText: {
+        color: "#fff",
+        fontWeight: "bold",
+        fontSize: 16,
+    },
+
+    container: {
+        flex: 1,
+        backgroundColor: "#F9FAFB",
+    },
+    header: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingHorizontal: 16,
+        paddingVertical: 16,
+        backgroundColor: "#fff",
+        borderBottomWidth: 1,
+        borderBottomColor: "#E5E7EB",
+    },
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: "bold",
+        color: "#1F2937",
+    },
+    clearText: {
+        color: "#EF4444",
+        fontWeight: "600",
+        fontSize: 16,
+    },
+    listContainer: {
+        padding: 16,
+    },
+    cartItem: {
+        flexDirection: "row",
+        backgroundColor: "#fff",
+        padding: 12,
+        borderRadius: 12,
+        marginBottom: 12,
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+        elevation: 2,
+    },
+    imageContainer: {
+        width: 70,
+        height: 70,
+        backgroundColor: "#F3F4F6",
+        borderRadius: 8,
+        alignItems: "center",
+        justifyContent: "center",
+        marginRight: 12,
+    },
+    image: {
+        width: "100%",
+        height: "100%",
+        borderRadius: 8,
+    },
+    itemInfo: {
+        flex: 1,
+    },
+    itemName: {
+        fontSize: 15,
+        fontWeight: "600",
+        color: "#1F2937",
+        marginBottom: 4,
+    },
+    itemPrice: {
+        fontSize: 16,
+        fontWeight: "bold",
+        color: "#2D6A4F",
+        marginBottom: 8,
+    },
+    quantityContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#F3F4F6",
+        borderRadius: 8,
+        alignSelf: "flex-start",
+    },
+    qtyBtn: {
+        padding: 6,
+    },
+    qtyText: {
+        paddingHorizontal: 12,
+        fontWeight: "bold",
+        color: "#1F2937",
+    },
+    deleteBtn: {
+        padding: 8,
+        marginLeft: 8,
+    },
+
+    footer: {
+        backgroundColor: "#fff",
+        padding: 16,
+        borderTopWidth: 1,
+        borderTopColor: "#E5E7EB",
+        marginBottom: 80, // Accommodate for bottom tab
+    },
+    totalRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 16,
+    },
+    totalLabel: {
+        fontSize: 18,
+        fontWeight: "600",
+        color: "#4B5563",
+    },
+    totalValue: {
+        fontSize: 24,
+        fontWeight: "bold",
+        color: "#1F2937",
+    },
+    checkoutBtn: {
+        backgroundColor: "#2D6A4F",
+        borderRadius: 12,
+        paddingVertical: 16,
+        alignItems: "center",
+    },
+    checkoutText: {
+        color: "#fff",
+        fontSize: 18,
+        fontWeight: "bold",
+    },
 });

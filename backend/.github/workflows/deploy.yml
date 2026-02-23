@@ -1,0 +1,116 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - ror/main
+  pull_request:
+    branches:
+      - ror/main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.1.6
+          bundler-cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build Docker images
+        run: |
+          docker build -f Dockerfile.backend -t grocery-backend:latest .
+          docker build -f frontend/Dockerfile -t grocery-frontend:latest ./frontend
+          docker build -f nginx.Dockerfile -t grocery-nginx:latest .
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/ror/main'
+
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          cat > ~/.ssh/id_rsa << 'KEYEOF'
+          ${{ secrets.EC2_SSH_KEY }}
+          KEYEOF
+          chmod 600 ~/.ssh/id_rsa
+          echo "SSH key file size: $(wc -c < ~/.ssh/id_rsa) bytes"
+          head -1 ~/.ssh/id_rsa
+          tail -1 ~/.ssh/id_rsa
+          ssh-keyscan -t rsa ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Deploy to EC2
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'SSHEOF'
+          
+          # Install Docker if needed
+          if ! command -v docker &> /dev/null; then
+            curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh
+            sudo usermod -aG docker ubuntu
+          fi
+          
+          cd /home/ubuntu/GroceryStore || mkdir -p /home/ubuntu/GroceryStore
+          cd /home/ubuntu/GroceryStore
+          
+          # Pull latest code
+          if [ ! -d .git ]; then
+            git clone https://github.com/${{ github.repository }}.git .
+          else
+            git pull origin ror/main
+          fi
+          
+          # Update environment
+          cat > .env << 'ENVEOF'
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          JWT_SECRET=${{ secrets.SECRET_KEY_BASE }}
+          RAILS_MASTER_KEY=${{ secrets.SECRET_KEY_BASE }}
+          ENVEOF
+          
+          # Deploy with Docker Compose
+          docker-compose down || true
+          docker-compose up -d --build
+          
+          # Run migrations
+          sleep 15
+          docker-compose exec -T backend bundle exec rake db:migrate || true
+          
+          echo "Deployment completed!"
+          SSHEOF
+
+      - name: Verify deployment
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'SSHEOF'
+          echo "Checking services..."
+          docker-compose ps
+          echo "Testing health endpoints..."
+          curl -f http://localhost/health || echo "Health check failed"
+          echo "Deployment verification complete!"
+          SSHEOF

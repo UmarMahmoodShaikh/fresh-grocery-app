@@ -47,7 +47,7 @@ export default function SearchScreen() {
         ],
       });
 
-      const hits = searchResults[0]?.hits || [];
+      const hits = (searchResults[0] as any)?.hits || [];
       setResults(hits);
     } catch (error) {
       console.error("Algolia search error:", error);
@@ -132,7 +132,7 @@ export default function SearchScreen() {
       <View style={styles.content}>
         {isSearching && results.length === 0 ? (
           <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color="#FF6B35" />
+            <ActivityIndicator size="large" color="#2D6A4F" />
             <Text style={styles.loadingText}>Searching...</Text>
           </View>
         ) : query.length > 0 && results.length === 0 ? (
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#FF6B35",
+    backgroundColor: "#2D6A4F",
     alignItems: "center",
     justifyContent: "center",
   },

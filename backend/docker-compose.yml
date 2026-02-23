@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  # Nginx Reverse Proxy
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx.Dockerfile
+    container_name: grocery-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # Uncomment for SSL certificates in production environment and new changes
+      # - ./certs:/etc/nginx/certs:ro
+    networks:
+      - grocery-store-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Rails Backend (API with Supabase)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: grocery-backend
+    restart: unless-stopped
+    ports:
+      - "5001:5000"
+    environment:
+      # Rails Configuration
+      - RAILS_ENV=production
+      - RAILS_LOG_TO_STDOUT=true
+      - RAILS_MASTER_KEY=${RAILS_MASTER_KEY}
+      
+      # Database (Supabase)
+      - DATABASE_URL=${DATABASE_URL}
+      
+      # JWT & Security
+      - JWT_SECRET=${JWT_SECRET}
+      
+      # Supabase Configuration
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+    
+    volumes:
+      - .:/rails
+      - /rails/tmp
+      - /rails/log
+    networks:
+      - grocery-store-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/v1/products"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: bundle exec rails server -b 0.0.0.0 -p 5000
+
+  # Vite Frontend (React)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=/api/v1
+        - VITE_USE_MOCK=false
+        - VITE_BACKEND_URL=
+    container_name: grocery-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - grocery-store-network
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  grocery-store-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

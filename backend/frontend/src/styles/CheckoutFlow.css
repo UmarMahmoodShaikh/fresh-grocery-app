@@ -1,0 +1,253 @@
+.checkout-flow-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+  background: transparent;
+  padding: 20px;
+}
+
+.checkout-flow-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 40px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+}
+
+.checkout-flow-card h2 {
+  font-size: 28px;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.flow-subtitle {
+  text-align: center;
+  color: var(--text-secondary);
+  margin-bottom: 30px;
+  font-size: 14px;
+}
+
+.checkout-flow-form {
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
+}
+
+.form-group input.input-error {
+  border-color: #e74c3c;
+  background-color: rgba(231, 76, 60, 0.05);
+}
+
+.form-group input.input-disabled {
+  background-color: var(--bg-secondary);
+  cursor: not-allowed;
+  color: var(--text-muted);
+}
+
+.error-message {
+  display: block;
+  color: #e74c3c;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.checkout-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent-color);
+  color: var(--text-inverse);
+  width: 100%;
+  padding: 14px;
+  font-size: 15px;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: var(--accent-hover);
+  box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--accent-color);
+  border: 2px solid var(--accent-color);
+  padding: 12px 20px;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(39, 174, 96, 0.1);
+}
+
+.btn-option {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+  justify-content: flex-start;
+  text-align: left;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.btn-option:hover:not(:disabled) {
+  border-color: var(--accent-color);
+  background: var(--bg-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-option .option-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.btn-option h3 {
+  margin: 0 0 4px 0;
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.btn-option p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: normal;
+}
+
+.btn-back {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.guest-info {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.guest-info p {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.guest-info strong {
+  color: var(--accent-color);
+  font-weight: 600;
+}
+
+.guest-note {
+  margin-top: 12px !important;
+  font-size: 13px !important;
+  color: var(--text-muted) !important;
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  .checkout-flow-card {
+    padding: 24px;
+  }
+
+  .checkout-flow-card h2 {
+    font-size: 22px;
+  }
+
+  .btn-option {
+    padding: 12px;
+  }
+
+  .btn-option .option-icon {
+    font-size: 28px;
+  }
+}
+
+.guest-checkout-actions {
+  margin: 30px 0;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 20px 0;
+  color: #999;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.divider::before {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #ddd;
+  margin-right: 10px;
+}
+
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #ddd;
+  margin-left: 10px;
+}
+
+.btn-full {
+  width: 100%;
+  margin-top: 10px;
+}

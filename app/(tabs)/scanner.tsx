@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Modal,
   Pressable,
@@ -113,7 +113,7 @@ export default function Scanner() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.permissionContainer}>
-          <Ionicons name="camera-outline" size={80} color="#FF6B35" />
+          <Ionicons name="camera-outline" size={80} color="#2D6A4F" />
           <Text style={styles.permissionTitle}>Camera Permission Required</Text>
           <Text style={styles.permissionText}>
             We need access to your camera to scan barcodes
@@ -203,7 +203,7 @@ export default function Scanner() {
       {loading && (
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingCard}>
-            <Text style={styles.loadingText}>🔍 Fetching product data...</Text>
+            <Text style={styles.overlayLoadingText}>🔍 Fetching product data...</Text>
           </View>
         </View>
       )}
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   permissionButton: {
-    backgroundColor: "#FF6B35",
+    backgroundColor: "#2D6A4F",
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 12,
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 10,
   },
-  loadingText: {
+  overlayLoadingText: {
     fontSize: 16,
     fontWeight: "600",
     color: "#1F2937",
@@ -541,9 +541,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 12,
     alignItems: "center",
+    marginBottom: 10,
   },
   modalButtonPrimary: {
-    backgroundColor: "#FF6B35",
+    backgroundColor: "#2D6A4F",
   },
   modalButtonPressed: {
     backgroundColor: "#E55A28",

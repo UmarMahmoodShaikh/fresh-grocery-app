@@ -1,9 +1,19 @@
+import { useCart } from "@/context/CartContext";
+import {
+  addressesApi,
+  brandsApi,
+  categoriesApi,
+  getStoredUser,
+  productsApi,
+} from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Image,
   Modal,
   Pressable,
   SafeAreaView,
@@ -11,22 +21,107 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
-export default function Home() {
-  const userName = "John Doe"; // TODO: Get from user context/auth
+// Category icon mapping
+const CATEGORY_ICONS: Record<string, string> = {
+  fruits: "nutrition",
+  vegetables: "leaf",
+  dairy: "water",
+  bakery: "pizza",
+  beverages: "cafe",
+  snacks: "fast-food",
+  meat: "restaurant",
+  seafood: "fish",
+  frozen: "snow",
+  pantry: "basket",
+};
+
+const getCategoryIcon = (name: string): string => {
+  const key = name?.toLowerCase() || "";
+  return CATEGORY_ICONS[key] || "grid";
+};
+
+const CATEGORY_COLORS = [
+  { bg: "#FFF3E0", text: "#2D6A4F" },
+  { bg: "#E8F5E9", text: "#2D6A4F" },
+  { bg: "#E3F2FD", text: "#1976D2" },
+  { bg: "#F3E8FF", text: "#7C3AED" },
+  { bg: "#FFF8E1", text: "#F59E0B" },
+  { bg: "#FCE4EC", text: "#E91E63" },
+  { bg: "#E0F7FA", text: "#00ACC1" },
+  { bg: "#F1F8E9", text: "#689F38" },
+];
+
+export default function HomeScreen() {
+  const { addToCart } = useCart();
+  const [userName, setUserName] = useState("User");
+  const [defaultAddress, setDefaultAddress] = useState<string | null>(null);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [tourVisible, setTourVisible] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [brands, setBrands] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  useEffect(() => {
+    loadUser();
+    loadDefaultAddress();
+    loadData();
+    checkFirstTimeUser();
+  }, []);
+
+  const loadUser = async () => {
+    const user = await getStoredUser();
+    if (user) {
+      const name = [user.first_name, user.last_name].filter(Boolean).join(" ");
+      setUserName(name || user.email?.split("@")[0] || "User");
+    }
+  };
+
+  const loadDefaultAddress = async () => {
+    try {
+      const result = await addressesApi.getAll();
+      if (result.data && Array.isArray(result.data)) {
+        const def = (result.data as any[]).find((a: any) => a.is_default);
+        if (def) {
+          setDefaultAddress(`${def.street}, ${def.city}`);
+        } else if (result.data.length > 0) {
+          const first = result.data[0] as any;
+          setDefaultAddress(`${first.street}, ${first.city}`);
+        }
+      }
+    } catch {
+      // silently fail
+    }
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [catRes, brandRes, prodRes] = await Promise.all([
+        categoriesApi.getAll(),
+        brandsApi.getAll(),
+        productsApi.getAll(),
+      ]);
+      if (catRes.data) setCategories(catRes.data as any[]);
+      if (brandRes.data) setBrands(brandRes.data as any[]);
+      if (prodRes.data) setProducts(prodRes.data as any[]);
+    } catch {
+      // silently fail
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const tourSteps = [
     {
       title: "Scan Products",
       description:
         "📸 Tap here to scan product barcodes instantly and get detailed information!",
-      target: "scanner",
       icon: "scan-outline",
       iconColor: "#2D6A4F",
       iconBg: "#D1FAE5",
@@ -35,7 +130,6 @@ export default function Home() {
       title: "My Cart",
       description:
         "🛒 View and manage your shopping cart. Add, remove, or update quantities easily!",
-      target: "cart",
       icon: "cart-outline",
       iconColor: "#4A90E2",
       iconBg: "#DBEAFE",
@@ -43,7 +137,6 @@ export default function Home() {
     {
       title: "Order History",
       description: "📜 Check your order history and track past purchases!",
-      target: "history",
       icon: "time-outline",
       iconColor: "#9B59B6",
       iconBg: "#F3E8FF",
@@ -52,36 +145,22 @@ export default function Home() {
       title: "Account Settings",
       description:
         "👤 Manage your profile, payment methods, saved addresses, and app settings!",
-      target: "account",
       icon: "person-outline",
-      iconColor: "#FF6B35",
+      iconColor: "#2D6A4F",
       iconBg: "#FFF4ED",
     },
   ];
 
-  useEffect(() => {
-    console.log("Homepage mounted, checking tour status...");
-    checkFirstTimeUser();
-  }, []);
-
   const checkFirstTimeUser = async () => {
     try {
       const hasSeenTour = await AsyncStorage.getItem("hasSeenTour");
-      console.log("Has seen tour:", hasSeenTour);
-
       if (!hasSeenTour) {
-        console.log("First time user! Starting tour in 1 second...");
         setTimeout(() => {
-          console.log("Starting custom tour now...");
           setTourVisible(true);
           setCurrentStep(0);
         }, 1000);
-      } else {
-        console.log("User has already seen the tour");
       }
-    } catch (error) {
-      console.error("Error checking tour status:", error);
-    }
+    } catch { }
   };
 
   const handleTourNext = () => {
@@ -92,25 +171,104 @@ export default function Home() {
     }
   };
 
-  const handleTourSkip = () => {
-    handleTourComplete();
-  };
+  const handleTourSkip = () => handleTourComplete();
 
   const handleTourComplete = async () => {
     try {
       await AsyncStorage.setItem("hasSeenTour", "true");
-      console.log("Tour completed and saved!");
       setTourVisible(false);
       setCurrentStep(0);
-    } catch (error) {
-      console.error("Error saving tour status:", error);
-    }
+    } catch { }
   };
 
-  const handleScanProduct = () => {
-    console.log("Navigate to scanner");
-    router.push("/scanner");
+  // ── Render helpers ────────────────────────────────────
+
+  const renderCategoryItem = (cat: any, index: number) => {
+    const color = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+    return (
+      <TouchableOpacity key={cat.id} style={styles.categoryItem}>
+        <View style={[styles.categoryCircle, { backgroundColor: color.bg }]}>
+          {cat.image_url ? (
+            <Image
+              source={{ uri: cat.image_url }}
+              style={styles.categoryImage}
+            />
+          ) : (
+            <Ionicons
+              name={getCategoryIcon(cat.name) as any}
+              size={26}
+              color={color.text}
+            />
+          )}
+        </View>
+        <Text style={styles.categoryName} numberOfLines={1}>
+          {cat.name}
+        </Text>
+      </TouchableOpacity>
+    );
   };
+
+  const renderBrandItem = (brand: any) => (
+    <TouchableOpacity key={brand.id} style={styles.brandCard}>
+      <View style={styles.brandImageWrap}>
+        {brand.image_url ? (
+          <Image
+            source={{ uri: brand.image_url }}
+            style={styles.brandImage}
+            resizeMode="contain"
+          />
+        ) : (
+          <View style={styles.brandPlaceholder}>
+            <Ionicons name="storefront" size={28} color="#2D6A4F" />
+          </View>
+        )}
+      </View>
+      <Text style={styles.brandName} numberOfLines={1}>
+        {brand.name}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const renderProductCard = (product: any) => (
+    <TouchableOpacity key={product.id} style={styles.productCard}>
+      <View style={styles.productImageWrap}>
+        {product.image_url ? (
+          <Image
+            source={{ uri: product.image_url }}
+            style={styles.productImage}
+          />
+        ) : (
+          <View style={styles.productPlaceholder}>
+            <Ionicons name="cube-outline" size={36} color="#ccc" />
+          </View>
+        )}
+        {product.category && (
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryBadgeText}>{product.category.name}</Text>
+          </View>
+        )}
+      </View>
+      <View style={styles.productInfo}>
+        <Text style={styles.productName} numberOfLines={2}>
+          {product.name}
+        </Text>
+        {product.brand && (
+          <Text style={styles.productBrand}>{product.brand.name}</Text>
+        )}
+        <View style={styles.productBottom}>
+          <Text style={styles.productPrice}>
+            €{Number(product.price).toFixed(2)}
+          </Text>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => addToCart(product)}
+          >
+            <Ionicons name="add" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
 
   const handleMyCart = () => {
     console.log("Navigate to cart");
@@ -146,103 +304,70 @@ export default function Home() {
         onRequestClose={() => setNotificationsVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            {/* Modal Header */}
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Notifications</Text>
+          <View style={styles.notifPanel}>
+            <View style={styles.notifHeader}>
+              <Text style={styles.notifHeaderTitle}>Notifications</Text>
               <TouchableOpacity
                 onPress={() => setNotificationsVisible(false)}
-                style={styles.closeButton}
               >
-                <Ionicons name="close" size={24} color="#374151" />
+                <Ionicons name="close" size={24} color="#1F2937" />
               </TouchableOpacity>
             </View>
-
-            {/* Notifications List */}
-            <ScrollView
-              style={styles.notificationsList}
-              showsVerticalScrollIndicator={false}
-            >
-              {/* Notification Item 1 */}
+            <ScrollView showsVerticalScrollIndicator={false}>
               <TouchableOpacity style={styles.notificationItem}>
                 <View
-                  style={[styles.notifIcon, { backgroundColor: "#FFE4D6" }]}
+                  style={[styles.notifIcon, { backgroundColor: "#DCFCE7" }]}
                 >
-                  <Ionicons name="pricetag" size={20} color="#FF6B35" />
+                  <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
                 </View>
                 <View style={styles.notifContent}>
-                  <Text style={styles.notifTitle}>Special Offer!</Text>
-                  <Text style={styles.notifDescription}>
-                    Get 20% off on fresh produce. Valid until Feb 28.
-                  </Text>
-                  <Text style={styles.notifTime}>2 hours ago</Text>
-                </View>
-                <View style={styles.unreadDot} />
-              </TouchableOpacity>
-
-              {/* Notification Item 2 */}
-              <TouchableOpacity style={styles.notificationItem}>
-                <View
-                  style={[styles.notifIcon, { backgroundColor: "#D8F3DC" }]}
-                >
-                  <Ionicons name="checkmark-circle" size={20} color="#52B788" />
-                </View>
-                <View style={styles.notifContent}>
-                  <Text style={styles.notifTitle}>Order Delivered</Text>
+                  <Text style={styles.notifTitle}>Order Delivered!</Text>
                   <Text style={styles.notifDescription}>
                     Your order #1234 has been delivered successfully.
                   </Text>
-                  <Text style={styles.notifTime}>5 hours ago</Text>
+                  <Text style={styles.notifTime}>2 hours ago</Text>
                 </View>
-                <View style={styles.unreadDot} />
               </TouchableOpacity>
 
-              {/* Notification Item 3 */}
-              <TouchableOpacity
-                style={[styles.notificationItem, styles.readNotification]}
-              >
+              <TouchableOpacity style={styles.notificationItem}>
+                <View
+                  style={[styles.notifIcon, { backgroundColor: "#FFF7ED" }]}
+                >
+                  <Ionicons name="pricetag" size={20} color="#2D6A4F" />
+                </View>
+                <View style={styles.notifContent}>
+                  <Text style={styles.notifTitle}>Flash Sale! 🎉</Text>
+                  <Text style={styles.notifDescription}>
+                    20% off on all fresh produce. Limited time!
+                  </Text>
+                  <Text style={styles.notifTime}>5 hours ago</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.notificationItem}>
                 <View
                   style={[styles.notifIcon, { backgroundColor: "#DBEAFE" }]}
                 >
-                  <Ionicons name="cart" size={20} color="#4A90E2" />
+                  <Ionicons
+                    name="information-circle"
+                    size={20}
+                    color="#3B82F6"
+                  />
                 </View>
                 <View style={styles.notifContent}>
-                  <Text style={styles.notifTitle}>Items Back in Stock</Text>
+                  <Text style={styles.notifTitle}>New Products Added</Text>
                   <Text style={styles.notifDescription}>
-                    Fresh Organic Apples are now available!
+                    Check out the latest arrivals in our store.
                   </Text>
                   <Text style={styles.notifTime}>1 day ago</Text>
                 </View>
-              </TouchableOpacity>
-
-              {/* Notification Item 4 */}
-              <TouchableOpacity
-                style={[styles.notificationItem, styles.readNotification]}
-              >
-                <View
-                  style={[styles.notifIcon, { backgroundColor: "#E9D5FF" }]}
-                >
-                  <Ionicons name="star" size={20} color="#9B59B6" />
-                </View>
-                <View style={styles.notifContent}>
-                  <Text style={styles.notifTitle}>New Rewards Available</Text>
-                  <Text style={styles.notifDescription}>
-                    You've earned 50 points! Redeem now.
-                  </Text>
-                  <Text style={styles.notifTime}>2 days ago</Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* Clear All Button */}
-              <TouchableOpacity style={styles.clearAllButton}>
-                <Text style={styles.clearAllText}>Clear All Notifications</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
         </View>
       </Modal>
 
-      {/* Custom Guided Tour Modal */}
+      {/* Guided Tour Modal */}
       <Modal
         visible={tourVisible}
         transparent={true}
@@ -250,67 +375,91 @@ export default function Home() {
         onRequestClose={handleTourSkip}
       >
         <View style={styles.tourOverlay}>
-          {/* Tour Tooltip */}
           <View style={styles.tourTooltip}>
-            {/* Step Indicator */}
             <View style={styles.tourHeader}>
               <Text style={styles.tourStepIndicator}>
                 Step {currentStep + 1} of {tourSteps.length}
               </Text>
               <TouchableOpacity onPress={handleTourSkip}>
-                <Ionicons name="close-circle" size={24} color="#FF6B35" />
+                <Ionicons name="close-circle" size={24} color="#2D6A4F" />
               </TouchableOpacity>
             </View>
-
-            {/* Feature Icon */}
             <View
               style={[
                 styles.tourIconContainer,
-                { backgroundColor: tourSteps[currentStep].iconBg },
+                {
+                  backgroundColor:
+                    tourSteps[currentStep]?.iconBg || "#FFF4ED",
+                },
               ]}
             >
               <Ionicons
-                name={tourSteps[currentStep].icon as any}
-                size={48}
-                color={tourSteps[currentStep].iconColor}
+                name={(tourSteps[currentStep]?.icon as any) || "star"}
+                size={40}
+                color={tourSteps[currentStep]?.iconColor || "#2D6A4F"}
               />
             </View>
-
-            {/* Tour Content */}
-            <Text style={styles.tourTitle}>{tourSteps[currentStep].title}</Text>
-            <Text style={styles.tourDescription}>
-              {tourSteps[currentStep].description}
+            <Text style={styles.tourTitle}>
+              {tourSteps[currentStep]?.title}
             </Text>
-
-            {/* Tour Navigation */}
-            <View style={styles.tourButtons}>
+            <Text style={styles.tourDescription}>
+              {tourSteps[currentStep]?.description}
+            </Text>
+            <View style={styles.tourDots}>
+              {tourSteps.map((_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.tourDot,
+                    i === currentStep && styles.tourDotActive,
+                  ]}
+                />
+              ))}
+            </View>
+            <View style={styles.tourActions}>
               <TouchableOpacity
-                style={styles.tourSkipButton}
                 onPress={handleTourSkip}
+                style={styles.tourSkipButton}
               >
-                <Text style={styles.tourSkipText}>Skip Tour</Text>
+                <Text style={styles.tourSkipText}>Skip</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.tourNextButton}
                 onPress={handleTourNext}
+                style={styles.tourNextButton}
               >
                 <Text style={styles.tourNextText}>
-                  {currentStep < tourSteps.length - 1 ? "Next" : "Got it!"}
+                  {currentStep === tourSteps.length - 1
+                    ? "Get Started"
+                    : "Next"}
                 </Text>
-                {currentStep < tourSteps.length - 1 && (
-                  <Ionicons name="arrow-forward" size={18} color="white" />
-                )}
+                <Ionicons name="arrow-forward" size={16} color="#fff" />
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* Header Section */}
-      <LinearGradient colors={["#FF6B35", "#F77F00"]} style={styles.header}>
+      {/* Header */}
+      <LinearGradient colors={["#2D6A4F", "#52B788"]} style={styles.header}>
+        {/* Address Bar */}
+        <TouchableOpacity
+          style={styles.addressBar}
+          onPress={() => router.push("/addresses")}
+        >
+          <Ionicons name="location" size={16} color="#fff" />
+          <Text style={styles.addressText} numberOfLines={1}>
+            {defaultAddress || "Add delivery address"}
+          </Text>
+          <Ionicons
+            name="chevron-down"
+            size={14}
+            color="rgba(255,255,255,0.7)"
+          />
+        </TouchableOpacity>
+
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.welcomeText}>Welcome back,</Text>
+            <Text style={styles.welcomeText}>Bonjour,</Text>
             <Text style={styles.userName}>{userName}</Text>
           </View>
           <TouchableOpacity
@@ -325,222 +474,166 @@ export default function Home() {
         </View>
 
         {/* Search Bar */}
-        <TouchableOpacity style={styles.searchBar} onPress={handleSearch}>
+        <TouchableOpacity style={styles.searchBar}>
           <Ionicons name="search-outline" size={20} color="#9CA3AF" />
           <Text style={styles.searchPlaceholder}>Search groceries...</Text>
         </TouchableOpacity>
       </LinearGradient>
 
-      {/* Content Section - Scrollable */}
+      {/* Content */}
       <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.content}>
-          {/* Promotional Banner */}
-          <LinearGradient
-            colors={["#FF6B35", "#FF6B9D"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.promoBanner}
-          >
-            {/* Decorative fruit elements */}
-            <View style={styles.promoDecorations}>
-              <View style={styles.decorFruit1}>
-                <Ionicons
-                  name="leaf"
-                  size={40}
-                  color="rgba(255, 255, 255, 0.15)"
-                />
-              </View>
-              <View style={styles.decorFruit2}>
-                <Ionicons
-                  name="nutrition"
-                  size={50}
-                  color="rgba(255, 255, 255, 0.1)"
-                />
-              </View>
-            </View>
-
-            <View style={styles.promoContentWrapper}>
-              <View style={styles.promoHeader}>
-                <View style={styles.promoIconLarge}>
-                  <Ionicons name="pricetag" size={24} color="#FF6B35" />
-                </View>
-                <View>
-                  <Text style={styles.promoLabel}>🎉 Special Offer</Text>
-                  <Text style={styles.promoValidity}>
-                    Valid until Feb 28, 2026
-                  </Text>
-                </View>
-              </View>
-
-              <Text style={styles.promoTitle}>
-                Get <Text style={styles.promoHighlight}>20% OFF</Text>
-                {"\n"}
-                on Fresh Produce
-              </Text>
-
-              <View style={styles.promoFooter}>
-                <TouchableOpacity
-                  style={styles.shopButton}
-                  onPress={handleShopNow}
-                >
-                  <Text style={styles.shopButtonText}>Shop Now</Text>
-                  <Ionicons name="arrow-forward" size={16} color="#FF6B35" />
-                </TouchableOpacity>
-                <View style={styles.savingsBadge}>
-                  <Text style={styles.savingsText}>Save up to $50</Text>
-                </View>
-              </View>
-            </View>
-          </LinearGradient>
-
-          {/* Quick Actions */}
-          <View style={styles.quickActionsContainer}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-            <View style={styles.actionsGrid}>
-              {/* Scan Product */}
-              <Pressable style={styles.actionCard} onPress={handleScanProduct}>
-                {({ pressed }) => (
-                  <>
-                    <View
-                      style={[
-                        styles.actionIcon,
-                        styles.scanIcon,
-                        pressed && { backgroundColor: "#059669" },
-                      ]}
-                    >
-                      <Ionicons name="scan-outline" size={28} color="#2D6A4F" />
-                    </View>
-                    <Text style={styles.actionText}>Scan Product</Text>
-                  </>
-                )}
-              </Pressable>
-
-              {/* My Cart */}
-              <Pressable style={styles.actionCard} onPress={handleMyCart}>
-                {({ pressed }) => (
-                  <>
-                    <View
-                      style={[
-                        styles.actionIcon,
-                        styles.cartIcon,
-                        pressed && { backgroundColor: "#2563EB" },
-                      ]}
-                    >
-                      <Ionicons name="cart-outline" size={28} color="#4A90E2" />
-                    </View>
-                    <Text style={styles.actionText}>My Cart</Text>
-                  </>
-                )}
-              </Pressable>
-
-              {/* History */}
-              <Pressable style={styles.actionCard} onPress={handleHistory}>
-                {({ pressed }) => (
-                  <>
-                    <View
-                      style={[
-                        styles.actionIcon,
-                        styles.historyIcon,
-                        pressed && { backgroundColor: "#9333EA" },
-                      ]}
-                    >
-                      <Ionicons name="time-outline" size={28} color="#9B59B6" />
-                    </View>
-                    <Text style={styles.actionText}>History</Text>
-                  </>
-                )}
-              </Pressable>
-
-              {/* Account */}
-              <Pressable style={styles.actionCard} onPress={handleAccount}>
-                {({ pressed }) => (
-                  <>
-                    <View
-                      style={[
-                        styles.actionIcon,
-                        styles.accountIcon,
-                        pressed && { backgroundColor: "#EA580C" },
-                      ]}
-                    >
-                      <Ionicons
-                        name="person-outline"
-                        size={28}
-                        color="#FF6B35"
-                      />
-                    </View>
-                    <Text style={styles.actionText}>Account</Text>
-                  </>
-                )}
-              </Pressable>
-            </View>
+        {loading ? (
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator size="large" color="#2D6A4F" />
           </View>
-
-          {/* Recommended for You */}
-          <View style={styles.recommendedContainer}>
-            <View style={styles.recommendedHeader}>
-              <Text style={styles.sectionTitle}>Recommended for You</Text>
-              <TouchableOpacity>
-                <Text style={styles.seeAllText}>See All</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.productsScrollContent}
+        ) : (
+          <View style={styles.content}>
+            {/* Promotional Banner */}
+            <LinearGradient
+              colors={["#2D6A4F", "#4ADE80"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.promoBanner}
             >
-              <View style={styles.productsRow}>
-                {/* Product 1 */}
-                <View style={styles.productCard}>
-                  <View style={styles.productImageContainer}>
-                    <View style={styles.productImagePlaceholder}>
-                      <Ionicons name="leaf" size={32} color="#52B788" />
-                    </View>
-                    <View style={styles.discountBadge}>
-                      <Text style={styles.discountText}>-29%</Text>
-                    </View>
+              <View style={styles.promoContentWrapper}>
+                <View style={styles.promoHeader}>
+                  <View style={styles.promoIconLarge}>
+                    <Ionicons name="pricetag" size={22} color="#2D6A4F" />
                   </View>
-                  <Text style={styles.productName}>Fresh Organic Apples</Text>
-                  <View style={styles.priceRow}>
-                    <Text style={styles.currentPrice}>$4.99</Text>
-                    <Text style={styles.originalPrice}>$6.99</Text>
+                  <View>
+                    <Text style={styles.promoLabel}>🎉 Special Offer</Text>
+                    <Text style={styles.promoValidity}>
+                      Valid until Feb 28, 2026
+                    </Text>
                   </View>
                 </View>
+                <Text style={styles.promoTitle}>
+                  Get <Text style={styles.promoHighlight}>20% OFF</Text>
+                  {"\n"}on Fresh Produce
+                </Text>
+                <TouchableOpacity style={styles.shopButton}>
+                  <Text style={styles.shopButtonText}>Shop Now</Text>
+                  <Ionicons name="arrow-forward" size={16} color="#2D6A4F" />
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
 
-                {/* Product 2 */}
-                <View style={styles.productCard}>
-                  <View style={styles.productImageContainer}>
-                    <View style={styles.productImagePlaceholder}>
-                      <Ionicons name="nutrition" size={32} color="#FFB703" />
-                    </View>
-                    <View style={[styles.popularBadge]}>
-                      <Text style={styles.popularText}>Popular</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.productName}>Whole Grain Bread</Text>
-                  <View style={styles.priceRow}>
-                    <Text style={styles.currentPrice}>$2.99</Text>
-                  </View>
+            {/* Categories */}
+            {categories.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Categories</Text>
+                  <TouchableOpacity>
+                    <Text style={styles.seeAll}>See All</Text>
+                  </TouchableOpacity>
                 </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.categoryScroll}
+                >
+                  {categories.map((cat, i) => renderCategoryItem(cat, i))}
+                </ScrollView>
+              </View>
+            )}
 
-                {/* Product 3 - Additional product */}
-                <View style={styles.productCard}>
-                  <View style={styles.productImageContainer}>
-                    <View style={styles.productImagePlaceholder}>
-                      <Ionicons name="water" size={32} color="#4A90E2" />
-                    </View>
-                  </View>
-                  <Text style={styles.productName}>Fresh Milk</Text>
-                  <View style={styles.priceRow}>
-                    <Text style={styles.currentPrice}>$3.49</Text>
-                  </View>
+            {/* Brands */}
+            {brands.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Featured Brands</Text>
+                  <TouchableOpacity>
+                    <Text style={styles.seeAll}>See All</Text>
+                  </TouchableOpacity>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.brandScroll}
+                >
+                  {brands.map(renderBrandItem)}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Best Sellers */}
+            {products.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Best Sellers</Text>
+                  <TouchableOpacity>
+                    <Text style={styles.seeAll}>See All</Text>
+                  </TouchableOpacity>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.productScroll}
+                >
+                  {products.slice(0, 10).map(renderProductCard)}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* All Products Grid */}
+            {products.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>All Products</Text>
+                </View>
+                <View style={styles.productGrid}>
+                  {products.map((product: any) => (
+                    <TouchableOpacity
+                      key={product.id}
+                      style={styles.gridProductCard}
+                    >
+                      <View style={styles.gridProductImageWrap}>
+                        {product.image_url ? (
+                          <Image
+                            source={{ uri: product.image_url }}
+                            style={styles.gridProductImage}
+                          />
+                        ) : (
+                          <View style={styles.gridProductPlaceholder}>
+                            <Ionicons
+                              name="cube-outline"
+                              size={32}
+                              color="#ccc"
+                            />
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.gridProductName} numberOfLines={2}>
+                        {product.name}
+                      </Text>
+                      {product.brand && (
+                        <Text style={styles.gridProductBrand}>
+                          {product.brand.name}
+                        </Text>
+                      )}
+                      <View style={styles.gridProductBottom}>
+                        <Text style={styles.gridProductPrice}>
+                          €{Number(product.price).toFixed(2)}
+                        </Text>
+                        <TouchableOpacity
+                          style={styles.addButton}
+                          onPress={() => addToCart(product)}
+                        >
+                          <Ionicons name="add" size={18} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
                 </View>
               </View>
-            </ScrollView>
+            )}
+
+            <View style={{ height: 30 }} />
           </View>
-        </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -549,17 +642,37 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#F5F5F5",
   },
   scrollContainer: {
     flex: 1,
   },
+  loadingWrap: {
+    paddingTop: 80,
+    alignItems: "center",
+  },
+
+  // ── Header ──────────────────────────────────────
   header: {
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 20,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
+  },
+  addressBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 12,
+    paddingVertical: 4,
+  },
+  addressText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600",
+    flex: 1,
+    opacity: 0.95,
   },
   headerTop: {
     flexDirection: "row",
@@ -569,388 +682,392 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     fontSize: 14,
-    color: "rgba(255, 255, 255, 0.9)",
-    marginBottom: 2,
+    color: "rgba(255,255,255,0.85)",
+    fontWeight: "500",
   },
   userName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
+    fontSize: 22,
+    color: "#fff",
+    fontWeight: "800",
   },
   notificationButton: {
     position: "relative",
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    alignItems: "center",
-    justifyContent: "center",
+    padding: 8,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 12,
   },
   badge: {
     position: "absolute",
-    top: 8,
-    right: 8,
+    top: 2,
+    right: 2,
     backgroundColor: "#EF4444",
-    borderRadius: 10,
-    minWidth: 18,
+    width: 18,
     height: 18,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 4,
   },
   badgeText: {
-    color: "white",
-    fontSize: 11,
-    fontWeight: "bold",
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "700",
   },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "white",
-    borderRadius: 12,
+    backgroundColor: "#fff",
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 10,
   },
   searchPlaceholder: {
-    flex: 1,
-    fontSize: 14,
     color: "#9CA3AF",
+    fontSize: 15,
   },
+
+  // ── Content ─────────────────────────────────────
   content: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingTop: 16,
   },
+
+  // ── Promo ───────────────────────────────────────
   promoBanner: {
+    marginHorizontal: 20,
     borderRadius: 20,
     padding: 20,
-    marginBottom: 20,
-    position: "relative",
     overflow: "hidden",
-    shadowColor: "#FF6B35",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
-  promoDecorations: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  decorFruit1: {
-    position: "absolute",
-    top: -10,
-    right: 20,
-    transform: [{ rotate: "15deg" }],
-  },
-  decorFruit2: {
-    position: "absolute",
-    bottom: -15,
-    left: 10,
-    transform: [{ rotate: "-20deg" }],
-  },
-  promoContentWrapper: {
-    position: "relative",
-    zIndex: 1,
-  },
+  promoContentWrapper: {},
   promoHeader: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 10,
     marginBottom: 12,
-    gap: 12,
   },
   promoIconLarge: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "white",
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   promoLabel: {
-    fontSize: 14,
-    color: "white",
+    color: "#fff",
+    fontSize: 13,
     fontWeight: "700",
-    marginBottom: 2,
   },
   promoValidity: {
+    color: "rgba(255,255,255,0.75)",
     fontSize: 11,
-    color: "rgba(255, 255, 255, 0.85)",
   },
   promoTitle: {
-    fontSize: 26,
+    color: "#fff",
+    fontSize: 20,
     fontWeight: "800",
-    color: "white",
+    lineHeight: 26,
     marginBottom: 16,
-    lineHeight: 32,
   },
   promoHighlight: {
-    fontSize: 30,
-    fontWeight: "900",
-    color: "#FFE66D",
-    textShadowColor: "rgba(0, 0, 0, 0.2)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  promoFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    fontSize: 24,
+    color: "#FFEB3B",
   },
   shopButton: {
-    backgroundColor: "white",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 25,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 5,
+    backgroundColor: "#fff",
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 25,
+    alignSelf: "flex-start",
+    gap: 6,
   },
   shopButtonText: {
-    color: "#FF6B35",
-    fontSize: 15,
+    color: "#2D6A4F",
     fontWeight: "700",
+    fontSize: 14,
   },
-  savingsBadge: {
-    backgroundColor: "rgba(255, 255, 255, 0.25)",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.4)",
+
+  // ── Section shared ──────────────────────────────
+  section: {
+    marginTop: 24,
   },
-  savingsText: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  quickActionsContainer: {
-    flex: 1,
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginBottom: 14,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#111827",
-    marginBottom: 12,
+    fontWeight: "800",
+    color: "#1F2937",
   },
-  actionsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  actionCard: {
-    width: "48%",
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 20,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  actionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  scanIcon: {
-    backgroundColor: "#D8F3DC",
-  },
-  cartIcon: {
-    backgroundColor: "#DBEAFE",
-  },
-  historyIcon: {
-    backgroundColor: "#E9D5FF",
-  },
-  accountIcon: {
-    backgroundColor: "#FFE4D6",
-  },
-  actionText: {
+  seeAll: {
     fontSize: 14,
     fontWeight: "600",
+    color: "#2D6A4F",
+  },
+
+  // ── Categories ──────────────────────────────────
+  categoryScroll: {
+    paddingLeft: 20,
+    paddingRight: 8,
+    gap: 16,
+  },
+  categoryItem: {
+    alignItems: "center",
+    width: 72,
+  },
+  categoryCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  categoryImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  categoryName: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#4B5563",
+    textAlign: "center",
+  },
+
+  // ── Brands ──────────────────────────────────────
+  brandScroll: {
+    paddingLeft: 20,
+    paddingRight: 8,
+    gap: 12,
+  },
+  brandCard: {
+    alignItems: "center",
+    width: 90,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  brandImageWrap: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    overflow: "hidden",
+    marginBottom: 8,
+    backgroundColor: "#FFF3E0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  brandImage: {
+    width: 50,
+    height: 50,
+  },
+  brandPlaceholder: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  brandName: {
+    fontSize: 12,
+    fontWeight: "700",
     color: "#374151",
     textAlign: "center",
   },
-  recommendedContainer: {
-    marginTop: 28,
+
+  // ── Products (horizontal) ──────────────────────
+  productScroll: {
+    paddingLeft: 20,
+    paddingRight: 8,
+    gap: 14,
   },
-  recommendedHeader: {
+  productCard: {
+    width: 160,
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  productImageWrap: {
+    width: "100%",
+    height: 120,
+    backgroundColor: "#F9FAFB",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  productImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  productPlaceholder: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  categoryBadge: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    backgroundColor: "rgba(255, 107, 53, 0.9)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  categoryBadgeText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  productInfo: {
+    padding: 12,
+  },
+  productName: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1F2937",
+    marginBottom: 2,
+    lineHeight: 18,
+  },
+  productBrand: {
+    fontSize: 11,
+    color: "#9CA3AF",
+    fontWeight: "500",
+    marginBottom: 8,
+  },
+  productBottom: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
   },
-  seeAllText: {
-    fontSize: 14,
-    color: "#FF6B35",
-    fontWeight: "600",
+  productPrice: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#2D6A4F",
   },
-  productsScrollContent: {
-    paddingRight: 20,
+  addButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    backgroundColor: "#2D6A4F",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  productsRow: {
+
+  // ── Products Grid (all) ────────────────────────
+  productGrid: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: 14,
     gap: 12,
   },
-  productCard: {
-    width: 140,
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 12,
+  gridProductCard: {
+    width: "47%",
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    overflow: "hidden",
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
+    marginBottom: 4,
   },
-  productImageContainer: {
-    position: "relative",
-    marginBottom: 8,
-  },
-  productImagePlaceholder: {
+  gridProductImageWrap: {
     width: "100%",
-    height: 100,
-    backgroundColor: "#F3F4F6",
-    borderRadius: 8,
+    height: 110,
+    backgroundColor: "#F9FAFB",
     alignItems: "center",
     justifyContent: "center",
   },
-  discountBadge: {
-    position: "absolute",
-    top: 6,
-    right: 6,
-    backgroundColor: "#FF6B35",
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  gridProductImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
-  discountText: {
-    color: "white",
-    fontSize: 11,
-    fontWeight: "bold",
-  },
-  popularBadge: {
-    position: "absolute",
-    top: 6,
-    right: 6,
-    backgroundColor: "#52B788",
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  popularText: {
-    color: "white",
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  productName: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#374151",
-    marginBottom: 6,
-  },
-  priceRow: {
-    flexDirection: "row",
+  gridProductPlaceholder: {
     alignItems: "center",
-    gap: 6,
+    justifyContent: "center",
   },
-  currentPrice: {
-    fontSize: 15,
-    fontWeight: "bold",
-    color: "#52B788",
+  gridProductName: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#1F2937",
+    marginTop: 10,
+    marginHorizontal: 10,
+    lineHeight: 17,
   },
-  originalPrice: {
-    fontSize: 12,
+  gridProductBrand: {
+    fontSize: 11,
     color: "#9CA3AF",
-    textDecorationLine: "line-through",
+    fontWeight: "500",
+    marginHorizontal: 10,
+    marginTop: 2,
   },
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: "white",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: "80%",
-    paddingTop: 20,
-  },
-  modalHeader: {
+  gridProductBottom: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+    paddingTop: 6,
+  },
+  gridProductPrice: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#2D6A4F",
+  },
+
+  // ── Notifications ──────────────────────────────
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  notifPanel: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: "70%",
+    paddingBottom: 30,
+  },
+  notifHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
   },
-  modalTitle: {
+  notifHeaderTitle: {
     fontSize: 20,
-    fontWeight: "bold",
-    color: "#111827",
-  },
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#F3F4F6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  notificationsList: {
-    paddingHorizontal: 20,
+    fontWeight: "800",
+    color: "#1F2937",
   },
   notificationItem: {
     flexDirection: "row",
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    padding: 16,
+    paddingHorizontal: 20,
     gap: 12,
-    backgroundColor: "#FFF9F5",
-  },
-  readNotification: {
-    backgroundColor: "white",
   },
   notifIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -959,142 +1076,116 @@ const styles = StyleSheet.create({
   },
   notifTitle: {
     fontSize: 15,
-    fontWeight: "600",
-    color: "#111827",
-    marginBottom: 4,
+    fontWeight: "700",
+    color: "#1F2937",
   },
   notifDescription: {
     fontSize: 13,
     color: "#6B7280",
+    marginTop: 2,
     lineHeight: 18,
-    marginBottom: 6,
   },
   notifTime: {
     fontSize: 11,
     color: "#9CA3AF",
+    marginTop: 4,
   },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#FF6B35",
-    marginTop: 6,
-  },
-  clearAllButton: {
-    backgroundColor: "#FEF2F2",
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#FEE2E2",
-  },
-  clearAllText: {
-    color: "#DC2626",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  // Custom Tour Styles
+
+  // ── Tour ───────────────────────────────────────
   tourOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.85)",
+    backgroundColor: "rgba(0,0,0,0.7)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: 30,
   },
   tourTooltip: {
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 24,
-    width: "90%",
-    maxWidth: 400,
-    shadowColor: "#FF6B35",
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 10,
-    borderWidth: 2,
-    borderColor: "#FF6B35",
+    backgroundColor: "#fff",
+    borderRadius: 24,
+    padding: 28,
+    width: "100%",
+    alignItems: "center",
   },
   tourHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    width: "100%",
+    marginBottom: 20,
   },
   tourStepIndicator: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
-    color: "#FF6B35",
-    backgroundColor: "#FFF4ED",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    color: "#9CA3AF",
   },
   tourIconContainer: {
-    width: 100,
-    height: 100,
+    width: 80,
+    height: 80,
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    alignSelf: "center",
-    marginVertical: 16,
+    marginBottom: 16,
   },
   tourTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
+    fontSize: 20,
+    fontWeight: "800",
     color: "#1F2937",
-    marginBottom: 12,
+    marginBottom: 8,
+    textAlign: "center",
   },
   tourDescription: {
-    fontSize: 16,
+    fontSize: 15,
     color: "#6B7280",
-    lineHeight: 24,
-    marginBottom: 24,
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 20,
   },
-  tourButtons: {
+  tourDots: {
+    flexDirection: "row",
+    gap: 6,
+    marginBottom: 20,
+  },
+  tourDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#E5E7EB",
+  },
+  tourDotActive: {
+    backgroundColor: "#2D6A4F",
+    width: 24,
+  },
+  tourActions: {
     flexDirection: "row",
     gap: 12,
+    width: "100%",
   },
   tourSkipButton: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 12,
     alignItems: "center",
-    backgroundColor: "#F3F4F6",
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
   tourSkipText: {
-    color: "#6B7280",
     fontSize: 15,
     fontWeight: "600",
+    color: "#6B7280",
   },
   tourNextButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    backgroundColor: "#FF6B35",
+    flex: 2,
     flexDirection: "row",
+    gap: 6,
+    paddingVertical: 14,
+    alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    shadowColor: "#FF6B35",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    borderRadius: 14,
+    backgroundColor: "#2D6A4F",
   },
   tourNextText: {
-    color: "white",
     fontSize: 15,
-    fontWeight: "bold",
+    fontWeight: "700",
+    color: "#fff",
   },
 });

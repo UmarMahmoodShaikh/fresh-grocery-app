@@ -60,7 +60,7 @@ export default function ForgotPasswordScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
-        colors={["#FF6B35", "#F77F00", "#FFAA00"]}
+        colors={["#2D6A4F", "#52B788", "#74C69D"]}
         style={styles.gradient}
       >
         {/* Decorative Elements */}
@@ -82,7 +82,7 @@ export default function ForgotPasswordScreen() {
             {/* Logo */}
             <View style={styles.logoContainer}>
               <View style={styles.logoCircle}>
-                <Ionicons name="bag-check" size={32} color="#FF6B35" />
+                <Ionicons name="bag-check" size={32} color="#2D6A4F" />
               </View>
             </View>
 
@@ -273,12 +273,12 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
   resetButton: {
-    backgroundColor: "#FF6B35",
+    backgroundColor: "#2D6A4F",
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
     marginBottom: 20,
-    shadowColor: "#FF6B35",
+    shadowColor: "#2D6A4F",
     shadowOffset: {
       width: 0,
       height: 4,
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   },
   backToLoginLink: {
     fontSize: 14,
-    color: "#FF6B35",
+    color: "#2D6A4F",
     fontWeight: "600",
   },
   // Decorative fruit positions
