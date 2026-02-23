@@ -1,5 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { authAPI } from '../services/api';
+
+const isDev = import.meta.env.DEV;
 
 export const useAuth = () => {
   const [user, setUser] = useState(() => {
@@ -12,49 +14,31 @@ export const useAuth = () => {
   const [error, setError] = useState(null);
 
   const login = useCallback(async (email, password) => {
-    console.log('🔑 useAuth.login() called with email:', email);
     setLoading(true);
     setError(null);
     try {
-      console.log('📡 Making API request to authAPI.login()');
       const response = await authAPI.login(email, password);
-      console.log('📨 API response received:', response);
-      console.log('  Status:', response.status);
-      console.log('  Data:', response.data);
-      
+
       const { token, user } = response.data;
-      console.log('🔍 Extracting token and user:');
-      console.log('  Token:', token ? token.substring(0, 20) + '...' : 'MISSING');
-      console.log('  User:', user);
-      
+
       if (!token || !user) {
-        console.error('❌ Missing token or user in response');
         throw new Error('Invalid response: missing token or user');
       }
-      
-      console.log('💾 Saving to localStorage:');
+
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      console.log('✅ Stored in localStorage');
-      
-      console.log('📝 Setting user state:', user);
       setUser(user);
-      console.log('✅ User state updated');
-      
+
       return user;
     } catch (err) {
-      console.error('❌ Login error in useAuth:', err);
-      console.error('  Error message:', err.message);
-      if (err.response) {
-        console.error('  Response status:', err.response.status);
-        console.error('  Response data:', err.response.data);
+      if (isDev) {
+        // Only log non-sensitive error metadata in development
+        console.error('[Auth] Login failed:', err.response?.status ?? err.message);
       }
       const message = err.response?.data?.message || err.message || 'Login failed';
-      console.log('📋 Setting error:', message);
       setError(message);
       throw new Error(message);
     } finally {
-      console.log('🔚 useAuth.login() finished, setting loading to false');
       setLoading(false);
     }
   }, []);
@@ -64,7 +48,6 @@ export const useAuth = () => {
     setError(null);
     try {
       const response = await authAPI.signup(email, password);
-      console.log('Signup response:', response);
       const { token, user } = response.data;
       if (!token || !user) {
         throw new Error('Invalid response: missing token or user');
@@ -74,7 +57,9 @@ export const useAuth = () => {
       setUser(user);
       return user;
     } catch (err) {
-      console.error('Signup error:', err);
+      if (isDev) {
+        console.error('[Auth] Signup failed:', err.response?.status ?? err.message);
+      }
       const message = err.response?.data?.message || err.message || 'Signup failed';
       setError(message);
       throw new Error(message);

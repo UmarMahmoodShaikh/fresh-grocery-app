@@ -55,4 +55,11 @@ backend/node_modules/
 backend/frontend/node_modules/
 backend/frontend/dist/
 
+# IDE - prevent IDE metadata from being committed
 .idea/
+.vscode/
+*.iml
+
+# Scripts generated during dev
+replace_colors.py
+dump.rdb
