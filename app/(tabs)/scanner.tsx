@@ -58,7 +58,7 @@ export default function Scanner() {
             `This barcode (${barcode}) is not in our grocery database.\n\n` +
             `This might be:\n` +
             `• A non-food product\n` +
-            `• A product not yet added to Open Food Facts\n` +
+            `• A product not yet added\n` +
             `• An invalid barcode`,
           type: "error",
         });
@@ -221,7 +221,7 @@ export default function Scanner() {
         </View>
       </View>
 
-      {/* Custom Result Modal */}
+      {/* Result Modal */}
       <Modal
         visible={resultVisible}
         transparent={true}

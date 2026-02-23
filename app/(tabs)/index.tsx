@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
   Image,
   Modal,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -269,6 +270,30 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
+  const handleMyCart = () => {
+    console.log("Navigate to cart");
+    router.push("/(tabs)/cart" as any);
+  };
+
+  const handleHistory = () => {
+    // TODO: Navigate to history screen
+    console.log("Navigate to history");
+  };
+
+  const handleAccount = () => {
+    router.push("/(tabs)/account");
+  };
+
+  const handleSearch = () => {
+    console.log("Navigate to search");
+    router.push("/(tabs)/search" as any);
+  };
+
+  const handleShopNow = () => {
+    // TODO: Navigate to products/offers
+    console.log("Shop now clicked");
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Notifications Modal */}
@@ -451,7 +476,7 @@ export default function HomeScreen() {
         {/* Search Bar */}
         <TouchableOpacity style={styles.searchBar}>
           <Ionicons name="search-outline" size={20} color="#9CA3AF" />
-          <Text style={styles.searchPlaceholder}>Search products...</Text>
+          <Text style={styles.searchPlaceholder}>Search groceries...</Text>
         </TouchableOpacity>
       </LinearGradient>
 
