@@ -4,14 +4,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    Modal,
-    Pressable,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Modal,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function Home() {
@@ -113,8 +113,8 @@ export default function Home() {
   };
 
   const handleMyCart = () => {
-    // TODO: Navigate to cart screen
     console.log("Navigate to cart");
+    router.push("/(tabs)/cart" as any);
   };
 
   const handleHistory = () => {
@@ -127,8 +127,8 @@ export default function Home() {
   };
 
   const handleSearch = () => {
-    // TODO: Implement search functionality
-    console.log("Search triggered");
+    console.log("Navigate to search");
+    router.push("/(tabs)/search" as any);
   };
 
   const handleShopNow = () => {
@@ -327,7 +327,7 @@ export default function Home() {
         {/* Search Bar */}
         <TouchableOpacity style={styles.searchBar} onPress={handleSearch}>
           <Ionicons name="search-outline" size={20} color="#9CA3AF" />
-          <Text style={styles.searchPlaceholder}>Search products...</Text>
+          <Text style={styles.searchPlaceholder}>Search groceries...</Text>
         </TouchableOpacity>
       </LinearGradient>
 
