@@ -1,18 +1,20 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import { authApi, getStoredUser } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Alert,
-  SafeAreaView,
+  Appearance,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
+
 
 export default function Account() {
   const [userName, setUserName] = useState("User");
@@ -55,23 +57,15 @@ export default function Account() {
   };
 
   const handlePaymentMethods = () => {
-    console.log("Navigate to Payment Methods");
+    router.push("/payment-methods");
   };
 
-  const handleNotifications = () => {
-    console.log("Navigate to Notifications Settings");
-  };
+  const [isDarkMode, setIsDarkMode] = useState(Appearance.getColorScheme() === "dark");
 
-  const handlePrivacySecurity = () => {
-    console.log("Navigate to Privacy & Security");
-  };
-
-  const handleHelpSupport = () => {
-    console.log("Navigate to Help & Support");
-  };
-
-  const handleAppSettings = () => {
-    console.log("Navigate to App Settings");
+  const toggleDarkMode = () => {
+    const newMode = isDarkMode ? "light" : "dark";
+    Appearance.setColorScheme(newMode);
+    setIsDarkMode(!isDarkMode);
   };
 
   const handleShowTour = async () => {
@@ -105,21 +99,21 @@ export default function Account() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, isDarkMode && { backgroundColor: "#111827" }]}>
       <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Card */}
-        <View style={styles.profileCard}>
+        <View style={[styles.profileCard, isDarkMode && { backgroundColor: "#1F2937", borderBottomColor: "#374151" }]}>
           {/* Back Button - Inside Card */}
-          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#374151" />
+          <TouchableOpacity onPress={handleBack} style={[styles.backButton, isDarkMode && { backgroundColor: "#374151" }]}>
+            <Ionicons name="arrow-back" size={24} color={isDarkMode ? "#F9FAFB" : "#374151"} />
           </TouchableOpacity>
 
           <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
+            <View style={[styles.avatar, isDarkMode && { backgroundColor: "#0369A1", borderColor: "#0284C7" }]}>
+              <Text style={[styles.avatarText, isDarkMode && { color: "#F0F9FF" }]}>
                 {userName
                   .split(" ")
                   .map((n) => n[0])
@@ -127,38 +121,38 @@ export default function Account() {
               </Text>
             </View>
           </View>
-          <Text style={styles.profileName}>{userName}</Text>
-          <Text style={styles.memberSince}>Member since {memberSince}</Text>
+          <Text style={[styles.profileName, isDarkMode && { color: "#F9FAFB" }]}>{userName}</Text>
+          <Text style={[styles.memberSince, isDarkMode && { color: "#9CA3AF" }]}>Member since {memberSince}</Text>
 
           <View style={styles.contactInfo}>
             <View style={styles.contactItem}>
-              <Ionicons name="mail-outline" size={16} color="#6B7280" />
-              <Text style={styles.contactText}>{userEmail}</Text>
+              <Ionicons name="mail-outline" size={16} color={isDarkMode ? "#9CA3AF" : "#6B7280"} />
+              <Text style={[styles.contactText, isDarkMode && { color: "#D1D5DB" }]}>{userEmail}</Text>
             </View>
             <View style={styles.contactItem}>
-              <Ionicons name="call-outline" size={16} color="#6B7280" />
-              <Text style={styles.contactText}>{userPhone}</Text>
+              <Ionicons name="call-outline" size={16} color={isDarkMode ? "#9CA3AF" : "#6B7280"} />
+              <Text style={[styles.contactText, isDarkMode && { color: "#D1D5DB" }]}>{userPhone}</Text>
             </View>
           </View>
         </View>
 
         {/* Menu Options */}
-        <View style={styles.menuSection}>
+        <View style={[styles.menuSection, isDarkMode && { backgroundColor: "#1F2937", borderColor: "#374151" }]}>
           {/* Personal Information */}
           <TouchableOpacity
             style={styles.menuItem}
             onPress={handlePersonalInfo}
           >
-            <View style={[styles.menuIcon, { backgroundColor: "#DBEAFE" }]}>
-              <Ionicons name="person-outline" size={22} color="#3B82F6" />
+            <View style={[styles.menuIcon, { backgroundColor: isDarkMode ? "#1E3A8A" : "#DBEAFE" }]}>
+              <Ionicons name="person-outline" size={22} color={isDarkMode ? "#60A5FA" : "#3B82F6"} />
             </View>
             <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Personal Information</Text>
-              <Text style={styles.menuSubtitle}>
+              <Text style={[styles.menuTitle, isDarkMode && { color: "#F9FAFB" }]}>Personal Information</Text>
+              <Text style={[styles.menuSubtitle, isDarkMode && { color: "#9CA3AF" }]}>
                 Update your profile details
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            <Ionicons name="chevron-forward" size={20} color={isDarkMode ? "#6B7280" : "#9CA3AF"} />
           </TouchableOpacity>
 
           {/* Saved Addresses */}
@@ -166,14 +160,14 @@ export default function Account() {
             style={styles.menuItem}
             onPress={handleSavedAddresses}
           >
-            <View style={[styles.menuIcon, { backgroundColor: "#D8F3DC" }]}>
-              <Ionicons name="location-outline" size={22} color="#52B788" />
+            <View style={[styles.menuIcon, { backgroundColor: isDarkMode ? "#166534" : "#D8F3DC" }]}>
+              <Ionicons name="location-outline" size={22} color={isDarkMode ? "#4ADE80" : "#52B788"} />
             </View>
             <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Saved Addresses</Text>
-              <Text style={styles.menuSubtitle}>Manage delivery addresses</Text>
+              <Text style={[styles.menuTitle, isDarkMode && { color: "#F9FAFB" }]}>Saved Addresses</Text>
+              <Text style={[styles.menuSubtitle, isDarkMode && { color: "#9CA3AF" }]}>Manage delivery addresses</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            <Ionicons name="chevron-forward" size={20} color={isDarkMode ? "#6B7280" : "#9CA3AF"} />
           </TouchableOpacity>
 
           {/* Order History */}
@@ -181,14 +175,14 @@ export default function Account() {
             style={styles.menuItem}
             onPress={handleHistory}
           >
-            <View style={[styles.menuIcon, { backgroundColor: "#F3E8FF" }]}>
-              <Ionicons name="receipt-outline" size={22} color="#7C3AED" />
+            <View style={[styles.menuIcon, { backgroundColor: isDarkMode ? "#581C87" : "#F3E8FF" }]}>
+              <Ionicons name="receipt-outline" size={22} color={isDarkMode ? "#A78BFA" : "#7C3AED"} />
             </View>
             <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Order History</Text>
-              <Text style={styles.menuSubtitle}>View all past orders</Text>
+              <Text style={[styles.menuTitle, isDarkMode && { color: "#F9FAFB" }]}>Order History</Text>
+              <Text style={[styles.menuSubtitle, isDarkMode && { color: "#9CA3AF" }]}>View all past orders</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            <Ionicons name="chevron-forward" size={20} color={isDarkMode ? "#6B7280" : "#9CA3AF"} />
           </TouchableOpacity>
 
           {/* Payment Methods */}
@@ -196,113 +190,57 @@ export default function Account() {
             style={styles.menuItem}
             onPress={handlePaymentMethods}
           >
-            <View style={[styles.menuIcon, { backgroundColor: "#E9D5FF" }]}>
-              <Ionicons name="card-outline" size={22} color="#9B59B6" />
+            <View style={[styles.menuIcon, { backgroundColor: isDarkMode ? "#4C1D95" : "#E9D5FF" }]}>
+              <Ionicons name="card-outline" size={22} color={isDarkMode ? "#A78BFA" : "#9B59B6"} />
             </View>
             <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Payment Methods</Text>
-              <Text style={styles.menuSubtitle}>Manage payment options</Text>
+              <Text style={[styles.menuTitle, isDarkMode && { color: "#F9FAFB" }]}>Payment Methods</Text>
+              <Text style={[styles.menuSubtitle, isDarkMode && { color: "#9CA3AF" }]}>Manage payment options</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-          </TouchableOpacity>
-
-          {/* Notifications */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={handleNotifications}
-          >
-            <View style={[styles.menuIcon, { backgroundColor: "#FFE4D6" }]}>
-              <Ionicons
-                name="notifications-outline"
-                size={22}
-                color="#2D6A4F"
-              />
-            </View>
-            <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Notifications</Text>
-              <Text style={styles.menuSubtitle}>Customize your alerts</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            <Ionicons name="chevron-forward" size={20} color={isDarkMode ? "#6B7280" : "#9CA3AF"} />
           </TouchableOpacity>
         </View>
 
         {/* Additional Options */}
-        <View style={styles.menuSection}>
-          {/* Help & Support */}
-          <TouchableOpacity style={styles.menuItem} onPress={handleHelpSupport}>
-            <View style={[styles.menuIcon, { backgroundColor: "#E0E7FF" }]}>
-              <Ionicons name="help-circle-outline" size={22} color="#6366F1" />
-            </View>
-            <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Help & Support</Text>
-              <Text style={styles.menuSubtitle}>Get help and contact us</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-          </TouchableOpacity>
-
+        <View style={[styles.menuSection, isDarkMode && { backgroundColor: "#1F2937", borderColor: "#374151" }]}>
           {/* Show App Tour */}
           <TouchableOpacity style={styles.menuItem} onPress={handleShowTour}>
-            <View style={[styles.menuIcon, { backgroundColor: "#FEF3C7" }]}>
-              <Ionicons name="bulb-outline" size={22} color="#F59E0B" />
+            <View style={[styles.menuIcon, { backgroundColor: isDarkMode ? "#92400E" : "#FEF3C7" }]}>
+              <Ionicons name="bulb-outline" size={22} color={isDarkMode ? "#FBBF24" : "#F59E0B"} />
             </View>
             <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Show App Tour</Text>
-              <Text style={styles.menuSubtitle}>Replay the guided tour</Text>
+              <Text style={[styles.menuTitle, isDarkMode && { color: "#F9FAFB" }]}>Show App Tour</Text>
+              <Text style={[styles.menuSubtitle, isDarkMode && { color: "#9CA3AF" }]}>Replay the guided tour</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            <Ionicons name="chevron-forward" size={20} color={isDarkMode ? "#6B7280" : "#9CA3AF"} />
           </TouchableOpacity>
 
-          {/* App Settings */}
-          <TouchableOpacity style={styles.menuItem} onPress={handleAppSettings}>
-            <View style={[styles.menuIcon, { backgroundColor: "#F3F4F6" }]}>
-              <Ionicons name="settings-outline" size={22} color="#6B7280" />
+          {/* Dark Mode Toggle */}
+          <View style={styles.menuItem}>
+            <View style={[styles.menuIcon, { backgroundColor: isDarkMode ? "#374151" : "#1F2937" }]}>
+              <Ionicons name={isDarkMode ? "moon" : "moon-outline"} size={22} color="#F9FAFB" />
             </View>
             <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>App Settings</Text>
-              <Text style={styles.menuSubtitle}>
-                Preferences and configurations
-              </Text>
+              <Text style={[styles.menuTitle, isDarkMode && { color: "#F9FAFB" }]}>Dark Mode</Text>
+              <Text style={[styles.menuSubtitle, isDarkMode && { color: "#9CA3AF" }]}>Toggle app theme</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Activity Stats */}
-        <View style={styles.activityCardWrapper}>
-          <LinearGradient
-            colors={["#A855F7", "#EC4899"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.activityCard}
-          >
-            <Text style={styles.activityTitle}>Your Activity</Text>
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>24</Text>
-                <Text style={styles.statLabel}>Orders</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>$486</Text>
-                <Text style={styles.statLabel}>Spent</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>15</Text>
-                <Text style={styles.statLabel}>Saved</Text>
-              </View>
-            </View>
-          </LinearGradient>
+            <Switch
+              value={isDarkMode}
+              onValueChange={toggleDarkMode}
+              trackColor={{ false: "#D1D5DB", true: "#52B788" }}
+              thumbColor={"#fff"}
+            />
+          </View>
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color="#DC2626" />
-          <Text style={styles.logoutText}>Log Out</Text>
+        <TouchableOpacity style={[styles.logoutButton, isDarkMode && { backgroundColor: "#7F1D1D" }]} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={20} color={isDarkMode ? "#FECACA" : "#DC2626"} />
+          <Text style={[styles.logoutText, isDarkMode && { color: "#FECACA" }]}>Log Out</Text>
         </TouchableOpacity>
 
         {/* App Version */}
-        <Text style={styles.appVersion}>GroceryGo v1.0.0</Text>
+        <Text style={[styles.appVersion, isDarkMode && { color: "#6B7280" }]}>GroceryGo v1.0.0</Text>
         <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>

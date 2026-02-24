@@ -4,25 +4,67 @@ import {
   brandsApi,
   categoriesApi,
   getStoredUser,
+  ordersApi,
   productsApi,
 } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Image,
   Modal,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
+  useColorScheme
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+
+const FloatingPlusOne = ({ x, y }: { x: number; y: number }) => {
+  const translateY = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(translateY, {
+        toValue: -40,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [translateY, opacity]);
+
+  return (
+    <Animated.View
+      style={{
+        position: "absolute",
+        top: y - 20,
+        left: x - 15,
+        transform: [{ translateY }],
+        opacity,
+        zIndex: 9999,
+        pointerEvents: "none",
+      }}
+    >
+      <Text style={{ color: "#2D6A4F", fontSize: 24, fontWeight: "bold", textShadowColor: "rgba(255,255,255,0.8)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 4 }}>
+        +1
+      </Text>
+    </Animated.View>
+  );
+};
 
 // Category icon mapping
 const CATEGORY_ICONS: Record<string, string> = {
@@ -55,12 +97,17 @@ const CATEGORY_COLORS = [
 ];
 
 export default function HomeScreen() {
+  const isDark = useColorScheme() === 'dark';
+  const styles = getStyles(isDark);
+
   const { addToCart } = useCart();
   const [userName, setUserName] = useState("User");
   const [defaultAddress, setDefaultAddress] = useState<string | null>(null);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
+  const [activeOrders, setActiveOrders] = useState<any[]>([]);
   const [tourVisible, setTourVisible] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [plusAnimations, setPlusAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -71,8 +118,26 @@ export default function HomeScreen() {
     loadUser();
     loadDefaultAddress();
     loadData();
+    loadActiveOrders();
     checkFirstTimeUser();
+
+    const interval = setInterval(loadActiveOrders, 30_000);
+    return () => clearInterval(interval);
   }, []);
+
+  const loadActiveOrders = async () => {
+    try {
+      const result = await ordersApi.getAll();
+      if (result.data && Array.isArray(result.data)) {
+        const active = (result.data as any[]).filter((o) =>
+          ["pending", "processing", "shipped"].includes(o.status?.toLowerCase())
+        );
+        setActiveOrders(active);
+      }
+    } catch {
+      // silently fail
+    }
+  };
 
   const loadUser = async () => {
     const user = await getStoredUser();
@@ -186,7 +251,12 @@ export default function HomeScreen() {
   const renderCategoryItem = (cat: any, index: number) => {
     const color = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
     return (
-      <TouchableOpacity key={cat.id} style={styles.categoryItem}>
+      <TouchableOpacity
+        key={cat.id}
+        style={styles.categoryItem}
+        onPress={() => router.push(`/category/${cat.id}?name=${encodeURIComponent(cat.name)}` as any)}
+        activeOpacity={0.75}
+      >
         <View style={[styles.categoryCircle, { backgroundColor: color.bg }]}>
           {cat.image_url ? (
             <Image
@@ -209,7 +279,12 @@ export default function HomeScreen() {
   };
 
   const renderBrandItem = (brand: any) => (
-    <TouchableOpacity key={brand.id} style={styles.brandCard}>
+    <TouchableOpacity
+      key={brand.id}
+      style={styles.brandCard}
+      onPress={() => router.push(`/brand/${brand.id}?name=${encodeURIComponent(brand.name)}` as any)}
+      activeOpacity={0.75}
+    >
       <View style={styles.brandImageWrap}>
         {brand.image_url ? (
           <Image
@@ -230,7 +305,12 @@ export default function HomeScreen() {
   );
 
   const renderProductCard = (product: any) => (
-    <TouchableOpacity key={product.id} style={styles.productCard}>
+    <TouchableOpacity
+      key={product.id}
+      style={styles.productCard}
+      onPress={() => router.push(`/product/${product.id}` as any)}
+      activeOpacity={0.75}
+    >
       <View style={styles.productImageWrap}>
         {product.image_url ? (
           <Image
@@ -259,12 +339,13 @@ export default function HomeScreen() {
           <Text style={styles.productPrice}>
             €{Number(product.price).toFixed(2)}
           </Text>
-          <TouchableOpacity
+          <Pressable
             style={styles.addButton}
-            onPress={() => addToCart(product)}
+            onPress={(e) => handleAddCart(e, product)}
+            hitSlop={8}
           >
             <Ionicons name="add" size={20} color="#fff" />
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     </TouchableOpacity>
@@ -276,22 +357,32 @@ export default function HomeScreen() {
   };
 
   const handleHistory = () => {
-    // TODO: Navigate to history screen
-    console.log("Navigate to history");
+    router.push("/(tabs)/history" as any);
   };
 
   const handleAccount = () => {
-    router.push("/(tabs)/account");
+    router.push("/profile" as any);
   };
 
   const handleSearch = () => {
-    console.log("Navigate to search");
     router.push("/(tabs)/search" as any);
   };
 
   const handleShopNow = () => {
-    // TODO: Navigate to products/offers
-    console.log("Shop now clicked");
+    router.push("/(tabs)/search" as any);
+  };
+
+  const handleAddCart = (e: any, product: any) => {
+    e.stopPropagation?.();
+    if (e.nativeEvent) {
+      const { pageX, pageY } = e.nativeEvent;
+      const id = Math.random().toString();
+      setPlusAnimations((prev) => [...prev, { id, x: pageX, y: pageY }]);
+      setTimeout(() => {
+        setPlusAnimations((prev) => prev.filter((a) => a.id !== id));
+      }, 800);
+    }
+    addToCart(product);
   };
 
   return (
@@ -314,54 +405,44 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <TouchableOpacity style={styles.notificationItem}>
-                <View
-                  style={[styles.notifIcon, { backgroundColor: "#DCFCE7" }]}
-                >
-                  <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
+              {activeOrders.length === 0 ? (
+                <View style={{ padding: 20, alignItems: "center" }}>
+                  <Text style={{ color: isDark ? "#9CA3AF" : "#6B7280" }}>No new notifications</Text>
                 </View>
-                <View style={styles.notifContent}>
-                  <Text style={styles.notifTitle}>Order Delivered!</Text>
-                  <Text style={styles.notifDescription}>
-                    Your order #1234 has been delivered successfully.
-                  </Text>
-                  <Text style={styles.notifTime}>2 hours ago</Text>
-                </View>
-              </TouchableOpacity>
+              ) : (
+                activeOrders.map((order) => {
+                  let color = "#D97706";
+                  let bg = "#FEF3C7";
+                  let icon = "time-outline";
+                  const status = order.status?.toLowerCase();
+                  if (status === "processing") { color = "#2563EB"; bg = "#DBEAFE"; icon = "refresh-outline"; }
+                  if (status === "shipped") { color = "#7C3AED"; bg = "#EDE9FE"; icon = "bicycle-outline"; }
 
-              <TouchableOpacity style={styles.notificationItem}>
-                <View
-                  style={[styles.notifIcon, { backgroundColor: "#FFF7ED" }]}
-                >
-                  <Ionicons name="pricetag" size={20} color="#2D6A4F" />
-                </View>
-                <View style={styles.notifContent}>
-                  <Text style={styles.notifTitle}>Flash Sale! 🎉</Text>
-                  <Text style={styles.notifDescription}>
-                    20% off on all fresh produce. Limited time!
-                  </Text>
-                  <Text style={styles.notifTime}>5 hours ago</Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.notificationItem}>
-                <View
-                  style={[styles.notifIcon, { backgroundColor: "#DBEAFE" }]}
-                >
-                  <Ionicons
-                    name="information-circle"
-                    size={20}
-                    color="#3B82F6"
-                  />
-                </View>
-                <View style={styles.notifContent}>
-                  <Text style={styles.notifTitle}>New Products Added</Text>
-                  <Text style={styles.notifDescription}>
-                    Check out the latest arrivals in our store.
-                  </Text>
-                  <Text style={styles.notifTime}>1 day ago</Text>
-                </View>
-              </TouchableOpacity>
+                  return (
+                    <TouchableOpacity
+                      key={order.id}
+                      style={styles.notificationItem}
+                      onPress={() => {
+                        setNotificationsVisible(false);
+                        router.push(`/order/${order.id}` as any);
+                      }}
+                    >
+                      <View style={[styles.notifIcon, { backgroundColor: bg }]}>
+                        <Ionicons name={icon as any} size={20} color={color} />
+                      </View>
+                      <View style={styles.notifContent}>
+                        <Text style={styles.notifTitle}>Order #{order.id} is {status}</Text>
+                        <Text style={styles.notifDescription}>
+                          {order.order_items?.length ?? 0} items • €{Number(order.total).toFixed(2)}
+                        </Text>
+                        <Text style={styles.notifTime}>
+                          {new Date(order.created_at).toLocaleDateString()}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })
+              )}
             </ScrollView>
           </View>
         </View>
@@ -467,9 +548,11 @@ export default function HomeScreen() {
             onPress={() => setNotificationsVisible(true)}
           >
             <Ionicons name="notifications-outline" size={24} color="white" />
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>3</Text>
-            </View>
+            {activeOrders.length > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{activeOrders.length}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -589,6 +672,8 @@ export default function HomeScreen() {
                     <TouchableOpacity
                       key={product.id}
                       style={styles.gridProductCard}
+                      onPress={() => router.push(`/product/${product.id}` as any)}
+                      activeOpacity={0.75}
                     >
                       <View style={styles.gridProductImageWrap}>
                         {product.image_url ? (
@@ -618,12 +703,14 @@ export default function HomeScreen() {
                         <Text style={styles.gridProductPrice}>
                           €{Number(product.price).toFixed(2)}
                         </Text>
-                        <TouchableOpacity
+                        {/* Pressable stops the touch from bubbling to the card's onPress */}
+                        <Pressable
                           style={styles.addButton}
-                          onPress={() => addToCart(product)}
+                          onPress={(e) => handleAddCart(e, product)}
+                          hitSlop={8}
                         >
                           <Ionicons name="add" size={18} color="#fff" />
-                        </TouchableOpacity>
+                        </Pressable>
                       </View>
                     </TouchableOpacity>
                   ))}
@@ -635,11 +722,16 @@ export default function HomeScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Render floating +1 animations globally */}
+      {plusAnimations.map((anim) => (
+        <FloatingPlusOne key={anim.id} x={anim.x} y={anim.y} />
+      ))}
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F5F5",
@@ -715,14 +807,14 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: isDark ? "#1F2937" : "#fff",
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 10,
   },
   searchPlaceholder: {
-    color: "#9CA3AF",
+    color: isDark ? "#D1D5DB" : "#9CA3AF",
     fontSize: 15,
   },
 
@@ -749,7 +841,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: "#fff",
+    backgroundColor: isDark ? "#1F2937" : "#fff",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -776,7 +868,7 @@ const styles = StyleSheet.create({
   shopButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: isDark ? "#1F2937" : "#fff",
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 25,
@@ -803,7 +895,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#1F2937",
+    color: isDark ? "#F9FAFB" : "#1F2937",
   },
   seeAll: {
     fontSize: 14,
@@ -837,7 +929,7 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#4B5563",
+    color: isDark ? "#D1D5DB" : "#4B5563",
     textAlign: "center",
   },
 
@@ -850,11 +942,11 @@ const styles = StyleSheet.create({
   brandCard: {
     alignItems: "center",
     width: 90,
-    backgroundColor: "#fff",
+    backgroundColor: isDark ? "#1F2937" : "#fff",
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 8,
-    shadowColor: "#000",
+    shadowColor: isDark ? "#F9FAFB" : "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -881,7 +973,7 @@ const styles = StyleSheet.create({
   brandName: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#374151",
+    color: isDark ? "#D1D5DB" : "#374151",
     textAlign: "center",
   },
 
@@ -893,10 +985,10 @@ const styles = StyleSheet.create({
   },
   productCard: {
     width: 160,
-    backgroundColor: "#fff",
+    backgroundColor: isDark ? "#1F2937" : "#fff",
     borderRadius: 18,
     overflow: "hidden",
-    shadowColor: "#000",
+    shadowColor: isDark ? "#F9FAFB" : "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
     shadowRadius: 10,
@@ -905,7 +997,7 @@ const styles = StyleSheet.create({
   productImageWrap: {
     width: "100%",
     height: 120,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: isDark ? "#111827" : "#F9FAFB",
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
@@ -939,13 +1031,13 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#1F2937",
+    color: isDark ? "#F9FAFB" : "#1F2937",
     marginBottom: 2,
     lineHeight: 18,
   },
   productBrand: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: isDark ? "#D1D5DB" : "#9CA3AF",
     fontWeight: "500",
     marginBottom: 8,
   },
@@ -977,10 +1069,10 @@ const styles = StyleSheet.create({
   },
   gridProductCard: {
     width: "47%",
-    backgroundColor: "#fff",
+    backgroundColor: isDark ? "#1F2937" : "#fff",
     borderRadius: 16,
     overflow: "hidden",
-    shadowColor: "#000",
+    shadowColor: isDark ? "#F9FAFB" : "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
@@ -990,7 +1082,7 @@ const styles = StyleSheet.create({
   gridProductImageWrap: {
     width: "100%",
     height: 110,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: isDark ? "#111827" : "#F9FAFB",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1006,14 +1098,14 @@ const styles = StyleSheet.create({
   gridProductName: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#1F2937",
+    color: isDark ? "#F9FAFB" : "#1F2937",
     marginTop: 10,
     marginHorizontal: 10,
     lineHeight: 17,
   },
   gridProductBrand: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: isDark ? "#D1D5DB" : "#9CA3AF",
     fontWeight: "500",
     marginHorizontal: 10,
     marginTop: 2,
@@ -1039,7 +1131,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   notifPanel: {
-    backgroundColor: "#fff",
+    backgroundColor: isDark ? "#1F2937" : "#fff",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: "70%",
@@ -1051,12 +1143,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    borderBottomColor: isDark ? "#374151" : "#F3F4F6",
   },
   notifHeaderTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#1F2937",
+    color: isDark ? "#F9FAFB" : "#1F2937",
   },
   notificationItem: {
     flexDirection: "row",
@@ -1077,17 +1169,17 @@ const styles = StyleSheet.create({
   notifTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#1F2937",
+    color: isDark ? "#F9FAFB" : "#1F2937",
   },
   notifDescription: {
     fontSize: 13,
-    color: "#6B7280",
+    color: isDark ? "#9CA3AF" : "#6B7280",
     marginTop: 2,
     lineHeight: 18,
   },
   notifTime: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: isDark ? "#D1D5DB" : "#9CA3AF",
     marginTop: 4,
   },
 
@@ -1100,7 +1192,7 @@ const styles = StyleSheet.create({
     padding: 30,
   },
   tourTooltip: {
-    backgroundColor: "#fff",
+    backgroundColor: isDark ? "#1F2937" : "#fff",
     borderRadius: 24,
     padding: 28,
     width: "100%",
@@ -1116,7 +1208,7 @@ const styles = StyleSheet.create({
   tourStepIndicator: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#9CA3AF",
+    color: isDark ? "#D1D5DB" : "#9CA3AF",
   },
   tourIconContainer: {
     width: 80,
@@ -1129,13 +1221,13 @@ const styles = StyleSheet.create({
   tourTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#1F2937",
+    color: isDark ? "#F9FAFB" : "#1F2937",
     marginBottom: 8,
     textAlign: "center",
   },
   tourDescription: {
     fontSize: 15,
-    color: "#6B7280",
+    color: isDark ? "#9CA3AF" : "#6B7280",
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 20,
@@ -1149,7 +1241,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: isDark ? "#374151" : "#E5E7EB",
   },
   tourDotActive: {
     backgroundColor: "#2D6A4F",
@@ -1166,12 +1258,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: isDark ? "#374151" : "#E5E7EB",
   },
   tourSkipText: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#6B7280",
+    color: isDark ? "#9CA3AF" : "#6B7280",
   },
   tourNextButton: {
     flex: 2,

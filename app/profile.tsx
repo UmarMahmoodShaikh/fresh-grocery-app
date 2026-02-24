@@ -1,21 +1,24 @@
+import { SafeAreaView } from "react-native-safe-area-context";
+import { BasketLoader } from "@/components/BasketLoader";
 import { apiRequest, authApi, getStoredUser, setStoredUser } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+    useColorScheme
 } from "react-native";
+
 
 interface UserProfile {
     id: number;
@@ -31,6 +34,9 @@ interface UserProfile {
 }
 
 export default function ProfileScreen() {
+  const isDark = useColorScheme() === 'dark';
+  const styles = getStyles(isDark);
+
     const [user, setUser] = useState<UserProfile | null>(null);
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
@@ -152,10 +158,7 @@ export default function ProfileScreen() {
     if (isLoading) {
         return (
             <SafeAreaView style={styles.container}>
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#F97316" />
-                    <Text style={styles.loadingText}>Loading profile...</Text>
-                </View>
+                <BasketLoader text="Loading your profile..." />
             </SafeAreaView>
         );
     }
@@ -262,7 +265,7 @@ export default function ProfileScreen() {
                             <View style={[styles.inputWrapper, styles.inputDisabled]}>
                                 <Ionicons name="mail-outline" size={18} color="#9CA3AF" style={styles.inputIcon} />
                                 <TextInput
-                                    style={[styles.input, { color: "#9CA3AF" }]}
+                                    style={[styles.input, { color: isDark ? "#D1D5DB" : "#9CA3AF" }]}
                                     value={email}
                                     editable={false}
                                 />
@@ -352,10 +355,10 @@ export default function ProfileScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isDark: boolean) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#F9FAFB",
+        backgroundColor: isDark ? "#111827" : "#F9FAFB",
     },
     loadingContainer: {
         flex: 1,
@@ -365,7 +368,7 @@ const styles = StyleSheet.create({
     loadingText: {
         marginTop: 12,
         fontSize: 16,
-        color: "#6B7280",
+        color: isDark ? "#9CA3AF" : "#6B7280",
     },
     header: {
         flexDirection: "row",
@@ -373,9 +376,9 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: "#fff",
+        backgroundColor: isDark ? "#1F2937" : "#fff",
         borderBottomWidth: 1,
-        borderBottomColor: "#F3F4F6",
+        borderBottomColor: isDark ? "#374151" : "#F3F4F6",
     },
     backBtn: {
         padding: 8,
@@ -383,7 +386,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: "700",
-        color: "#1F2937",
+        color: isDark ? "#F9FAFB" : "#1F2937",
     },
     saveBtn: {
         backgroundColor: "#F97316",
@@ -394,7 +397,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     saveBtnDisabled: {
-        backgroundColor: "#E5E7EB",
+        backgroundColor: isDark ? "#374151" : "#E5E7EB",
     },
     saveBtnText: {
         color: "#fff",
@@ -402,7 +405,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     saveBtnTextDisabled: {
-        color: "#9CA3AF",
+        color: isDark ? "#D1D5DB" : "#9CA3AF",
     },
     scrollContainer: {
         flex: 1,
@@ -428,11 +431,11 @@ const styles = StyleSheet.create({
     avatarName: {
         fontSize: 20,
         fontWeight: "700",
-        color: "#1F2937",
+        color: isDark ? "#F9FAFB" : "#1F2937",
     },
     avatarEmail: {
         fontSize: 14,
-        color: "#6B7280",
+        color: isDark ? "#9CA3AF" : "#6B7280",
         marginTop: 2,
     },
     section: {
@@ -441,7 +444,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 16,
         fontWeight: "700",
-        color: "#374151",
+        color: isDark ? "#D1D5DB" : "#374151",
         marginBottom: 12,
         paddingLeft: 4,
     },
@@ -454,22 +457,22 @@ const styles = StyleSheet.create({
     fieldLabel: {
         fontSize: 13,
         fontWeight: "600",
-        color: "#6B7280",
+        color: isDark ? "#9CA3AF" : "#6B7280",
         marginBottom: 6,
         paddingLeft: 4,
     },
     inputWrapper: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#fff",
+        backgroundColor: isDark ? "#1F2937" : "#fff",
         borderRadius: 12,
         borderWidth: 1.5,
-        borderColor: "#E5E7EB",
+        borderColor: isDark ? "#374151" : "#E5E7EB",
         overflow: "hidden",
     },
     inputDisabled: {
-        backgroundColor: "#F9FAFB",
-        borderColor: "#F3F4F6",
+        backgroundColor: isDark ? "#111827" : "#F9FAFB",
+        borderColor: isDark ? "#374151" : "#F3F4F6",
     },
     inputIcon: {
         paddingLeft: 14,
@@ -479,11 +482,11 @@ const styles = StyleSheet.create({
         paddingVertical: 14,
         paddingHorizontal: 12,
         fontSize: 15,
-        color: "#1F2937",
+        color: isDark ? "#F9FAFB" : "#1F2937",
     },
     fieldHint: {
         fontSize: 11,
-        color: "#9CA3AF",
+        color: isDark ? "#D1D5DB" : "#9CA3AF",
         marginTop: 4,
         marginLeft: 4,
     },

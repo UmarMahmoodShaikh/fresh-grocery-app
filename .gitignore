@@ -63,3 +63,4 @@ backend/frontend/dist/
 # Scripts generated during dev
 replace_colors.py
 dump.rdb
+dump.rdb

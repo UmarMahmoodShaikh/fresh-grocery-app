@@ -1,18 +1,20 @@
+import { SafeAreaView } from "react-native-safe-area-context";
+import { BasketLoader } from "@/components/BasketLoader";
 import { Ionicons } from "@expo/vector-icons";
 import { liteClient as algoliasearch } from "algoliasearch/lite";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
   FlatList,
   Image,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   View,
+    useColorScheme
 } from "react-native";
+
 
 // Initialize Algolia search client
 const searchClient = algoliasearch(
@@ -22,6 +24,9 @@ const searchClient = algoliasearch(
 const INDEX_NAME = "grocery_products";
 
 export default function SearchScreen() {
+  const isDark = useColorScheme() === 'dark';
+  const styles = getStyles(isDark);
+
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
@@ -132,8 +137,7 @@ export default function SearchScreen() {
       <View style={styles.content}>
         {isSearching && results.length === 0 ? (
           <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color="#2D6A4F" />
-            <Text style={styles.loadingText}>Searching...</Text>
+            <BasketLoader text="Searching groceries..." />
           </View>
         ) : query.length > 0 && results.length === 0 ? (
           <View style={styles.centerContainer}>
@@ -165,10 +169,10 @@ export default function SearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: isDark ? "#111827" : "#F9FAFB",
   },
   header: {
     flexDirection: "row",
@@ -177,9 +181,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    borderBottomColor: isDark ? "#374151" : "#F3F4F6",
     elevation: 2,
-    shadowColor: "#000",
+    shadowColor: isDark ? "#F9FAFB" : "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 3,
@@ -188,7 +192,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: isDark ? "#111827" : "#f3f4f6",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -197,7 +201,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: isDark ? "#111827" : "#f3f4f6",
     borderRadius: 20,
     paddingHorizontal: 12,
     height: 44,
@@ -209,7 +213,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: "100%",
     fontSize: 16,
-    color: "#1F2937",
+    color: isDark ? "#F9FAFB" : "#1F2937",
   },
   clearButton: {
     padding: 4,
@@ -226,19 +230,19 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: "#6B7280",
+    color: isDark ? "#9CA3AF" : "#6B7280",
   },
   emptyTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#1F2937",
+    color: isDark ? "#F9FAFB" : "#1F2937",
     marginTop: 16,
     marginBottom: 8,
     textAlign: "center",
   },
   emptySubtitle: {
     fontSize: 16,
-    color: "#6B7280",
+    color: isDark ? "#9CA3AF" : "#6B7280",
     textAlign: "center",
     lineHeight: 24,
   },
@@ -252,7 +256,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     padding: 12,
     borderRadius: 16,
-    shadowColor: "#000",
+    shadowColor: isDark ? "#F9FAFB" : "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -265,13 +269,13 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 8,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: isDark ? "#111827" : "#F9FAFB",
   },
   productImagePlaceholder: {
     width: 60,
     height: 60,
     borderRadius: 8,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: isDark ? "#111827" : "#f3f4f6",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -283,12 +287,12 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#1F2937",
+    color: isDark ? "#F9FAFB" : "#1F2937",
     marginBottom: 4,
   },
   productBrand: {
     fontSize: 14,
-    color: "#6B7280",
+    color: isDark ? "#9CA3AF" : "#6B7280",
     marginBottom: 4,
   },
   productNutriscore: {

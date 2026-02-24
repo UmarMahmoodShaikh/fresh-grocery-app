@@ -1,0 +1,13 @@
+<h1>Order Confirmation ##{@order.id}</h1>
+<p>Hi <%= @user.first_name || 'Customer' %>,</p>
+<p>Thank you for your order! Here are your details:</p>
+<p><strong>Total:</strong> €<%= number_to_currency(@order.total, unit: '') %></p>
+<p><strong>Delivery Address:</strong> <%= @order.delivery_address %></p>
+
+<h3>Items:</h3>
+<ul>
+  <% @order.order_items.each do |item| %>
+    <li><%= item.quantity %>x <%= item.product.name %> - €<%= number_to_currency(item.price * item.quantity, unit: '') %></li>
+  <% end %>
+</ul>
+<p>We'll notify you when your order ships.</p>

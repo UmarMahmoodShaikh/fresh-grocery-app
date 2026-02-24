@@ -1,21 +1,24 @@
 # Admin User for API
-User.find_or_create_by!(email: 'admin@example.com') do |user|
-  user.password = 'password'
-  user.password_confirmation = 'password'
+User.find_or_create_by!(email: 'admin@trinity.com') do |user|
+  user.password = 'Admin@123'
+  user.password_confirmation = 'Admin@123'
   user.role = :admin
+  user.first_name = 'Admin'
+  user.last_name = 'User'
+  user.phone = '+33612345678'
 end
 
 # Admin User for ActiveAdmin
-AdminUser.find_or_create_by!(email: 'admin@example.com') do |admin|
-  admin.password = 'password'
-  admin.password_confirmation = 'password'
+AdminUser.find_or_create_by!(email: 'admin@trinity.com') do |admin|
+  admin.password = 'Admin@123'
+  admin.password_confirmation = 'Admin@123'
   admin.role = :admin
 end
 
 # Employee User for ActiveAdmin
-AdminUser.find_or_create_by!(email: 'employee@example.com') do |admin|
-  admin.password = 'password'
-  admin.password_confirmation = 'password'
+AdminUser.find_or_create_by!(email: 'employee@trinity.com') do |admin|
+  admin.password = 'Admin@123'
+  admin.password_confirmation = 'Admin@123'
   admin.role = :employee
 end
 
@@ -29,5 +32,5 @@ end
 # end
 
 puts "✅ Seeded Admin Users"
-puts "   API Admin: admin@example.com / password"
-puts "   ActiveAdmin: admin@example.com / password"
+puts "   API Admin: admin@trinity.com / Admin@123"
+puts "   ActiveAdmin: admin@trinity.com / Admin@123"

@@ -11,10 +11,14 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View
+    View,
+    useColorScheme
 } from "react-native";
 
 export default function ScannerScreen() {
+  const isDark = useColorScheme() === 'dark';
+  const styles = getStyles(isDark);
+
     const [hasPermission, setHasPermission] = useState<boolean | null>(null);
     const [scanned, setScanned] = useState(false);
     const [manualBarcode, setManualBarcode] = useState("");
@@ -138,7 +142,7 @@ export default function ScannerScreen() {
                 )}
 
                 <Text style={styles.label}>Barcode</Text>
-                <TextInput style={[styles.input, { backgroundColor: '#e5e7eb' }]} value={productForm.barcode} editable={false} />
+                <TextInput style={[styles.input, { backgroundColor: isDark ? "#374151" : "#E5E7EB" }]} value={productForm.barcode} editable={false} />
 
                 <Text style={styles.label}>Name</Text>
                 <TextInput style={styles.input} value={productForm.name} onChangeText={(t) => setProductForm({ ...productForm, name: t })} />
@@ -202,8 +206,8 @@ export default function ScannerScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#000' },
+const getStyles = (isDark: boolean) => StyleSheet.create({
+    container: { flex: 1, backgroundColor: isDark ? "#F9FAFB" : "#000" },
     fetchingOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.9)', justifyContent: 'center', alignItems: 'center', zIndex: 10 },
     manualEntry: {
         position: "absolute",
@@ -220,7 +224,7 @@ const styles = StyleSheet.create({
         flex: 1,
         borderWidth: 1,
         borderColor: "#ccc",
-        backgroundColor: '#fff',
+        backgroundColor: isDark ? "#1F2937" : "#fff",
         padding: 12,
         marginRight: 10,
         borderRadius: 8,
@@ -233,14 +237,14 @@ const styles = StyleSheet.create({
     manualSearchText: { color: '#fff', fontWeight: 'bold' },
 
     // Form styles
-    formContainer: { padding: 20, backgroundColor: '#F9FAFB', flexGrow: 1 },
+    formContainer: { padding: 20, backgroundColor: isDark ? "#111827" : "#F9FAFB", flexGrow: 1 },
     formTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
     formImage: { width: 150, height: 150, alignSelf: 'center', borderRadius: 12, marginBottom: 20 },
-    label: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 6 },
-    input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 16 },
+    label: { fontSize: 14, fontWeight: '600', color: isDark ? "#D1D5DB" : "#374151", marginBottom: 6 },
+    input: { backgroundColor: isDark ? "#1F2937" : "#fff", borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 16 },
     formActions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, marginBottom: 40 },
     cancelBtn: { flex: 1, padding: 14, borderRadius: 8, borderWidth: 1, borderColor: '#ccc', marginRight: 10, alignItems: 'center' },
-    cancelBtnText: { color: '#4B5563', fontWeight: 'bold', fontSize: 16 },
+    cancelBtnText: { color: isDark ? "#D1D5DB" : "#4B5563", fontWeight: 'bold', fontSize: 16 },
     saveBtn: { flex: 1, padding: 14, borderRadius: 8, backgroundColor: '#2D6A4F', marginLeft: 10, alignItems: 'center' },
     saveBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 });

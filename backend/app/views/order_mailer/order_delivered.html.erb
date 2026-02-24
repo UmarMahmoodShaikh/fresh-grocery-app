@@ -1,0 +1,7 @@
+<h1>Order Delivered!</h1>
+<p>Hi <%= @user.first_name || 'Customer' %>,</p>
+<p>Your order ##{@order.id} has reached its destination. We hope you enjoy it!</p>
+<hr/>
+<h3>How did we do?</h3>
+<p>Please rate your experience by replying or clicking the link below (simulated):</p>
+<p><a href="http://localhost:8081/order/<%= @order.id %>/feedback">Leave Feedback</a></p>

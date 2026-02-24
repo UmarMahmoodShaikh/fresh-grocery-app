@@ -12,6 +12,9 @@ ActiveAdmin.register Order do
       status_tag order.status
     end
     column :delivery_address
+    column :score do |order|
+      order.score ? "#{order.score} / 5" : "-"
+    end
     column :created_at
     actions
   end
@@ -28,6 +31,8 @@ ActiveAdmin.register Order do
       f.input :status, as: :select, collection: Order.statuses.keys
       f.input :delivery_address
       f.input :delivery_fee
+      f.input :score
+      f.input :comments
     end
     f.actions
   end
@@ -46,6 +51,8 @@ ActiveAdmin.register Order do
       row :delivery_fee do |order|
         number_to_currency(order.delivery_fee) if order.delivery_fee
       end
+      row :score
+      row :comments
       row :created_at
       row :updated_at
     end

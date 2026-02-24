@@ -9,15 +9,17 @@ import {
     Dimensions,
     KeyboardAvoidingView,
     Platform,
-    SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
     View,
+    useColorScheme
 } from "react-native";
-import MapView, { Marker, Region } from "react-native-maps";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
 
 const { width } = Dimensions.get("window");
 
@@ -38,6 +40,9 @@ const LABELS: { key: AddressLabel; label: string; icon: string }[] = [
 ];
 
 export default function AddAddressScreen() {
+  const isDark = useColorScheme() === 'dark';
+  const styles = getStyles(isDark);
+
     const params = useLocalSearchParams<{ id?: string }>();
     const isEditing = !!params.id;
 
@@ -91,11 +96,12 @@ export default function AddAddressScreen() {
     };
 
     const getCurrentLocation = async () => {
+        setIsLoadingLocation(true);
         try {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status === "granted") {
                 const loc = await Location.getCurrentPositionAsync({
-                    accuracy: Location.Accuracy.Balanced,
+                    accuracy: Location.Accuracy.Highest,
                 });
                 const coord = {
                     latitude: loc.coords.latitude,
@@ -104,9 +110,11 @@ export default function AddAddressScreen() {
                 setMarkerCoord(coord);
                 setRegion({ ...coord, latitudeDelta: 0.005, longitudeDelta: 0.005 });
                 reverseGeocode(coord.latitude, coord.longitude);
+            } else {
+                Alert.alert("Permission Denied", "We need location permissions to find you.");
             }
         } catch {
-            // Use default Paris location
+            Alert.alert("Location Error", "Could not fetch your current location reliably from satellites or WiFi.");
         } finally {
             setIsLoadingLocation(false);
         }
@@ -219,21 +227,31 @@ export default function AddAddressScreen() {
                                 <Text style={styles.mapLoadingText}>Getting location...</Text>
                             </View>
                         ) : (
-                            <MapView
-                                ref={mapRef}
-                                style={styles.map}
-                                region={region}
-                                onRegionChangeComplete={setRegion}
-                                onPress={handleMapPress}
-                                showsUserLocation
-                                showsMyLocationButton
-                            >
-                                <Marker
-                                    coordinate={markerCoord}
-                                    draggable
-                                    onDragEnd={handleMarkerDrag}
-                                />
-                            </MapView>
+                            <View style={{ flex: 1, position: "relative" }}>
+                                <MapView
+                                    ref={mapRef}
+                                    provider={PROVIDER_GOOGLE}
+                                    style={styles.map}
+                                    region={region}
+                                    onRegionChangeComplete={setRegion}
+                                    onPress={handleMapPress}
+                                    showsUserLocation={true}
+                                    showsMyLocationButton={false}
+                                >
+                                    <Marker
+                                        coordinate={markerCoord}
+                                        draggable
+                                        onDragEnd={handleMarkerDrag}
+                                    />
+                                </MapView>
+
+                                <TouchableOpacity
+                                    style={styles.locateButton}
+                                    onPress={getCurrentLocation}
+                                >
+                                    <Ionicons name="locate" size={24} color="#fff" />
+                                </TouchableOpacity>
+                            </View>
                         )}
                         <View style={styles.mapHint}>
                             <Ionicons name="finger-print-outline" size={14} color="#6B7280" />
@@ -406,48 +424,64 @@ export default function AddAddressScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#F9FAFB" },
+const getStyles = (isDark: boolean) => StyleSheet.create({
+    container: { flex: 1, backgroundColor: isDark ? "#111827" : "#F9FAFB" },
     header: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: "#fff",
+        backgroundColor: isDark ? "#1F2937" : "#fff",
         borderBottomWidth: 1,
-        borderBottomColor: "#F3F4F6",
+        borderBottomColor: isDark ? "#374151" : "#F3F4F6",
     },
     backBtn: { padding: 8 },
-    headerTitle: { fontSize: 18, fontWeight: "700", color: "#1F2937" },
+    headerTitle: { fontSize: 18, fontWeight: "700", color: isDark ? "#F9FAFB" : "#1F2937" },
     mapContainer: {
         margin: 16,
         borderRadius: 16,
         overflow: "hidden",
-        backgroundColor: "#E5E7EB",
+        backgroundColor: isDark ? "#374151" : "#E5E7EB",
     },
     map: { width: "100%", height: 220 },
+    locateButton: {
+        position: 'absolute',
+        bottom: 12,
+        right: 12,
+        backgroundColor: '#F97316',
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: isDark ? "#F9FAFB" : "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 4,
+    },
     mapLoading: {
         width: "100%",
         height: 220,
         justifyContent: "center",
         alignItems: "center",
     },
-    mapLoadingText: { marginTop: 8, color: "#6B7280", fontSize: 14 },
+    mapLoadingText: { marginTop: 8, color: isDark ? "#9CA3AF" : "#6B7280", fontSize: 14 },
     mapHint: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
         paddingVertical: 8,
-        backgroundColor: "#F9FAFB",
+        backgroundColor: isDark ? "#111827" : "#F9FAFB",
         gap: 6,
     },
-    mapHintText: { fontSize: 12, color: "#6B7280" },
+    mapHintText: { fontSize: 12, color: isDark ? "#9CA3AF" : "#6B7280" },
     section: { paddingHorizontal: 16, marginBottom: 8 },
     sectionTitle: {
         fontSize: 16,
         fontWeight: "700",
-        color: "#374151",
+        color: isDark ? "#D1D5DB" : "#374151",
         marginBottom: 12,
         paddingLeft: 4,
     },
@@ -459,33 +493,33 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         paddingVertical: 12,
         borderRadius: 12,
-        backgroundColor: "#fff",
+        backgroundColor: isDark ? "#1F2937" : "#fff",
         borderWidth: 1.5,
-        borderColor: "#E5E7EB",
+        borderColor: isDark ? "#374151" : "#E5E7EB",
         gap: 6,
     },
     labelChipActive: {
         backgroundColor: "#F97316",
         borderColor: "#F97316",
     },
-    labelChipText: { fontSize: 14, fontWeight: "600", color: "#6B7280" },
+    labelChipText: { fontSize: 14, fontWeight: "600", color: isDark ? "#9CA3AF" : "#6B7280" },
     labelChipTextActive: { color: "#fff" },
     row: { flexDirection: "row" },
     fieldContainer: { marginBottom: 16 },
     fieldLabel: {
         fontSize: 13,
         fontWeight: "600",
-        color: "#6B7280",
+        color: isDark ? "#9CA3AF" : "#6B7280",
         marginBottom: 6,
         paddingLeft: 4,
     },
     inputWrapper: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#fff",
+        backgroundColor: isDark ? "#1F2937" : "#fff",
         borderRadius: 12,
         borderWidth: 1.5,
-        borderColor: "#E5E7EB",
+        borderColor: isDark ? "#374151" : "#E5E7EB",
         overflow: "hidden",
     },
     inputIcon: { paddingLeft: 14 },
@@ -494,7 +528,7 @@ const styles = StyleSheet.create({
         paddingVertical: 14,
         paddingHorizontal: 12,
         fontSize: 15,
-        color: "#1F2937",
+        color: isDark ? "#F9FAFB" : "#1F2937",
     },
     defaultToggle: {
         flexDirection: "row",
@@ -502,19 +536,19 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         marginHorizontal: 16,
         marginBottom: 12,
-        backgroundColor: "#fff",
+        backgroundColor: isDark ? "#1F2937" : "#fff",
         borderRadius: 12,
         padding: 16,
         borderWidth: 1.5,
-        borderColor: "#E5E7EB",
+        borderColor: isDark ? "#374151" : "#E5E7EB",
     },
     defaultToggleLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
-    defaultToggleText: { fontSize: 15, fontWeight: "600", color: "#374151" },
+    defaultToggleText: { fontSize: 15, fontWeight: "600", color: isDark ? "#D1D5DB" : "#374151" },
     toggle: {
         width: 44,
         height: 24,
         borderRadius: 12,
-        backgroundColor: "#E5E7EB",
+        backgroundColor: isDark ? "#374151" : "#E5E7EB",
         justifyContent: "center",
         paddingHorizontal: 2,
     },
@@ -523,7 +557,7 @@ const styles = StyleSheet.create({
         width: 20,
         height: 20,
         borderRadius: 10,
-        backgroundColor: "#fff",
+        backgroundColor: isDark ? "#1F2937" : "#fff",
     },
     toggleKnobActive: { alignSelf: "flex-end" },
     coordsBar: {
@@ -533,7 +567,7 @@ const styles = StyleSheet.create({
         gap: 6,
         marginBottom: 16,
     },
-    coordsText: { fontSize: 12, color: "#9CA3AF" },
+    coordsText: { fontSize: 12, color: isDark ? "#D1D5DB" : "#9CA3AF" },
     saveBtn: {
         flexDirection: "row",
         alignItems: "center",

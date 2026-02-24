@@ -1,19 +1,24 @@
 import { ordersApi } from "@/services/api";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
     Button,
     FlatList,
     Modal,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
+    useColorScheme
 } from "react-native";
+
+import { BasketLoader } from "@/components/BasketLoader";
 
 const STATUSES = ["pending", "processing", "shipped", "delivered", "cancelled"];
 
 export default function AdminOrdersScreen() {
+  const isDark = useColorScheme() === 'dark';
+  const styles = getStyles(isDark);
+
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
@@ -70,7 +75,7 @@ export default function AdminOrdersScreen() {
     return (
         <View style={styles.container}>
             {loading ? (
-                <ActivityIndicator size="large" color="#2D6A4F" style={{ marginTop: 20 }} />
+                <BasketLoader text="Loading orders..." />
             ) : (
                 <FlatList
                     data={orders}
@@ -107,17 +112,17 @@ export default function AdminOrdersScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#F9FAFB" },
-    card: { backgroundColor: "#fff", borderRadius: 12, padding: 16, marginBottom: 12, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+const getStyles = (isDark: boolean) => StyleSheet.create({
+    container: { flex: 1, backgroundColor: isDark ? "#111827" : "#F9FAFB" },
+    card: { backgroundColor: isDark ? "#1F2937" : "#fff", borderRadius: 12, padding: 16, marginBottom: 12, elevation: 2, shadowColor: isDark ? "#F9FAFB" : "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
     orderNumber: { fontSize: 16, fontWeight: "bold" },
     status: { fontSize: 14, fontWeight: "bold" },
-    detail: { fontSize: 14, color: "#4B5563", marginBottom: 4 },
+    detail: { fontSize: 14, color: isDark ? "#D1D5DB" : "#4B5563", marginBottom: 4 },
     updateButton: { marginTop: 12, backgroundColor: "#2D6A4F", padding: 10, borderRadius: 8, alignItems: "center" },
     updateButtonText: { color: "#fff", fontWeight: "bold" },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-    modalContent: { backgroundColor: '#fff', width: '80%', borderRadius: 12, padding: 20 },
+    modalContent: { backgroundColor: isDark ? "#1F2937" : "#fff", width: '80%', borderRadius: 12, padding: 20 },
     modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' },
     statusOption: { padding: 16, borderBottomWidth: 1, borderBottomColor: '#f0f0f0', alignItems: 'center' },
     statusOptionText: { fontSize: 16, color: '#333' }
