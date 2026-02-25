@@ -2,14 +2,14 @@ import { Apple, Pineapple, Strawberry } from "@/components/FruitDecorations";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 
 export function CustomSplashScreen({ onComplete }: { onComplete: () => void }) {
-    const fadeAnim = new Animated.Value(1);
-    const scaleLogoAnim = new Animated.Value(0.5);
-    const translateYAnim = new Animated.Value(20);
-    const titleOpacityAnim = new Animated.Value(0);
+    const fadeAnim = useRef(new Animated.Value(1)).current;
+    const scaleLogoAnim = useRef(new Animated.Value(0.5)).current;
+    const translateYAnim = useRef(new Animated.Value(20)).current;
+    const titleOpacityAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         async function prepare() {

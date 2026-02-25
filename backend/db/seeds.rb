@@ -1,5 +1,5 @@
 # Admin User for API
-User.find_or_create_by!(email: 'admin@trinity.com') do |user|
+User.find_or_create_by!(email: 'admin@grocerygo.com') do |user|
   user.password = ENV.fetch('ADMIN_PASSWORD', 'password')
   user.password_confirmation = ENV.fetch('ADMIN_PASSWORD', 'password')
   user.role = :admin
@@ -9,14 +9,14 @@ User.find_or_create_by!(email: 'admin@trinity.com') do |user|
 end
 
 # Admin User for ActiveAdmin
-AdminUser.find_or_create_by!(email: 'admin@trinity.com') do |admin|
+AdminUser.find_or_create_by!(email: 'admin@grocerygo.com') do |admin|
   admin.password = ENV.fetch('ADMIN_PASSWORD', 'password')
   admin.password_confirmation = ENV.fetch('ADMIN_PASSWORD', 'password')
   admin.role = :admin
 end
 
 # Employee User for ActiveAdmin
-AdminUser.find_or_create_by!(email: 'employee@trinity.com') do |admin|
+AdminUser.find_or_create_by!(email: 'employee@grocerygo.com') do |admin|
   admin.password = ENV.fetch('ADMIN_PASSWORD', 'password')
   admin.password_confirmation = ENV.fetch('ADMIN_PASSWORD', 'password')
   admin.role = :employee

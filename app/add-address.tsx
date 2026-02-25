@@ -40,8 +40,8 @@ const LABELS: { key: AddressLabel; label: string; icon: string }[] = [
 ];
 
 export default function AddAddressScreen() {
-  const isDark = useColorScheme() === 'dark';
-  const styles = getStyles(isDark);
+    const isDark = useColorScheme() === 'dark';
+    const styles = getStyles(isDark);
 
     const params = useLocalSearchParams<{ id?: string }>();
     const isEditing = !!params.id;
@@ -230,7 +230,7 @@ export default function AddAddressScreen() {
                             <View style={{ flex: 1, position: "relative" }}>
                                 <MapView
                                     ref={mapRef}
-                                    provider={PROVIDER_GOOGLE}
+                                    provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
                                     style={styles.map}
                                     region={region}
                                     onRegionChangeComplete={setRegion}

@@ -8,8 +8,8 @@ import Constants from "expo-constants";
 const getBaseUrl = () => {
     if (__DEV__) {
         try {
-            const extra = Constants?.expoConfig || Constants?.manifest2?.extra?.expoClient || Constants?.manifest;
-            const hostUri = (extra as any)?.hostUri;
+            const extra = Constants.expoConfig || {};
+            const hostUri = (extra as any).hostUri || (Constants.expoConfig as any)?.hostUri;
             if (hostUri) {
                 const ipFormat = hostUri.split(":")[0];
                 if (ipFormat && ipFormat.includes(".")) {

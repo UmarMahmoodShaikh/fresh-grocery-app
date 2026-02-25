@@ -1,4 +1,3 @@
-import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Apple,
   DotsPattern,
@@ -19,8 +18,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-    useColorScheme
+  useColorScheme
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 
 export default function LoginScreen() {
@@ -109,8 +109,8 @@ export default function LoginScreen() {
                   />
                   <TextInput
                     style={styles.input}
-                    placeholder="your@emailcom"
-                    placeholderTextColor="#9CA3AF"
+                    placeholder="your@email.com"
+                    placeholderTextColor="rgba(255, 255, 255, 0.6)"
                     value={email}
                     onChangeText={setEmail}
                     keyboardType="email-address"

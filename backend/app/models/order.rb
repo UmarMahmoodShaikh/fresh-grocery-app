@@ -28,11 +28,15 @@ class Order < ApplicationRecord
   end
 
   def send_status_emails
-    case status
-    when "shipped"
-      OrderMailer.order_shipped(self).deliver_later
-    when "delivered"
-      OrderMailer.order_delivered(self).deliver_later
+    begin
+      case status
+      when "shipped"
+        OrderMailer.order_shipped(self).deliver_later
+      when "delivered"
+        OrderMailer.order_delivered(self).deliver_later
+      end
+    rescue => e
+      Rails.logger.error "Failed to send status email for Order #{id}: #{e.message}"
     end
   end
 end
