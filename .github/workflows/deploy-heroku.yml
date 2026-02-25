@@ -13,7 +13,7 @@ on:
 jobs:
   deploy:
     # This runs only on your PERSONAL repo after it is mirrored
-    if: github.repository == 'UmarMahmoodShaikh/fresh-grocery-app'
+    if: github.repository_owner == 'UmarMahmoodShaikh'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository

@@ -25,7 +25,7 @@ const getBaseUrl = () => {
         }
         return "http://localhost:5001";
     }
-    return "https://your-production-api.com";
+    return "https://fresh-grocery-store-74f6cf859e50.herokuapp.com";
 };
 
 export const API_BASE_URL = getBaseUrl();
