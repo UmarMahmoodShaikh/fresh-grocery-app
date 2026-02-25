@@ -25,6 +25,6 @@ jobs:
         with:
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
           heroku_app_name: "fresh-grocery-store-74f6cf859e50"
-          heroku_email: "umarshaikhshk@gmail.com" # Updated based on typical user email patterns, but placeholder is fine
+          heroku_email: "umarmahmoodshk@gmail.com"
           appdir: "backend"
-          branch: "master"
+          branch: "HEAD" # This pushes the current branch that triggered the action
