@@ -1,12 +1,27 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
-// Android emulator uses 10.0.2.2 to reach host machine's localhost
-// iOS simulator uses localhost directly
+import Constants from "expo-constants";
+
+// Android emulator uses 10.0.2.2, Genymotion uses 10.0.3.2, and physical devices need the LAN IP.
+// Extracting it dynamically from Expo Constants fixes networking for all Android targets.
 const getBaseUrl = () => {
     if (__DEV__) {
+        try {
+            const extra = Constants.expoConfig || {};
+            const hostUri = (extra as any).hostUri || (Constants.expoConfig as any)?.hostUri;
+            if (hostUri) {
+                const ipFormat = hostUri.split(":")[0];
+                if (ipFormat && ipFormat.includes(".")) {
+                    return `http://${ipFormat}:5001`;
+                }
+            }
+        } catch (e) {
+            // Ignore extraction errors and fallback
+        }
+
         if (Platform.OS === "android") {
-            return "http://10.0.2.2:5001";
+            return "http://10.0.2.2:5001"; // Default fallback
         }
         return "http://localhost:5001";
     }
@@ -153,8 +168,20 @@ export const productsApi = {
         return apiRequest("/products");
     },
 
+    getByBrand: async (brandId: number) => {
+        return apiRequest(`/products?brand_id=${brandId}`);
+    },
+
+    getByCategory: async (categoryId: number) => {
+        return apiRequest(`/products?category_id=${categoryId}`);
+    },
+
     getById: async (id: number) => {
         return apiRequest(`/products/${id}`);
+    },
+
+    getByBarcode: async (barcode: string) => {
+        return apiRequest(`/products?barcode=${barcode}`);
     },
 
     create: async (productData: any) => {
@@ -214,6 +241,10 @@ export const ordersApi = {
 
     updateStatus: async (id: number, status: string) => {
         return apiRequest(`/orders/${id}/update_status`, "PATCH", { status });
+    },
+
+    update: async (id: number, orderData: { score?: number; comments?: string; status?: string }) => {
+        return apiRequest(`/orders/${id}`, "PATCH", { order: orderData });
     },
 };
 

@@ -1,3 +1,4 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Apple,
   Banana,
@@ -14,16 +15,20 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+    useColorScheme
 } from "react-native";
 
+
 export default function SignUpScreen() {
+  const isDark = useColorScheme() === 'dark';
+  const styles = getStyles(isDark);
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -182,7 +187,7 @@ export default function SignUpScreen() {
                       keyboardType="phone-pad"
                     />
                   </View>
-                  <Text style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4, marginLeft: 4 }}>
+                  <Text style={{ fontSize: 11, color: isDark ? "#D1D5DB" : "#9CA3AF", marginTop: 4, marginLeft: 4 }}>
                     French format (0x xx xx xx xx) — saved as +33
                   </Text>
                 </View>
@@ -313,7 +318,7 @@ export default function SignUpScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -343,7 +348,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
+    shadowColor: isDark ? "#F9FAFB" : "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -371,7 +376,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.3)",
-    shadowColor: "#000",
+    shadowColor: isDark ? "#F9FAFB" : "#000",
     shadowOffset: {
       width: 0,
       height: 8,
@@ -383,13 +388,13 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#111827",
+    color: isDark ? "#F9FAFB" : "#111827",
     marginBottom: 4,
     textAlign: "center",
   },
   cardSubtitle: {
     fontSize: 14,
-    color: "#6B7280",
+    color: isDark ? "#9CA3AF" : "#6B7280",
     marginBottom: 14,
     textAlign: "center",
   },
@@ -402,14 +407,14 @@ const styles = StyleSheet.create({
   labelText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#374151",
+    color: isDark ? "#D1D5DB" : "#374151",
     marginBottom: 6,
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: isDark ? "#374151" : "#E5E7EB",
     borderRadius: 10,
     backgroundColor: "rgba(249, 250, 251, 0.8)",
     paddingHorizontal: 12,
@@ -421,7 +426,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 14,
-    color: "#111827",
+    color: isDark ? "#F9FAFB" : "#111827",
   },
   eyeIcon: {
     padding: 4,
@@ -457,7 +462,7 @@ const styles = StyleSheet.create({
   },
   signInText: {
     fontSize: 14,
-    color: "#6B7280",
+    color: isDark ? "#9CA3AF" : "#6B7280",
   },
   signInLink: {
     fontSize: 14,
@@ -489,7 +494,7 @@ const styles = StyleSheet.create({
   agreementText: {
     flex: 1,
     fontSize: 12,
-    color: "#6B7280",
+    color: isDark ? "#9CA3AF" : "#6B7280",
     lineHeight: 16,
   },
   linkText: {

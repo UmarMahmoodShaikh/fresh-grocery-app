@@ -13,15 +13,20 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  useColorScheme
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
 
 export default function LoginScreen() {
+  const isDark = useColorScheme() === 'dark';
+  const styles = getStyles(isDark);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -85,20 +90,16 @@ export default function LoginScreen() {
               </View>
             </View>
 
-            <Text style={styles.title}>GroceryGo</Text>
-            <Text style={styles.subtitle}>Your smart shopping companion</Text>
+            <Text style={styles.title}>Fresh Grocery</Text>
+            <Text style={styles.subtitle}>Fresh Groceries at your doorstep</Text>
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Welcome Back</Text>
-            <Text style={styles.cardSubtitle}>
-              Sign in to continue shopping
-            </Text>
 
             <View style={styles.form}>
               {/* Email Input */}
               <View style={styles.inputContainer}>
-                <Text style={styles.labelText}>Email Address</Text>
+                <Text style={styles.labelText}>Email</Text>
                 <View style={styles.inputWrapper}>
                   <Ionicons
                     name="mail-outline"
@@ -108,8 +109,8 @@ export default function LoginScreen() {
                   />
                   <TextInput
                     style={styles.input}
-                    placeholder="your.email@example.com"
-                    placeholderTextColor="#9CA3AF"
+                    placeholder="your@email.com"
+                    placeholderTextColor="rgba(255, 255, 255, 0.6)"
                     value={email}
                     onChangeText={setEmail}
                     keyboardType="email-address"
@@ -131,7 +132,7 @@ export default function LoginScreen() {
                   />
                   <TextInput
                     style={styles.input}
-                    placeholder="Enter your password"
+                    placeholder="Your Password"
                     placeholderTextColor="#9CA3AF"
                     value={password}
                     onChangeText={setPassword}
@@ -189,7 +190,7 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -216,7 +217,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
+    shadowColor: isDark ? "#F9FAFB" : "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -244,7 +245,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.3)",
-    shadowColor: "#000",
+    shadowColor: isDark ? "#F9FAFB" : "#000",
     shadowOffset: {
       width: 0,
       height: 8,
@@ -256,13 +257,13 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#111827",
+    color: isDark ? "#F9FAFB" : "#111827",
     marginBottom: 4,
     textAlign: "center",
   },
   cardSubtitle: {
     fontSize: 14,
-    color: "#6B7280",
+    color: isDark ? "#9CA3AF" : "#6B7280",
     marginBottom: 24,
     textAlign: "center",
   },
@@ -275,14 +276,14 @@ const styles = StyleSheet.create({
   labelText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#374151",
+    color: isDark ? "#D1D5DB" : "#374151",
     marginBottom: 6,
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: isDark ? "#374151" : "#E5E7EB",
     borderRadius: 10,
     backgroundColor: "rgba(249, 250, 251, 0.8)",
     paddingHorizontal: 12,
@@ -294,7 +295,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 14,
-    color: "#111827",
+    color: isDark ? "#F9FAFB" : "#111827",
   },
   eyeIcon: {
     padding: 4,
@@ -338,7 +339,7 @@ const styles = StyleSheet.create({
   },
   signUpText: {
     fontSize: 14,
-    color: "#6B7280",
+    color: isDark ? "#9CA3AF" : "#6B7280",
   },
   signUpLink: {
     fontSize: 14,

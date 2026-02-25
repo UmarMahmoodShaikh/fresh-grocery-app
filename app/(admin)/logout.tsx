@@ -2,10 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View,
+    useColorScheme
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LogoutScreen() {
+  const isDark = useColorScheme() === 'dark';
+  const styles = getStyles(isDark);
+
     const router = useRouter();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -62,10 +67,10 @@ export default function LogoutScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isDark: boolean) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#F9FAFB",
+        backgroundColor: isDark ? "#111827" : "#F9FAFB",
     },
     content: {
         flex: 1,
@@ -76,13 +81,13 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: "bold",
-        color: "#1F2937",
+        color: isDark ? "#F9FAFB" : "#1F2937",
         marginTop: 20,
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 16,
-        color: "#6B7280",
+        color: isDark ? "#9CA3AF" : "#6B7280",
         textAlign: "center",
         marginBottom: 40,
         paddingHorizontal: 20,

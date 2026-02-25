@@ -6,13 +6,24 @@ module Api
       before_action :set_product, only: [:show, :update, :destroy]
 
       # GET /api/v1/products
+      # Optional query params: ?brand_id=1  ?category_id=2
       def index
-        products_json = Rails.cache.fetch("api/v1/products", expires_in: 30.minutes) do
-          Product.includes(:category, :brand).all.as_json(
+        brand_id    = params[:brand_id]
+        category_id = params[:category_id]
+        barcode     = params[:barcode]
+
+        cache_key = ["api/v1/products", brand_id, category_id, barcode].compact.join("/")
+
+        products_json = Rails.cache.fetch(cache_key, expires_in: 30.minutes) do
+          scope = Product.includes(:category, :brand).all
+          scope = scope.where(brand_id: brand_id)       if brand_id.present?
+          scope = scope.where(category_id: category_id)  if category_id.present?
+          scope = scope.where(barcode: barcode)         if barcode.present?
+          scope.as_json(
             methods: [:stock_label],
-            include: { 
-              category: { only: [:id, :name, :image_url] }, 
-              brand: { only: [:id, :name, :image_url] } 
+            include: {
+              category: { only: [:id, :name, :image_url] },
+              brand:    { only: [:id, :name, :image_url] }
             }
           )
         end

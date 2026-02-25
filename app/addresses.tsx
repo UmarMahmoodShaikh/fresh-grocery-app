@@ -1,18 +1,20 @@
+import { SafeAreaView } from "react-native-safe-area-context";
+import { BasketLoader } from "@/components/BasketLoader";
 import { addressesApi } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+    useColorScheme
 } from "react-native";
+
 
 interface Address {
     id: number;
@@ -39,6 +41,9 @@ const LABEL_COLORS: Record<string, string[]> = {
 };
 
 export default function AddressesScreen() {
+  const isDark = useColorScheme() === 'dark';
+  const styles = getStyles(isDark);
+
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -100,10 +105,7 @@ export default function AddressesScreen() {
             </View>
 
             {isLoading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#F97316" />
-                    <Text style={styles.loadingText}>Loading addresses...</Text>
-                </View>
+                <BasketLoader text="Loading your addresses..." />
             ) : (
                 <ScrollView
                     style={styles.scrollContainer}
@@ -249,26 +251,26 @@ export default function AddressesScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#F9FAFB" },
+const getStyles = (isDark: boolean) => StyleSheet.create({
+    container: { flex: 1, backgroundColor: isDark ? "#111827" : "#F9FAFB" },
     header: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: "#fff",
+        backgroundColor: isDark ? "#1F2937" : "#fff",
         borderBottomWidth: 1,
-        borderBottomColor: "#F3F4F6",
+        borderBottomColor: isDark ? "#374151" : "#F3F4F6",
     },
     backBtn: { padding: 8 },
-    headerTitle: { fontSize: 18, fontWeight: "700", color: "#1F2937" },
+    headerTitle: { fontSize: 18, fontWeight: "700", color: isDark ? "#F9FAFB" : "#1F2937" },
     loadingContainer: {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
     },
-    loadingText: { marginTop: 12, fontSize: 16, color: "#6B7280" },
+    loadingText: { marginTop: 12, fontSize: 16, color: isDark ? "#9CA3AF" : "#6B7280" },
     scrollContainer: { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
     countBar: {
         flexDirection: "row",
@@ -276,7 +278,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         marginBottom: 16,
     },
-    countText: { fontSize: 14, color: "#6B7280", fontWeight: "500" },
+    countText: { fontSize: 14, color: isDark ? "#9CA3AF" : "#6B7280", fontWeight: "500" },
     countBadge: {
         backgroundColor: "#DBEAFE",
         paddingHorizontal: 10,
@@ -287,11 +289,11 @@ const styles = StyleSheet.create({
     countBadgeText: { fontSize: 12, color: "#3B82F6", fontWeight: "600" },
     countBadgeTextFull: { color: "#EF4444" },
     card: {
-        backgroundColor: "#fff",
+        backgroundColor: isDark ? "#1F2937" : "#fff",
         borderRadius: 16,
         padding: 16,
         marginBottom: 12,
-        shadowColor: "#000",
+        shadowColor: isDark ? "#F9FAFB" : "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.06,
         shadowRadius: 8,
@@ -325,11 +327,11 @@ const styles = StyleSheet.create({
     streetText: {
         fontSize: 16,
         fontWeight: "600",
-        color: "#1F2937",
+        color: isDark ? "#F9FAFB" : "#1F2937",
         marginBottom: 2,
     },
-    cityText: { fontSize: 14, color: "#6B7280" },
-    countryText: { fontSize: 13, color: "#9CA3AF", marginBottom: 12 },
+    cityText: { fontSize: 14, color: isDark ? "#9CA3AF" : "#6B7280" },
+    countryText: { fontSize: 13, color: isDark ? "#D1D5DB" : "#9CA3AF", marginBottom: 12 },
     cardActions: {
         flexDirection: "row",
         borderTopWidth: 1,
@@ -350,10 +352,10 @@ const styles = StyleSheet.create({
     emptyTitle: {
         fontSize: 18,
         fontWeight: "700",
-        color: "#374151",
+        color: isDark ? "#D1D5DB" : "#374151",
         marginTop: 16,
     },
-    emptySubtitle: { fontSize: 14, color: "#9CA3AF", marginTop: 4 },
+    emptySubtitle: { fontSize: 14, color: isDark ? "#D1D5DB" : "#9CA3AF", marginTop: 4 },
     fab: {
         position: "absolute",
         bottom: 32,

@@ -2,7 +2,11 @@ module Api
   module V1
     class OrdersController < ApplicationController
       skip_before_action :verify_authenticity_token
+      # Hard authentication required for protected actions
       before_action :authenticate_user!, except: [:create, :show]
+      # Soft authentication for create: associates order with user if token present,
+      # falls back to guest checkout if no/invalid token
+      before_action :try_authenticate_user!, only: [:create]
       before_action :set_order, only: [:show, :update_status, :destroy]
 
       # GET /api/v1/orders
@@ -56,7 +60,8 @@ module Api
               )
               # Decrement stock
               product = Product.find(item[:product_id])
-              product.update(stock: product.stock - item[:quantity]) if product.stock.present?
+              qty = item[:quantity].to_i
+              product.update(stock: product.stock - qty) if product.stock.present?
             end
           end
 
@@ -106,10 +111,11 @@ module Api
       end
 
       def order_params
-        params.require(:order).permit(:user_id, :total, :status, :delivery_address, :delivery_fee)
+        params.require(:order).permit(:user_id, :total, :status, :delivery_address, :delivery_fee, :score, :comments)
       end
 
-      def authenticate_user!
+      # Called for ALL actions — sets @current_user if token is valid, silently ignores otherwise
+      def try_authenticate_user!
         token = request.headers['Authorization']&.split(' ')&.last
         return unless token
 
@@ -118,6 +124,22 @@ module Api
           @current_user = User.find(decoded['user_id'])
         rescue JWT::DecodeError, ActiveRecord::RecordNotFound
           nil
+        end
+      end
+
+      # Called for protected actions — sets @current_user or returns 401
+      def authenticate_user!
+        token = request.headers['Authorization']&.split(' ')&.last
+        unless token
+          render json: { message: 'Unauthorized' }, status: :unauthorized
+          return
+        end
+
+        begin
+          decoded = JWT.decode(token, Rails.application.credentials.secret_key_base)[0]
+          @current_user = User.find(decoded['user_id'])
+        rescue JWT::DecodeError, ActiveRecord::RecordNotFound
+          render json: { message: 'Unauthorized' }, status: :unauthorized
         end
       end
 

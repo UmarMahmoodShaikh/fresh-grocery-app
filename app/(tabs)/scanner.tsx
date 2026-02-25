@@ -1,22 +1,33 @@
+import { useCart } from "@/context/CartContext";
+import { productsApi } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Modal,
+  Platform,
   Pressable,
-  SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   View,
+    useColorScheme
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
 
 export default function Scanner() {
+  const isDark = useColorScheme() === 'dark';
+  const styles = getStyles(isDark);
+
   const router = useRouter();
+  const { addToCart } = useCart();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resultVisible, setResultVisible] = useState(false);
+  const [internalProduct, setInternalProduct] = useState<any>(null);
   const [resultData, setResultData] = useState({
     title: "",
     message: "",
@@ -26,39 +37,82 @@ export default function Scanner() {
   const fetchProductData = async (barcode: string) => {
     try {
       setLoading(true);
+
+      // 1. Check if the product exists in OUR database
+      const internalCheck = await productsApi.getByBarcode(barcode);
+      let internalProd = null;
+      if (internalCheck.data && Array.isArray(internalCheck.data) && internalCheck.data.length > 0) {
+        internalProd = internalCheck.data[0];
+      }
+
+      // If it exists in our store, show options to add to cart!
+      if (internalProd) {
+        setInternalProduct(internalProd);
+
+        let nutDetails = "";
+        try {
+          if (internalProd.nutrition) {
+            const nut = typeof internalProd.nutrition === 'string' ? JSON.parse(internalProd.nutrition) : internalProd.nutrition;
+            if (nut.calories || nut.protein || nut.fat || nut.carbohydrates) {
+              nutDetails = `\n\n🥗 Nutrition Facts:\nCalories: ${nut.calories || 0} kcal\nProtein: ${nut.protein || 0}g\nFat: ${nut.fat || 0}g\nCarbs: ${nut.carbohydrates || 0}g`;
+            }
+          }
+        } catch (e) { }
+
+        const description = internalProd.description ? `\n\n📝 Details:\n${internalProd.description}` : "";
+
+        setResultData({
+          title: internalProd.stock > 0 ? "✅ Product Found in Store!" : "⚠️ Product Out of Stock",
+          message: `${internalProd.name}\n\n🏷️ Brand: ${internalProd.brand?.name || "N/A"}\n📦 Category: ${internalProd.category?.name || "N/A"}\n💰 Price: €${Number(internalProd.price).toFixed(2)}\n📊 Stock: ${internalProd.stock}${nutDetails}${description}`,
+          type: internalProd.stock > 0 ? "success" : "warning",
+        });
+
+        setResultVisible(true);
+        setLoading(false);
+        return;
+      }
+
+      // 2. If not in our store, get its external details from Open Food Facts to show what they missed
       const response = await fetch(
         `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`,
       );
       const data = await response.json();
 
       if (data.status === 1 && data.product) {
-        // Product found
+        // Product found externally but not in store
         const product = data.product;
-
-        // Clean up category - take only first 2 categories
         const categories = product.categories
           ? product.categories.split(",").slice(0, 2).join(", ")
           : "N/A";
 
+        const externalMapped = {
+          id: null, // No database ID
+          name: product.product_name || "Unknown Product",
+          brand: { name: product.brands || "N/A" },
+          category: { name: categories },
+          price: 0,
+          stock: 0,
+          description: "⚠️ This item is recognized internationally but we do not currently carry it in our local store."
+        };
+
+        setInternalProduct(externalMapped);
+
         setResultData({
-          title: "✅ Product Found!",
-          message:
-            `${product.product_name || "Unknown Product"}\n\n` +
-            `📦 Brand: ${product.brands || "N/A"}\n` +
-            `🏷️ Category: ${categories}\n` +
-            `🔢 Barcode: ${barcode}`,
-          type: "success",
+          title: "❌ Out of Stock",
+          message: `${externalMapped.name}\n\n🏷️ Brand: ${externalMapped.brand.name}\n📦 Category: ${externalMapped.category.name}\n\n📝 Details:\n${externalMapped.description}`,
+          type: "warning",
         });
         setResultVisible(true);
+        setLoading(false);
+        return;
       } else {
-        // Product not found in database
+        // Product completely unknown
         setResultData({
           title: "❌ Product Not Found",
           message:
-            `This barcode (${barcode}) is not in our grocery database.\n\n` +
+            `This barcode (${barcode}) is completely unknown.\n\n` +
             `This might be:\n` +
             `• A non-food product\n` +
-            `• A product not yet added\n` +
             `• An invalid barcode`,
           type: "error",
         });
@@ -230,47 +284,116 @@ export default function Scanner() {
           setResultVisible(false);
           setScanned(false);
           setLoading(false);
+          setInternalProduct(null);
         }}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+          <View style={[styles.modalCard, { maxHeight: '80%' }]}>
             <Text style={styles.modalTitle}>{resultData.title}</Text>
-            <Text style={styles.modalMessage}>{resultData.message}</Text>
+            <ScrollView style={{ maxHeight: 250, marginBottom: 20 }}>
+              <Text style={styles.modalMessage}>{resultData.message}</Text>
+            </ScrollView>
 
-            <View style={styles.modalButtons}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.modalButton,
-                  styles.modalButtonPrimary,
-                  pressed && styles.modalButtonPressed,
-                ]}
-                onPress={() => {
-                  setResultVisible(false);
-                  setScanned(false);
-                  setLoading(false);
-                }}
-              >
-                <Text style={styles.modalButtonTextPrimary}>Scan Again</Text>
-              </Pressable>
+            {internalProduct ? (
+              <View style={{ width: "100%" }}>
+                <Pressable
+                  disabled={internalProduct.stock <= 0}
+                  style={({ pressed }) => [
+                    styles.modalButton,
+                    styles.modalButtonPrimary,
+                    { backgroundColor: internalProduct.stock > 0 ? "#2D6A4F" : "#9CA3AF", marginBottom: 10 },
+                    pressed && styles.modalButtonPressed,
+                  ]}
+                  onPress={() => {
+                    addToCart(internalProduct);
+                    setResultVisible(false);
+                    setScanned(false);
+                    setLoading(false);
+                    setInternalProduct(null);
+                  }}
+                >
+                  <Text style={styles.modalButtonTextPrimary}>
+                    {internalProduct.stock > 0 ? "Add to Cart" : "Out of Stock"}
+                  </Text>
+                </Pressable>
 
-              {resultData.type === "success" && (
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  {internalProduct.id && (
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.modalButton,
+                        styles.modalButtonSecondary,
+                        { flex: 1 },
+                        pressed && styles.modalButtonSecondaryPressed,
+                      ]}
+                      onPress={() => {
+                        setResultVisible(false);
+                        setScanned(false);
+                        setLoading(false);
+                        const id = internalProduct.id;
+                        setInternalProduct(null);
+                        router.push(`/product/${id}` as any);
+                      }}
+                    >
+                      <Text style={styles.modalButtonTextSecondary}>View Details</Text>
+                    </Pressable>
+                  )}
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.modalButton,
+                      styles.modalButtonSecondary,
+                      { flex: 1 },
+                      pressed && styles.modalButtonSecondaryPressed,
+                    ]}
+                    onPress={() => {
+                      setResultVisible(false);
+                      setScanned(false);
+                      setLoading(false);
+                      setInternalProduct(null);
+                    }}
+                  >
+                    <Text style={styles.modalButtonTextSecondary}>Scan Again</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.modalButtons}>
                 <Pressable
                   style={({ pressed }) => [
                     styles.modalButton,
-                    styles.modalButtonSecondary,
-                    pressed && styles.modalButtonSecondaryPressed,
+                    styles.modalButtonPrimary,
+                    pressed && styles.modalButtonPressed,
                   ]}
                   onPress={() => {
                     setResultVisible(false);
                     setScanned(false);
                     setLoading(false);
-                    router.push("/(tabs)");
+                    setInternalProduct(null);
                   }}
                 >
-                  <Text style={styles.modalButtonTextSecondary}>Go Back</Text>
+                  <Text style={styles.modalButtonTextPrimary}>Scan Again</Text>
                 </Pressable>
-              )}
-            </View>
+
+                {resultData.type === "success" && (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.modalButton,
+                      styles.modalButtonSecondary,
+                      pressed && styles.modalButtonSecondaryPressed,
+                    ]}
+                    onPress={() => {
+                      setResultVisible(false);
+                      setScanned(false);
+                      setLoading(false);
+                      setInternalProduct(null);
+                      router.push("/(tabs)");
+                    }}
+                  >
+                    <Text style={styles.modalButtonTextSecondary}>Go Back</Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -278,10 +401,11 @@ export default function Scanner() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#1F2937",
+    backgroundColor: isDark ? "#F9FAFB" : "#1F2937",
+    paddingTop: Platform.OS === "android" ? 35 : 0,
   },
   loadingContainer: {
     flex: 1,
@@ -307,7 +431,7 @@ const styles = StyleSheet.create({
   },
   permissionText: {
     fontSize: 16,
-    color: "#9CA3AF",
+    color: isDark ? "#D1D5DB" : "#9CA3AF",
     textAlign: "center",
     marginBottom: 30,
   },
@@ -328,7 +452,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   backButtonText: {
-    color: "#9CA3AF",
+    color: isDark ? "#D1D5DB" : "#9CA3AF",
     fontSize: 16,
   },
   header: {
@@ -443,7 +567,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   tipsCard: {
-    backgroundColor: "#374151",
+    backgroundColor: isDark ? "#D1D5DB" : "#374151",
     marginHorizontal: 20,
     marginTop: 16,
     marginBottom: 20,
@@ -484,7 +608,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingVertical: 24,
     borderRadius: 16,
-    shadowColor: "#000",
+    shadowColor: isDark ? "#F9FAFB" : "#000",
     shadowOffset: {
       width: 0,
       height: 4,
@@ -496,7 +620,7 @@ const styles = StyleSheet.create({
   overlayLoadingText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#1F2937",
+    color: isDark ? "#F9FAFB" : "#1F2937",
   },
   modalOverlay: {
     flex: 1,
@@ -511,7 +635,7 @@ const styles = StyleSheet.create({
     padding: 24,
     width: "100%",
     maxWidth: 400,
-    shadowColor: "#000",
+    shadowColor: isDark ? "#F9FAFB" : "#000",
     shadowOffset: {
       width: 0,
       height: 8,
@@ -523,13 +647,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#1F2937",
+    color: isDark ? "#F9FAFB" : "#1F2937",
     marginBottom: 12,
     textAlign: "center",
   },
   modalMessage: {
     fontSize: 16,
-    color: "#374151",
+    color: isDark ? "#D1D5DB" : "#374151",
     lineHeight: 26,
     marginBottom: 24,
   },
@@ -550,7 +674,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#E55A28",
   },
   modalButtonSecondary: {
-    backgroundColor: "#E5E7EB",
+    backgroundColor: isDark ? "#374151" : "#E5E7EB",
   },
   modalButtonSecondaryPressed: {
     backgroundColor: "#D1D5DB",
@@ -561,7 +685,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   modalButtonTextSecondary: {
-    color: "#1F2937",
+    color: isDark ? "#F9FAFB" : "#1F2937",
     fontSize: 16,
     fontWeight: "600",
   },

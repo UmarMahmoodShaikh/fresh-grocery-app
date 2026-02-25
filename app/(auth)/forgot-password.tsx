@@ -1,3 +1,4 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Apple,
   DotsPattern,
@@ -13,15 +14,19 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+    useColorScheme
 } from "react-native";
 
+
 export default function ForgotPasswordScreen() {
+  const isDark = useColorScheme() === 'dark';
+  const styles = getStyles(isDark);
+
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -152,7 +157,7 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -191,7 +196,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
+    shadowColor: isDark ? "#F9FAFB" : "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -219,7 +224,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.3)",
-    shadowColor: "#000",
+    shadowColor: isDark ? "#F9FAFB" : "#000",
     shadowOffset: {
       width: 0,
       height: 8,
@@ -231,13 +236,13 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#111827",
+    color: isDark ? "#F9FAFB" : "#111827",
     marginBottom: 4,
     textAlign: "center",
   },
   cardSubtitle: {
     fontSize: 14,
-    color: "#6B7280",
+    color: isDark ? "#9CA3AF" : "#6B7280",
     marginBottom: 24,
     textAlign: "center",
     lineHeight: 20,
@@ -251,14 +256,14 @@ const styles = StyleSheet.create({
   labelText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#374151",
+    color: isDark ? "#D1D5DB" : "#374151",
     marginBottom: 6,
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: isDark ? "#374151" : "#E5E7EB",
     borderRadius: 10,
     backgroundColor: "rgba(249, 250, 251, 0.8)",
     paddingHorizontal: 12,
@@ -270,7 +275,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 14,
-    color: "#111827",
+    color: isDark ? "#F9FAFB" : "#111827",
   },
   resetButton: {
     backgroundColor: "#2D6A4F",
@@ -302,7 +307,7 @@ const styles = StyleSheet.create({
   },
   backToLoginText: {
     fontSize: 14,
-    color: "#6B7280",
+    color: isDark ? "#9CA3AF" : "#6B7280",
   },
   backToLoginLink: {
     fontSize: 14,

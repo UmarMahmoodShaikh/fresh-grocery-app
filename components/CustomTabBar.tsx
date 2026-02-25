@@ -1,114 +1,192 @@
+import { useCart } from "@/context/CartContext";
+import { useFavorites } from "@/context/FavoritesContext";
+import { authApi } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import {
+    Alert,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    useWindowDimensions,
+    View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+// ─── Tab icon maps ─────────────────────────────────────────────────────────────
 
 const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
     index: "home-outline",
-    favorites: "heart-outline",
     cart: "bag-outline",
-    history: "ticket-outline",
     account: "person-outline",
+    scanner: "scan-outline",
+    favorites: "heart-outline",
+    explore: "grid-outline",
 };
 
 const ICONS_ACTIVE: Record<string, keyof typeof Ionicons.glyphMap> = {
     index: "home",
-    favorites: "heart",
     cart: "bag",
-    history: "ticket",
     account: "person",
+    scanner: "scan",
+    favorites: "heart",
+    explore: "grid",
 };
 
-export default function CustomTabBar({
-    state,
-    descriptors,
-    navigation,
-}: BottomTabBarProps) {
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export default function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     const insets = useSafeAreaInsets();
+    const router = useRouter();
+    const { width } = useWindowDimensions();
+    const { cartItems } = useCart();
+    const { favorites } = useFavorites();
+
+    const cartItemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+    const hasFavorites = favorites.length > 0;
+
+    const handleLogout = () => {
+        Alert.alert("Logout", "Are you sure you want to log out?", [
+            { text: "Cancel", style: "cancel" },
+            {
+                text: "Logout",
+                style: "destructive",
+                onPress: async () => {
+                    await authApi.logout();
+                    router.replace("/(auth)/login" as any);
+                },
+            },
+        ]);
+    };
+
+    // We want to show items horizontally. 
+    // Home, Cart, Account, Scanner are always there.
+    // Favorites is conditional.
+    // Logout is always there.
+    const visibleRoutesCount = state.routes.filter(route => {
+        const { options } = descriptors[route.key];
+        const isHidden = route.name.startsWith("_") || (options as any).href === null;
+        if (isHidden && route.name !== 'favorites') return false; // Stay hidden
+        if (route.name === 'favorites' && !hasFavorites) return false;
+        return !!ICONS[route.name];
+    }).length + 1; // +1 for the custom Logout button
+
+    const innerWidth = width * 0.9 - 24;
+    const ITEM_WIDTH = innerWidth / Math.min(visibleRoutesCount, 5); // Max 5 items visible before scrolling? 
+    // Actually simplicity: if 5 items, ITEM_WIDTH = innerWidth / 5.
+
 
     return (
-        <View style={[styles.container, { paddingBottom: Platform.OS === 'ios' ? insets.bottom + 10 : 20 }]}>
+        <View style={[styles.wrapper, { paddingBottom: Platform.OS === "ios" ? insets.bottom + 6 : 16 }]}>
             <View style={styles.tabBar}>
-                {state.routes.map((route, index) => {
-                    const { options } = descriptors[route.key];
-                    const label =
-                        options.tabBarLabel !== undefined
-                            ? options.tabBarLabel
-                            : options.title !== undefined
-                                ? options.title
-                                : route.name;
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.scrollContent}
+                >
+                    {state.routes.map((route, index) => {
+                        const { options } = descriptors[route.key];
 
-                    const isFocused = state.index === index;
+                        // Skip rendering if route has href: null (hidden) or starts with _
+                        // OR if we don't have an icon defined for it
+                        // EXCEPT favorites which we handle specially
+                        const isHidden = route.name.startsWith("_") || (options as any).href === null;
 
-                    const onPress = () => {
-                        const event = navigation.emit({
-                            type: "tabPress",
-                            target: route.key,
-                            canPreventDefault: true,
-                        });
+                        if (isHidden && route.name !== 'favorites') return null;
+                        if (!ICONS[route.name]) return null;
+                        if (route.name === 'favorites' && !hasFavorites) return null;
 
-                        if (!isFocused && !event.defaultPrevented) {
-                            navigation.navigate(route.name, route.params);
-                        }
-                    };
+                        const label =
+                            options.tabBarLabel !== undefined
+                                ? options.tabBarLabel
+                                : options.title !== undefined
+                                    ? options.title
+                                    : route.name;
 
-                    const onLongPress = () => {
-                        navigation.emit({
-                            type: "tabLongPress",
-                            target: route.key,
-                        });
-                    };
+                        const isFocused = state.index === index;
 
-                    const iconName = isFocused ? ICONS_ACTIVE[route.name] : ICONS[route.name];
+                        // Determine icons
+                        const iconName = isFocused ? ICONS_ACTIVE[route.name] : ICONS[route.name];
 
-                    // We skip rendering if the route starts with _ or if it's explicitly hidden
-                    if (route.name.startsWith("_") || (options as any).href === null) {
-                        return null;
-                    }
+                        const onPress = () => {
+                            const event = navigation.emit({
+                                type: "tabPress",
+                                target: route.key,
+                                canPreventDefault: true,
+                            });
+                            if (!isFocused && !event.defaultPrevented) {
+                                navigation.navigate(route.name, route.params);
+                            }
+                        };
 
-                    return (
+                        const onLongPress = () => {
+                            navigation.emit({ type: "tabLongPress", target: route.key });
+                        };
+
+                        return (
+                            <View key={route.key} style={{ width: ITEM_WIDTH, alignItems: "center" }}>
+                                <Pressable
+                                    accessibilityRole="button"
+                                    accessibilityState={isFocused ? { selected: true } : {}}
+                                    accessibilityLabel={options.tabBarAccessibilityLabel}
+                                    testID={(options as any).tabBarTestID}
+                                    onPress={onPress}
+                                    onLongPress={onLongPress}
+                                    style={[styles.tabItem, isFocused && styles.tabItemFocused]}
+                                >
+                                    <View>
+                                        <Ionicons
+                                            name={iconName || "ellipse-outline"}
+                                            size={22}
+                                            color={isFocused ? "#fff" : "#9CA3AF"}
+                                        />
+                                        {route.name === "cart" && cartItemCount > 0 && (
+                                            <View style={styles.badge}>
+                                                <Text style={styles.badgeText}>{cartItemCount}</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                    {isFocused && (
+                                        <Text style={styles.tabLabelFocused} numberOfLines={1}>
+                                            {typeof label === "string" ? label : route.name}
+                                        </Text>
+                                    )}
+                                </Pressable>
+                            </View>
+                        );
+                    })}
+
+                    {/* ── Custom Logout Tab ────────────────────────────────────────── */}
+                    <View style={{ width: ITEM_WIDTH, alignItems: "center" }}>
                         <Pressable
-                            key={route.key}
-                            accessibilityRole="button"
-                            accessibilityState={isFocused ? { selected: true } : {}}
-                            accessibilityLabel={options.tabBarAccessibilityLabel}
-                            testID={(options as any).tabBarTestID}
-                            onPress={onPress}
-                            onLongPress={onLongPress}
-                            style={[
-                                styles.tabItem,
-                                isFocused && styles.tabItemFocused,
-                            ]}
+                            style={styles.tabItem}
+                            onPress={handleLogout}
                         >
-                            <Ionicons
-                                name={iconName || "ellipse-outline"}
-                                size={22}
-                                color={isFocused ? "#fff" : "#9CA3AF"}
-                            />
-                            {isFocused && (
-                                <Text style={styles.tabLabelFocused}>
-                                    {typeof label === 'string' ? label : route.name}
-                                </Text>
-                            )}
+                            <Ionicons name="log-out-outline" size={22} color="#EF4444" />
+                            {/* Not showing text unless active, and logout is never 'active' */}
                         </Pressable>
-                    );
-                })}
+                    </View>
+                </ScrollView>
             </View>
         </View>
     );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-    container: {
-        position: 'absolute',
+    wrapper: {
+        position: "absolute",
         bottom: 0,
         left: 0,
         right: 0,
-        alignItems: 'center',
-        backgroundColor: 'transparent',
+        alignItems: "center",
+        backgroundColor: "transparent",
     },
     tabBar: {
-        flexDirection: "row",
         backgroundColor: "#fff",
         paddingHorizontal: 12,
         paddingVertical: 12,
@@ -118,10 +196,12 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 16,
         elevation: 8,
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        width: '90%', // Keep floating look
-        alignSelf: 'center',
+        width: "90%",
+        alignSelf: "center",
+    },
+    scrollContent: {
+        alignItems: "center",
+        // Ensure the scroll view hugs the items properly but allows scrolling
     },
     tabItem: {
         padding: 12,
@@ -131,14 +211,36 @@ const styles = StyleSheet.create({
         flexDirection: "row",
     },
     tabItemFocused: {
-        backgroundColor: "#63c276", // Light green as per design
+        backgroundColor: "#63c276",
         paddingHorizontal: 20,
+        // Add a max width so horizontal scroll doesn't break if label is very long
+        maxWidth: 120,
     },
     tabLabelFocused: {
         color: "#fff",
         fontSize: 14,
         fontWeight: "700",
         marginLeft: 8,
-        textTransform: 'capitalize',
+        textTransform: "capitalize",
+        flexShrink: 1, // Let text shrink gracefully if needed
     },
+    badge: {
+        position: 'absolute',
+        top: -6,
+        right: -8,
+        backgroundColor: '#EF4444',
+        borderRadius: 10,
+        minWidth: 16,
+        height: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 4,
+        borderWidth: 1,
+        borderColor: '#fff',
+    },
+    badgeText: {
+        color: '#fff',
+        fontSize: 9,
+        fontWeight: 'bold',
+    }
 });

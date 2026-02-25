@@ -1,21 +1,24 @@
 # Admin User for API
-User.find_or_create_by!(email: 'admin@example.com') do |user|
-  user.password = 'password'
-  user.password_confirmation = 'password'
+User.find_or_create_by!(email: 'admin@grocerygo.com') do |user|
+  user.password = ENV.fetch('ADMIN_PASSWORD', 'password')
+  user.password_confirmation = ENV.fetch('ADMIN_PASSWORD', 'password')
   user.role = :admin
+  user.first_name = 'Admin'
+  user.last_name = 'User'
+  user.phone = '+33612345678'
 end
 
 # Admin User for ActiveAdmin
-AdminUser.find_or_create_by!(email: 'admin@example.com') do |admin|
-  admin.password = 'password'
-  admin.password_confirmation = 'password'
+AdminUser.find_or_create_by!(email: 'admin@grocerygo.com') do |admin|
+  admin.password = ENV.fetch('ADMIN_PASSWORD', 'password')
+  admin.password_confirmation = ENV.fetch('ADMIN_PASSWORD', 'password')
   admin.role = :admin
 end
 
 # Employee User for ActiveAdmin
-AdminUser.find_or_create_by!(email: 'employee@example.com') do |admin|
-  admin.password = 'password'
-  admin.password_confirmation = 'password'
+AdminUser.find_or_create_by!(email: 'employee@grocerygo.com') do |admin|
+  admin.password = ENV.fetch('ADMIN_PASSWORD', 'password')
+  admin.password_confirmation = ENV.fetch('ADMIN_PASSWORD', 'password')
   admin.role = :employee
 end
 
@@ -29,5 +32,4 @@ end
 # end
 
 puts "✅ Seeded Admin Users"
-puts "   API Admin: admin@example.com / password"
-puts "   ActiveAdmin: admin@example.com / password"
+puts "   Passwords set from ENV['ADMIN_PASSWORD'] or 'password' by default."

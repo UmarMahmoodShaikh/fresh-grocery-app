@@ -1,18 +1,22 @@
+import { BasketLoader } from "@/components/BasketLoader";
 import { productsApi } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
     FlatList,
     Image,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
+    useColorScheme
 } from "react-native";
 
 export default function AdminProductsScreen() {
+  const isDark = useColorScheme() === 'dark';
+  const styles = getStyles(isDark);
+
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
@@ -58,7 +62,7 @@ export default function AdminProductsScreen() {
     return (
         <View style={styles.container}>
             {loading ? (
-                <ActivityIndicator size="large" color="#2D6A4F" style={{ marginTop: 20 }} />
+                <BasketLoader text="Loading products..." />
             ) : (
                 <FlatList
                     data={products}
@@ -81,16 +85,16 @@ export default function AdminProductsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#F9FAFB" },
+const getStyles = (isDark: boolean) => StyleSheet.create({
+    container: { flex: 1, backgroundColor: isDark ? "#111827" : "#F9FAFB" },
     card: {
-        backgroundColor: "#fff",
+        backgroundColor: isDark ? "#1F2937" : "#fff",
         borderRadius: 12,
         padding: 12,
         marginBottom: 12,
         flexDirection: "row",
         alignItems: "center",
-        shadowColor: "#000",
+        shadowColor: isDark ? "#F9FAFB" : "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
         shadowRadius: 5,
@@ -99,7 +103,7 @@ const styles = StyleSheet.create({
     imageContainer: {
         width: 60,
         height: 60,
-        backgroundColor: "#F3F4F6",
+        backgroundColor: isDark ? "#111827" : "#f3f4f6",
         borderRadius: 8,
         alignItems: "center",
         justifyContent: "center",
@@ -107,9 +111,9 @@ const styles = StyleSheet.create({
     },
     image: { width: "100%", height: "100%", borderRadius: 8 },
     infoContainer: { flex: 1 },
-    name: { fontSize: 16, fontWeight: "600", color: "#1F2937", marginBottom: 4 },
+    name: { fontSize: 16, fontWeight: "600", color: isDark ? "#F9FAFB" : "#1F2937", marginBottom: 4 },
     price: { fontSize: 15, fontWeight: "700", color: "#2D6A4F" },
-    stock: { fontSize: 13, color: "#6B7280", marginTop: 4 },
+    stock: { fontSize: 13, color: isDark ? "#9CA3AF" : "#6B7280", marginTop: 4 },
     editButton: { padding: 8 },
     fab: {
         position: "absolute",
@@ -121,7 +125,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#2D6A4F",
         alignItems: "center",
         justifyContent: "center",
-        shadowColor: "#000",
+        shadowColor: isDark ? "#F9FAFB" : "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 4,

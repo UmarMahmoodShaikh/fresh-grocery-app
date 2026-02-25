@@ -1,46 +1,136 @@
 import { useCart } from "@/context/CartContext";
+import { useFavorites } from "@/context/FavoritesContext";
 import {
   addressesApi,
   brandsApi,
   categoriesApi,
   getStoredUser,
+  ordersApi,
   productsApi,
 } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
+  Animated,
   Modal,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
+  useColorScheme
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+
+const FloatingPlusOne = ({ x, y }: { x: number; y: number }) => {
+  const translateY = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(translateY, {
+        toValue: -40,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [translateY, opacity]);
+
+  return (
+    <Animated.View
+      style={{
+        position: "absolute",
+        top: y - 20,
+        left: x - 15,
+        transform: [{ translateY }],
+        opacity,
+        zIndex: 9999,
+        pointerEvents: "none",
+      }}
+    >
+      <Text style={{ color: "#2D6A4F", fontSize: 24, fontWeight: "bold", textShadowColor: "rgba(255,255,255,0.8)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 4 }}>
+        +1
+      </Text>
+    </Animated.View>
+  );
+};
+
+const FloatingHeart = ({ x, y }: { x: number; y: number }) => {
+  const translateY = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
+  const scale = useRef(new Animated.Value(0.5)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(translateY, {
+        toValue: -60,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1.5,
+        friction: 3,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [translateY, opacity, scale]);
+
+  return (
+    <Animated.View
+      style={{
+        position: "absolute",
+        top: y - 20,
+        left: x - 15,
+        transform: [{ translateY }, { scale }],
+        opacity,
+        zIndex: 9999,
+        pointerEvents: "none",
+      }}
+    >
+      <Ionicons name="heart" size={30} color="#EF4444" />
+    </Animated.View>
+  );
+};
 
 // Category icon mapping
 const CATEGORY_ICONS: Record<string, string> = {
-  fruits: "nutrition",
-  vegetables: "leaf",
-  dairy: "water",
-  bakery: "pizza",
-  beverages: "cafe",
-  snacks: "fast-food",
-  meat: "restaurant",
-  seafood: "fish",
-  frozen: "snow",
-  pantry: "basket",
+  "fruits & vegetables": "https://cdn-icons-png.flaticon.com/128/695/695296.png",
+  "dairy & eggs": "https://cdn-icons-png.flaticon.com/128/695/695353.png",
+  "bakery": "https://cdn-icons-png.flaticon.com/128/695/695333.png",
+  "meat & seafood": "https://cdn-icons-png.flaticon.com/128/2893/2893322.png",
+  "beverages": "https://cdn-icons-png.flaticon.com/128/2893/2893321.png",
+  "snacks": "https://cdn-icons-png.flaticon.com/128/695/695270.png",
+  "frozen foods": "https://cdn-icons-png.flaticon.com/128/695/695350.png",
+  "pantry": "https://cdn-icons-png.flaticon.com/128/2893/2893346.png",
+  "household": "https://cdn-icons-png.flaticon.com/128/695/695304.png",
 };
 
-const getCategoryIcon = (name: string): string => {
-  const key = name?.toLowerCase() || "";
-  return CATEGORY_ICONS[key] || "grid";
+const getCategoryIcon = (name: string): string | null => {
+  const lowerName = name?.toLowerCase() || "";
+  // Check for exact match or contains
+  for (const [key, url] of Object.entries(CATEGORY_ICONS)) {
+    if (lowerName === key || lowerName.includes(key.split(' ')[0])) {
+      return url;
+    }
+  }
+  return null;
 };
 
 const CATEGORY_COLORS = [
@@ -55,12 +145,19 @@ const CATEGORY_COLORS = [
 ];
 
 export default function HomeScreen() {
+  const isDark = useColorScheme() === 'dark';
+  const styles = getStyles(isDark);
+
   const { addToCart } = useCart();
+  const { toggleFavorite, isFavorite } = useFavorites();
   const [userName, setUserName] = useState("User");
   const [defaultAddress, setDefaultAddress] = useState<string | null>(null);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
+  const [activeOrders, setActiveOrders] = useState<any[]>([]);
   const [tourVisible, setTourVisible] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [plusAnimations, setPlusAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
+  const [heartAnimations, setHeartAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -71,8 +168,26 @@ export default function HomeScreen() {
     loadUser();
     loadDefaultAddress();
     loadData();
+    loadActiveOrders();
     checkFirstTimeUser();
+
+    const interval = setInterval(loadActiveOrders, 30_000);
+    return () => clearInterval(interval);
   }, []);
+
+  const loadActiveOrders = async () => {
+    try {
+      const result = await ordersApi.getAll();
+      if (result.data && Array.isArray(result.data)) {
+        const active = (result.data as any[]).filter((o) =>
+          ["pending", "processing", "shipped"].includes(o.status?.toLowerCase())
+        );
+        setActiveOrders(active);
+      }
+    } catch {
+      // silently fail
+    }
+  };
 
   const loadUser = async () => {
     const user = await getStoredUser();
@@ -186,16 +301,22 @@ export default function HomeScreen() {
   const renderCategoryItem = (cat: any, index: number) => {
     const color = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
     return (
-      <TouchableOpacity key={cat.id} style={styles.categoryItem}>
+      <TouchableOpacity
+        key={cat.id}
+        style={styles.categoryItem}
+        onPress={() => router.push(`/category/${cat.id}?name=${encodeURIComponent(cat.name)}` as any)}
+        activeOpacity={0.75}
+      >
         <View style={[styles.categoryCircle, { backgroundColor: color.bg }]}>
-          {cat.image_url ? (
+          {(cat.image_url || getCategoryIcon(cat.name)) ? (
             <Image
-              source={{ uri: cat.image_url }}
-              style={styles.categoryImage}
+              source={{ uri: cat.image_url || getCategoryIcon(cat.name) }}
+              style={styles.categoryIconImage}
+              contentFit="contain"
             />
           ) : (
             <Ionicons
-              name={getCategoryIcon(cat.name) as any}
+              name="grid-outline"
               size={26}
               color={color.text}
             />
@@ -209,7 +330,12 @@ export default function HomeScreen() {
   };
 
   const renderBrandItem = (brand: any) => (
-    <TouchableOpacity key={brand.id} style={styles.brandCard}>
+    <TouchableOpacity
+      key={brand.id}
+      style={styles.brandCard}
+      onPress={() => router.push(`/brand/${brand.id}?name=${encodeURIComponent(brand.name)}` as any)}
+      activeOpacity={0.75}
+    >
       <View style={styles.brandImageWrap}>
         {brand.image_url ? (
           <Image
@@ -230,7 +356,12 @@ export default function HomeScreen() {
   );
 
   const renderProductCard = (product: any) => (
-    <TouchableOpacity key={product.id} style={styles.productCard}>
+    <TouchableOpacity
+      key={product.id}
+      style={styles.productCard}
+      onPress={() => router.push(`/product/${product.id}` as any)}
+      activeOpacity={0.75}
+    >
       <View style={styles.productImageWrap}>
         {product.image_url ? (
           <Image
@@ -259,12 +390,13 @@ export default function HomeScreen() {
           <Text style={styles.productPrice}>
             €{Number(product.price).toFixed(2)}
           </Text>
-          <TouchableOpacity
+          <Pressable
             style={styles.addButton}
-            onPress={() => addToCart(product)}
+            onPress={(e) => handleAddCart(e, product)}
+            hitSlop={8}
           >
             <Ionicons name="add" size={20} color="#fff" />
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     </TouchableOpacity>
@@ -276,22 +408,48 @@ export default function HomeScreen() {
   };
 
   const handleHistory = () => {
-    // TODO: Navigate to history screen
-    console.log("Navigate to history");
+    router.push("/(tabs)/history" as any);
   };
 
   const handleAccount = () => {
-    router.push("/(tabs)/account");
+    router.push("/profile" as any);
   };
 
   const handleSearch = () => {
-    console.log("Navigate to search");
     router.push("/(tabs)/search" as any);
   };
 
   const handleShopNow = () => {
-    // TODO: Navigate to products/offers
-    console.log("Shop now clicked");
+    router.push("/(tabs)/search" as any);
+  };
+
+  const handleAddCart = (e: any, item: any) => {
+    e.stopPropagation();
+    addToCart(item);
+
+    const { pageX, pageY } = e.nativeEvent;
+    const id = Math.random().toString(36).substring(7);
+    setPlusAnimations((prev) => [...prev, { id, x: pageX, y: pageY }]);
+
+    setTimeout(() => {
+      setPlusAnimations((prev) => prev.filter((anim) => anim.id !== id));
+    }, 800);
+  };
+
+  const handleToggleFavorite = (e: any, item: any) => {
+    e.stopPropagation();
+    const becomingFavorite = !isFavorite(item.id);
+    toggleFavorite(item);
+
+    if (becomingFavorite) {
+      const { pageX, pageY } = e.nativeEvent;
+      const id = Math.random().toString(36).substring(7);
+      setHeartAnimations((prev) => [...prev, { id, x: pageX, y: pageY }]);
+
+      setTimeout(() => {
+        setHeartAnimations((prev) => prev.filter((anim) => anim.id !== id));
+      }, 1000);
+    }
   };
 
   return (
@@ -314,54 +472,44 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <TouchableOpacity style={styles.notificationItem}>
-                <View
-                  style={[styles.notifIcon, { backgroundColor: "#DCFCE7" }]}
-                >
-                  <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
+              {activeOrders.length === 0 ? (
+                <View style={{ padding: 20, alignItems: "center" }}>
+                  <Text style={{ color: isDark ? "#9CA3AF" : "#6B7280" }}>No new notifications</Text>
                 </View>
-                <View style={styles.notifContent}>
-                  <Text style={styles.notifTitle}>Order Delivered!</Text>
-                  <Text style={styles.notifDescription}>
-                    Your order #1234 has been delivered successfully.
-                  </Text>
-                  <Text style={styles.notifTime}>2 hours ago</Text>
-                </View>
-              </TouchableOpacity>
+              ) : (
+                activeOrders.map((order) => {
+                  let color = "#D97706";
+                  let bg = "#FEF3C7";
+                  let icon = "time-outline";
+                  const status = order.status?.toLowerCase();
+                  if (status === "processing") { color = "#2563EB"; bg = "#DBEAFE"; icon = "refresh-outline"; }
+                  if (status === "shipped") { color = "#7C3AED"; bg = "#EDE9FE"; icon = "bicycle-outline"; }
 
-              <TouchableOpacity style={styles.notificationItem}>
-                <View
-                  style={[styles.notifIcon, { backgroundColor: "#FFF7ED" }]}
-                >
-                  <Ionicons name="pricetag" size={20} color="#2D6A4F" />
-                </View>
-                <View style={styles.notifContent}>
-                  <Text style={styles.notifTitle}>Flash Sale! 🎉</Text>
-                  <Text style={styles.notifDescription}>
-                    20% off on all fresh produce. Limited time!
-                  </Text>
-                  <Text style={styles.notifTime}>5 hours ago</Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.notificationItem}>
-                <View
-                  style={[styles.notifIcon, { backgroundColor: "#DBEAFE" }]}
-                >
-                  <Ionicons
-                    name="information-circle"
-                    size={20}
-                    color="#3B82F6"
-                  />
-                </View>
-                <View style={styles.notifContent}>
-                  <Text style={styles.notifTitle}>New Products Added</Text>
-                  <Text style={styles.notifDescription}>
-                    Check out the latest arrivals in our store.
-                  </Text>
-                  <Text style={styles.notifTime}>1 day ago</Text>
-                </View>
-              </TouchableOpacity>
+                  return (
+                    <TouchableOpacity
+                      key={order.id}
+                      style={styles.notificationItem}
+                      onPress={() => {
+                        setNotificationsVisible(false);
+                        router.push(`/order/${order.id}` as any);
+                      }}
+                    >
+                      <View style={[styles.notifIcon, { backgroundColor: bg }]}>
+                        <Ionicons name={icon as any} size={20} color={color} />
+                      </View>
+                      <View style={styles.notifContent}>
+                        <Text style={styles.notifTitle}>Order #{order.id} is {status}</Text>
+                        <Text style={styles.notifDescription}>
+                          {order.order_items?.length ?? 0} items • €{Number(order.total).toFixed(2)}
+                        </Text>
+                        <Text style={styles.notifTime}>
+                          {new Date(order.created_at).toLocaleDateString()}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })
+              )}
             </ScrollView>
           </View>
         </View>
@@ -467,14 +615,16 @@ export default function HomeScreen() {
             onPress={() => setNotificationsVisible(true)}
           >
             <Ionicons name="notifications-outline" size={24} color="white" />
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>3</Text>
-            </View>
+            {activeOrders.length > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{activeOrders.length}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
         {/* Search Bar */}
-        <TouchableOpacity style={styles.searchBar}>
+        <TouchableOpacity style={styles.searchBar} onPress={handleSearch}>
           <Ionicons name="search-outline" size={20} color="#9CA3AF" />
           <Text style={styles.searchPlaceholder}>Search groceries...</Text>
         </TouchableOpacity>
@@ -514,7 +664,7 @@ export default function HomeScreen() {
                   Get <Text style={styles.promoHighlight}>20% OFF</Text>
                   {"\n"}on Fresh Produce
                 </Text>
-                <TouchableOpacity style={styles.shopButton}>
+                <TouchableOpacity style={styles.shopButton} onPress={handleShopNow}>
                   <Text style={styles.shopButtonText}>Shop Now</Text>
                   <Ionicons name="arrow-forward" size={16} color="#2D6A4F" />
                 </TouchableOpacity>
@@ -526,7 +676,7 @@ export default function HomeScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Categories</Text>
-                  <TouchableOpacity>
+                  <TouchableOpacity onPress={() => router.push({ pathname: "/explore", params: { tab: "categories" } } as any)}>
                     <Text style={styles.seeAll}>See All</Text>
                   </TouchableOpacity>
                 </View>
@@ -545,7 +695,7 @@ export default function HomeScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Featured Brands</Text>
-                  <TouchableOpacity>
+                  <TouchableOpacity onPress={() => router.push({ pathname: "/explore", params: { tab: "brands" } } as any)}>
                     <Text style={styles.seeAll}>See All</Text>
                   </TouchableOpacity>
                 </View>
@@ -564,7 +714,7 @@ export default function HomeScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Best Sellers</Text>
-                  <TouchableOpacity>
+                  <TouchableOpacity onPress={() => router.push("/best-sellers" as any)}>
                     <Text style={styles.seeAll}>See All</Text>
                   </TouchableOpacity>
                 </View>
@@ -589,6 +739,8 @@ export default function HomeScreen() {
                     <TouchableOpacity
                       key={product.id}
                       style={styles.gridProductCard}
+                      onPress={() => router.push(`/product/${product.id}` as any)}
+                      activeOpacity={0.75}
                     >
                       <View style={styles.gridProductImageWrap}>
                         {product.image_url ? (
@@ -605,6 +757,16 @@ export default function HomeScreen() {
                             />
                           </View>
                         )}
+                        <Pressable
+                          style={styles.favoriteButton}
+                          onPress={(e) => handleToggleFavorite(e, product)}
+                        >
+                          <Ionicons
+                            name={isFavorite(product.id) ? "heart" : "heart-outline"}
+                            size={18}
+                            color={isFavorite(product.id) ? "#EF4444" : "#9CA3AF"}
+                          />
+                        </Pressable>
                       </View>
                       <Text style={styles.gridProductName} numberOfLines={2}>
                         {product.name}
@@ -618,12 +780,14 @@ export default function HomeScreen() {
                         <Text style={styles.gridProductPrice}>
                           €{Number(product.price).toFixed(2)}
                         </Text>
-                        <TouchableOpacity
+                        {/* Pressable stops the touch from bubbling to the card's onPress */}
+                        <Pressable
                           style={styles.addButton}
-                          onPress={() => addToCart(product)}
+                          onPress={(e) => handleAddCart(e, product)}
+                          hitSlop={8}
                         >
                           <Ionicons name="add" size={18} color="#fff" />
-                        </TouchableOpacity>
+                        </Pressable>
                       </View>
                     </TouchableOpacity>
                   ))}
@@ -635,11 +799,19 @@ export default function HomeScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Render floating animations globally */}
+      {plusAnimations.map((anim) => (
+        <FloatingPlusOne key={anim.id} x={anim.x} y={anim.y} />
+      ))}
+      {heartAnimations.map((anim) => (
+        <FloatingHeart key={anim.id} x={anim.x} y={anim.y} />
+      ))}
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F5F5",
@@ -715,14 +887,14 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: isDark ? "#1F2937" : "#fff",
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 10,
   },
   searchPlaceholder: {
-    color: "#9CA3AF",
+    color: isDark ? "#D1D5DB" : "#9CA3AF",
     fontSize: 15,
   },
 
@@ -749,7 +921,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: "#fff",
+    backgroundColor: isDark ? "#1F2937" : "#fff",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -776,7 +948,7 @@ const styles = StyleSheet.create({
   shopButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: isDark ? "#1F2937" : "#fff",
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 25,
@@ -803,7 +975,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#1F2937",
+    color: isDark ? "#F9FAFB" : "#1F2937",
   },
   seeAll: {
     fontSize: 14,
@@ -828,16 +1000,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  categoryIconImage: {
+    width: 36,
+    height: 36,
+    resizeMode: "contain",
   },
   categoryImage: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: "100%",
+    height: "100%",
+    borderRadius: 30,
+    resizeMode: "cover",
   },
   categoryName: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#4B5563",
+    color: isDark ? "#D1D5DB" : "#4B5563",
     textAlign: "center",
   },
 
@@ -850,11 +1033,11 @@ const styles = StyleSheet.create({
   brandCard: {
     alignItems: "center",
     width: 90,
-    backgroundColor: "#fff",
+    backgroundColor: isDark ? "#1F2937" : "#fff",
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 8,
-    shadowColor: "#000",
+    shadowColor: isDark ? "#F9FAFB" : "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -881,7 +1064,7 @@ const styles = StyleSheet.create({
   brandName: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#374151",
+    color: isDark ? "#D1D5DB" : "#374151",
     textAlign: "center",
   },
 
@@ -893,10 +1076,10 @@ const styles = StyleSheet.create({
   },
   productCard: {
     width: 160,
-    backgroundColor: "#fff",
+    backgroundColor: isDark ? "#1F2937" : "#fff",
     borderRadius: 18,
     overflow: "hidden",
-    shadowColor: "#000",
+    shadowColor: isDark ? "#F9FAFB" : "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
     shadowRadius: 10,
@@ -905,7 +1088,7 @@ const styles = StyleSheet.create({
   productImageWrap: {
     width: "100%",
     height: 120,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: isDark ? "#111827" : "#F9FAFB",
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
@@ -939,13 +1122,13 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#1F2937",
+    color: isDark ? "#F9FAFB" : "#1F2937",
     marginBottom: 2,
     lineHeight: 18,
   },
   productBrand: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: isDark ? "#D1D5DB" : "#9CA3AF",
     fontWeight: "500",
     marginBottom: 8,
   },
@@ -977,10 +1160,10 @@ const styles = StyleSheet.create({
   },
   gridProductCard: {
     width: "47%",
-    backgroundColor: "#fff",
+    backgroundColor: isDark ? "#1F2937" : "#fff",
     borderRadius: 16,
     overflow: "hidden",
-    shadowColor: "#000",
+    shadowColor: isDark ? "#F9FAFB" : "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
@@ -990,15 +1173,29 @@ const styles = StyleSheet.create({
   gridProductImageWrap: {
     width: "100%",
     height: 110,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: isDark ? "#111827" : "#F9FAFB",
     alignItems: "center",
-    justifyContent: "center",
+    borderRadius: 12,
+    position: "relative",
+    overflow: "hidden",
   },
-  gridProductImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
+  favoriteButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
+  gridProductImage: { width: "100%", height: 120, resizeMode: "cover" },
   gridProductPlaceholder: {
     alignItems: "center",
     justifyContent: "center",
@@ -1006,14 +1203,14 @@ const styles = StyleSheet.create({
   gridProductName: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#1F2937",
+    color: isDark ? "#F9FAFB" : "#1F2937",
     marginTop: 10,
     marginHorizontal: 10,
     lineHeight: 17,
   },
   gridProductBrand: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: isDark ? "#D1D5DB" : "#9CA3AF",
     fontWeight: "500",
     marginHorizontal: 10,
     marginTop: 2,
@@ -1039,7 +1236,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   notifPanel: {
-    backgroundColor: "#fff",
+    backgroundColor: isDark ? "#1F2937" : "#fff",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: "70%",
@@ -1051,12 +1248,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    borderBottomColor: isDark ? "#374151" : "#F3F4F6",
   },
   notifHeaderTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#1F2937",
+    color: isDark ? "#F9FAFB" : "#1F2937",
   },
   notificationItem: {
     flexDirection: "row",
@@ -1077,17 +1274,17 @@ const styles = StyleSheet.create({
   notifTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#1F2937",
+    color: isDark ? "#F9FAFB" : "#1F2937",
   },
   notifDescription: {
     fontSize: 13,
-    color: "#6B7280",
+    color: isDark ? "#9CA3AF" : "#6B7280",
     marginTop: 2,
     lineHeight: 18,
   },
   notifTime: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: isDark ? "#D1D5DB" : "#9CA3AF",
     marginTop: 4,
   },
 
@@ -1100,7 +1297,7 @@ const styles = StyleSheet.create({
     padding: 30,
   },
   tourTooltip: {
-    backgroundColor: "#fff",
+    backgroundColor: isDark ? "#1F2937" : "#fff",
     borderRadius: 24,
     padding: 28,
     width: "100%",
@@ -1116,7 +1313,7 @@ const styles = StyleSheet.create({
   tourStepIndicator: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#9CA3AF",
+    color: isDark ? "#D1D5DB" : "#9CA3AF",
   },
   tourIconContainer: {
     width: 80,
@@ -1129,13 +1326,13 @@ const styles = StyleSheet.create({
   tourTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#1F2937",
+    color: isDark ? "#F9FAFB" : "#1F2937",
     marginBottom: 8,
     textAlign: "center",
   },
   tourDescription: {
     fontSize: 15,
-    color: "#6B7280",
+    color: isDark ? "#9CA3AF" : "#6B7280",
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 20,
@@ -1149,7 +1346,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: isDark ? "#374151" : "#E5E7EB",
   },
   tourDotActive: {
     backgroundColor: "#2D6A4F",
@@ -1166,12 +1363,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: isDark ? "#374151" : "#E5E7EB",
   },
   tourSkipText: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#6B7280",
+    color: isDark ? "#9CA3AF" : "#6B7280",
   },
   tourNextButton: {
     flex: 2,
