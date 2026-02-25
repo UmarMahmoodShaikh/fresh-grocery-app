@@ -30,23 +30,17 @@ module Api
 
       # POST /api/v1/orders
       def create
-        if current_user
-          @order = Order.new(order_params)
-          @order.user = current_user
-        else
-          # Guest Checkout: Create a guest user
-          user_params = params[:guest_info] || {}
-          guest_email = user_params[:email] || "guest_#{SecureRandom.hex(4)}@example.com"
-          @guest_user = User.find_or_initialize_by(email: guest_email)
-          @guest_user.password ||= SecureRandom.hex(8)
-          @guest_user.role = :guest
-          @guest_user.first_name = user_params[:first_name]
-          @guest_user.last_name = user_params[:last_name]
-          @guest_user.phone = user_params[:phone]
-          @guest_user.save! if @guest_user.new_record?
-          
-          @order = Order.new(order_params)
-          @order.user = @guest_user
+        unless current_user
+          return render json: { message: 'Authentication required to place orders' }, status: :unauthorized
+        end
+
+        @order = Order.new(order_params)
+        @order.user = current_user
+
+        # Snapshot address info for fulfillment record
+        if @order.address.present?
+          a = @order.address
+          @order.delivery_address = "#{a.street}, #{a.city}, #{a.zip_code}, #{a.country}"
         end
 
         if @order.save

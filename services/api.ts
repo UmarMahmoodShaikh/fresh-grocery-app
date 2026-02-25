@@ -129,7 +129,7 @@ export const authApi = {
     },
 
     checkEmail: async (email: string) => {
-        return apiRequest<{ exists: boolean; isGuest: boolean; role: string }>(
+        return apiRequest<{ exists: boolean; role: string }>(
             "/auth/check-email",
             "POST",
             { email }

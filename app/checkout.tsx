@@ -45,8 +45,8 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: string; l
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function CheckoutScreen() {
-  const isDark = useColorScheme() === 'dark';
-  const styles = getStyles(isDark);
+    const isDark = useColorScheme() === 'dark';
+    const styles = getStyles(isDark);
 
     const { cartItems, cartTotal, clearCart } = useCart();
     const router = useRouter();
@@ -125,6 +125,7 @@ export default function CheckoutScreen() {
             const payload = {
                 order: {
                     total: orderTotal,
+                    address_id: selectedAddress?.id,
                     delivery_address: deliveryStr,
                     delivery_fee: DELIVERY_FEE,
                     status: "pending",

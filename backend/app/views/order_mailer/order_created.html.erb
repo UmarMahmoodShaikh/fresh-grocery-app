@@ -1,13 +1,58 @@
-<h1>Order Confirmation ##{@order.id}</h1>
-<p>Hi <%= @user.first_name || 'Customer' %>,</p>
-<p>Thank you for your order! Here are your details:</p>
-<p><strong>Total:</strong> €<%= number_to_currency(@order.total, unit: '') %></p>
-<p><strong>Delivery Address:</strong> <%= @order.delivery_address %></p>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
+    <style>
+      body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f9fafb; margin: 0; padding: 0; }
+      .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+      .header { background-color: #2D6A4F; padding: 40px 20px; text-align: center; color: #ffffff; }
+      .header h1 { margin: 0; font-size: 24px; font-weight: 700; }
+      .content { padding: 40px 30px; line-height: 1.6; color: #374151; }
+      .order-details { margin: 30px 0; padding: 20px; background-color: #f0fdf4; border-radius: 8px; border: 1px solid #dcfce7; }
+      .item-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+      .item-table td { padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+      .total-row { font-weight: 700; font-size: 18px; color: #065f46; }
+      .footer { background-color: #f3f4f6; padding: 20px; text-align: center; font-size: 12px; color: #9ca3af; }
+      .button { display: inline-block; padding: 12px 24px; background-color: #2D6A4F; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 20px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Order Confirmed!</h1>
+        <p>Order #<%= @order.id %></p>
+      </div>
+      <div class="content">
+        <h2>Hi <%= @user.first_name || 'there' %>,</h2>
+        <p>Thanks for shopping with <strong>Fresh Grocery</strong>. We've received your order and our team is already picking the freshest items for you.</p>
+        
+        <div class="order-details">
+          <p><strong>Delivery Address:</strong><br><%= @order.delivery_address %></p>
+          <p><strong>Status:</strong> Pending Processing</p>
+        </div>
 
-<h3>Items:</h3>
-<ul>
-  <% @order.order_items.each do |item| %>
-    <li><%= item.quantity %>x <%= item.product.name %> - €<%= number_to_currency(item.price * item.quantity, unit: '') %></li>
-  <% end %>
-</ul>
-<p>We'll notify you when your order ships.</p>
+        <h3>Your Order Summary</h3>
+        <table class="item-table">
+          <% @order.order_items.each do |item| %>
+            <tr>
+              <td><%= item.quantity %>x <%= item.product.name %></td>
+              <td align="right">€<%= number_to_currency(item.price * item.quantity, unit: '') %></td>
+            </tr>
+          <% end %>
+          <tr class="total-row">
+            <td style="padding-top: 20px;">Order Total</td>
+            <td align="right" style="padding-top: 20px;">€<%= number_to_currency(@order.total, unit: '') %></td>
+          </tr>
+        </table>
+
+        <div style="text-align: center;">
+          <a href="#" class="button">Track Your Order</a>
+        </div>
+      </div>
+      <div class="footer">
+        <p>&copy; 2026 Fresh Grocery. All rights reserved.</p>
+        <p>Paris, France</p>
+      </div>
+    </div>
+  </body>
+</html>

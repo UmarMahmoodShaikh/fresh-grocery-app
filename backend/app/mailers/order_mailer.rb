@@ -1,10 +1,14 @@
 class OrderMailer < ApplicationMailer
-  default from: 'no-reply@trinity.com'
+  default from: 'umarmahmoodshk@gmail.com'
 
   def order_created(order)
     @order = order
     @user = order.user
-    mail(to: @user.email, subject: "Order confirmation - ##{@order.id}")
+    mail(to: @user.email, subject: "Order confirmed! ##{@order.id} - Fresh Grocery")
+  end
+
+  def test_email(to_email)
+    mail(to: to_email, subject: "Fresh Grocery - Email Test")
   end
 
   def order_shipped(order)

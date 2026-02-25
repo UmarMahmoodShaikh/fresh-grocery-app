@@ -29,8 +29,8 @@ module Api
           {
             id: order.id,
             orderId: order.id,
-            userName: order.user&.email || 'Guest',
-            userEmail: order.user&.email || '-',
+            userName: order.user&.email,
+            userEmail: order.user&.email,
             totalAmount: order.total,
             status: order.status,
             paymentStatus: 'completed', # Add payment_status field if needed

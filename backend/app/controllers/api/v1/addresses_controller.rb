@@ -7,9 +7,9 @@ module Api
 
       # GET /api/v1/addresses
       def index
-        cache_key = "user_#{current_user.id}_addresses"
+        cache_key = "user_#{current_user.id}_active_addresses"
         @addresses = Rails.cache.fetch(cache_key, expires_in: 30.minutes) do
-          current_user.addresses.order(is_default: :desc, created_at: :desc).as_json(methods: [:label])
+          current_user.addresses.where(is_active: true).order(is_default: :desc, created_at: :desc).as_json(methods: [:label])
         end
         render json: @addresses
       end
@@ -39,21 +39,35 @@ module Api
 
       # PATCH/PUT /api/v1/addresses/:id
       def update
-        if @address.update(address_params)
-          render json: @address
+        # If this address is used in any orders, we must VERSION it (Append-only)
+        # to preserve historical accuracy for 100k+ scalability.
+        if @address.orders.any?
+          @new_address = current_user.addresses.build(address_params)
+          @new_address.is_default = @address.is_default
+          
+          if @new_address.save
+            @address.update(is_active: false, is_default: false) # Deactivate old one
+            render json: @new_address
+          else
+            render json: { errors: @new_address.errors.full_messages }, status: :unprocessable_entity
+          end
         else
-          render json: { errors: @address.errors.full_messages }, status: :unprocessable_entity
+          # If not used in orders, simple update is fine
+          if @address.update(address_params)
+            render json: @address
+          else
+            render json: { errors: @address.errors.full_messages }, status: :unprocessable_entity
+          end
         end
       end
 
       # DELETE /api/v1/addresses/:id
       def destroy
-        was_default = @address.is_default
-        @address.destroy
-
-        # If deleted address was default, make the most recent one default
-        if was_default
-          new_default = current_user.addresses.order(created_at: :desc).first
+        # Soft delete to maintain relational integrity for existing orders
+        @address.update(is_active: false, is_default: false)
+        
+        if @address.is_default
+          new_default = current_user.addresses.where(is_active: true).order(created_at: :desc).first
           new_default&.update(is_default: true)
         end
 

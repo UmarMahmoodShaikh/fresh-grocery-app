@@ -60,15 +60,42 @@ Rails.application.configure do
   # want to log everything, set the level to "debug".
   config.log_level = ENV.fetch("RAILS_LOG_LEVEL", "info")
 
-  # Use a different cache store in production.
-  # config.cache_store = :mem_cache_store
+  # Use Redis for high-performance caching (Critical for 100k+ users)
+  config.cache_store = :redis_cache_store, {
+    url: ENV.fetch("REDIS_URL", "redis://localhost:6379/0"),
+    expires_in: 1.hour,
+    error_handler: -> (method:, returning:, exception:) {
+      Rails.logger.warn "Redis cache error: #{exception.message}"
+    }
+  }
 
-  # Use a real queuing backend for Active Job (and separate queues per environment).
-  # config.active_job.queue_adapter = :resque
-  # config.active_job.queue_name_prefix = "store_backend_production"
+  # Store sessions in Redis to keep the DB lean
+  config.session_store :cache_store,
+    key: "_grocerygo_session_prod",
+    expire_after: 24.hours
+
+  # Use a real queuing backend for Active Job
+  # We recommend adding 'sidekiq' gem for true 100k+ scalability
+  config.active_job.queue_adapter = :async
+  config.active_job.queue_name_prefix = "store_backend_production"
 
   # Disable caching for Action Mailer templates even if Action Controller
   # caching is enabled.
+  # SMTP Configuration for Brevo (formerly Sendinblue)
+  config.action_mailer.delivery_method = :smtp
+  config.action_mailer.perform_deliveries = true
+  config.action_mailer.raise_delivery_errors = true
+  config.action_mailer.default_url_options = { host: 'fresh-grocery-store-74f6cf859e50.herokuapp.com' }
+  
+  config.action_mailer.smtp_settings = {
+    address:              'smtp-relay.brevo.com',
+    port:                 587,
+    domain:               'heroku.com',
+    user_name:            ENV['BREVO_LOGIN'], # Your Brevo account email
+    password:             ENV['BREVO_SMTP_KEY'], # Your Brevo SMTP Key (V3)
+    authentication:       'login',
+    enable_starttls_auto: true
+  }
   config.action_mailer.perform_caching = false
 
   # Ignore bad email addresses and do not raise email delivery errors.

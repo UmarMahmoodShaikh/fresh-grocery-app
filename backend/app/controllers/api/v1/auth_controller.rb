@@ -53,13 +53,11 @@ module Api
         if user
           render json: {
             exists: true,
-            isGuest: user.guest?,
             role: user.role
           }
         else
           render json: {
-            exists: false,
-            isGuest: false
+            exists: false
           }
         end
       end

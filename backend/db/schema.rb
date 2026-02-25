@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_24_105606) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_25_133621) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -26,6 +26,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_24_105606) do
     t.boolean "is_default", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "is_active", default: true
     t.index ["user_id", "latitude", "longitude"], name: "index_addresses_on_user_lat_lon", unique: true
     t.index ["user_id"], name: "index_addresses_on_user_id"
   end
@@ -88,6 +89,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_24_105606) do
     t.datetime "updated_at", null: false
     t.integer "score"
     t.text "comments"
+    t.bigint "address_id", null: false
+    t.index ["address_id"], name: "index_orders_on_address_id"
     t.index ["user_id"], name: "index_orders_on_user_id"
   end
 
@@ -131,6 +134,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_24_105606) do
   add_foreign_key "invoices", "orders"
   add_foreign_key "order_items", "orders"
   add_foreign_key "order_items", "products"
+  add_foreign_key "orders", "addresses"
   add_foreign_key "orders", "users"
   add_foreign_key "products", "brands"
   add_foreign_key "products", "categories"

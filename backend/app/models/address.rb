@@ -1,5 +1,6 @@
 class Address < ApplicationRecord
   belongs_to :user
+  has_many :orders, dependent: :restrict_with_error
 
   enum :label, { home: 0, work: 1, other: 2 }
 
@@ -14,10 +15,12 @@ class Address < ApplicationRecord
   before_save :round_coordinates
   before_save :ensure_single_default
   after_save :invalidate_cache
+  after_update :invalidate_cache, if: :saved_change_to_is_active?
   after_destroy :invalidate_cache
 
   # Scopes
-  scope :default_address, -> { where(is_default: true).first }
+  scope :active, -> { where(is_active: true) }
+  scope :default_address, -> { where(is_default: true).active.first }
 
   def self.ransackable_attributes(auth_object = nil)
     ["city", "country", "created_at", "id", "is_default", "label", "street", "user_id", "zip_code"]
@@ -35,8 +38,8 @@ class Address < ApplicationRecord
   end
 
   def max_five_addresses
-    if user && user.addresses.count >= 5
-      errors.add(:base, "You can have a maximum of 5 addresses")
+    if user && user.addresses.where(is_active: true).count >= 5
+      errors.add(:base, "You can have a maximum of 5 active addresses")
     end
   end
 
@@ -46,7 +49,7 @@ class Address < ApplicationRecord
     rounded_lat = latitude.round(4)
     rounded_lon = longitude.round(4)
 
-    existing = user.addresses
+    existing = user.addresses.where(is_active: true)
       .where("ROUND(latitude::numeric, 4) = ? AND ROUND(longitude::numeric, 4) = ?", rounded_lat, rounded_lon)
     
     # Exclude self when updating
@@ -65,8 +68,8 @@ class Address < ApplicationRecord
   end
 
   def invalidate_cache
-    Rails.cache.delete("user_#{user_id}_addresses")
-    user.addresses.pluck(:id).each do |aid|
+    Rails.cache.delete("user_#{user_id}_active_addresses")
+    user.addresses.where(is_active: true).pluck(:id).each do |aid|
       Rails.cache.delete("user_#{user_id}_address_#{aid}")
     end
   end

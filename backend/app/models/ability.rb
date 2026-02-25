@@ -2,7 +2,7 @@ class Ability
   include CanCan::Ability
 
   def initialize(admin_user)
-    admin_user ||= AdminUser.new # guest user (not logged in)
+    return unless admin_user
 
     if admin_user.admin?
       # Admins can do everything
