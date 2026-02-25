@@ -105,7 +105,7 @@ module Api
       end
 
       def order_params
-        params.require(:order).permit(:user_id, :total, :status, :delivery_address, :delivery_fee, :score, :comments)
+        params.require(:order).permit(:user_id, :address_id, :total, :status, :delivery_address, :delivery_fee, :score, :comments)
       end
 
       # Called for ALL actions — sets @current_user if token is valid, silently ignores otherwise
