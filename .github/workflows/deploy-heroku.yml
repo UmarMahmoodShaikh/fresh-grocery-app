@@ -1,0 +1,30 @@
+name: Deploy Backend to Heroku
+
+on:
+  push:
+    branches:
+      - umar/dev
+      - master
+      - main
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-heroku.yml"
+
+jobs:
+  deploy:
+    if: github.repository == 'EpitechMscInternationalPromo2027/I-DEV-801-INT-8-1-trinitydevapp-5'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Deploy Subdirectory to Heroku
+        uses: akhileshns/heroku-deploy@v3.13.15
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: "fresh-grocery-store-74f6cf859e50"
+          heroku_email: "umarmahmoodshk@gmail.com"
+          appdir: "backend"
+          branch: "HEAD" # This pushes the current branch that triggered the action
