@@ -60,7 +60,7 @@ const FloatingPlusOne = ({ x, y }: { x: number; y: number }) => {
         pointerEvents: "none",
       }}
     >
-      <Text style={{ color: "#2D6A4F", fontSize: 24, fontWeight: "bold", textShadowColor: "rgba(255,255,255,0.8)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 4 }}>
+      <Text style={{ color: "#2D6A4F", fontSize: 24, fontWeight: "bold", textshadowColor: "rgba(255,255,255,0.8)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 4 }}>
         +1
       </Text>
     </Animated.View>

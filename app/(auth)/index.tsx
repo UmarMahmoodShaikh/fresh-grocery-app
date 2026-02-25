@@ -4,3 +4,5 @@ export default function AuthIndex() {
   return <Redirect href="/(auth)/login" />;
 }
 
+
+const getStyles = (isDark: boolean) => StyleSheet.create({});

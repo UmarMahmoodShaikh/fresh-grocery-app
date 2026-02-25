@@ -6,7 +6,7 @@ export default function AdminLayout() {
         <Tabs
             screenOptions={{
                 headerShown: true,
-                tabBarActiveTintColor: "#2D6A4F",
+                tabBarActivetintColor: "#2D6A4F",
             }}
         >
             <Tabs.Screen
@@ -56,3 +56,5 @@ export default function AdminLayout() {
     );
 }
 
+
+const getStyles = (isDark: boolean) => StyleSheet.create({});

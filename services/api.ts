@@ -1,30 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Platform } from "react-native";
 
-import Constants from "expo-constants";
 
 // Android emulator uses 10.0.2.2, Genymotion uses 10.0.3.2, and physical devices need the LAN IP.
 // Extracting it dynamically from Expo Constants fixes networking for all Android targets.
 const getBaseUrl = () => {
-    if (__DEV__) {
-        try {
-            const extra = Constants.expoConfig || {};
-            const hostUri = (extra as any).hostUri || (Constants.expoConfig as any)?.hostUri;
-            if (hostUri) {
-                const ipFormat = hostUri.split(":")[0];
-                if (ipFormat && ipFormat.includes(".")) {
-                    return `http://${ipFormat}:5001`;
-                }
-            }
-        } catch (e) {
-            // Ignore extraction errors and fallback
-        }
-
-        if (Platform.OS === "android") {
-            return "http://10.0.2.2:5001"; // Default fallback
-        }
-        return "http://localhost:5001";
-    }
+    // Force Heroku URL for production/remote testing
     return "https://fresh-grocery-store-74f6cf859e50.herokuapp.com";
 };
 
