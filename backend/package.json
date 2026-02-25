@@ -5,7 +5,7 @@
         "node": "18.x"
     },
     "scripts": {
-        "build": "cd frontend && npm install && npm run build && cp -a dist/* ../public/"
+        "build": "cd frontend && npm install --include=dev && npm run build && cp -a dist/* ../public/"
     },
     "cacheDirectories": [
         "frontend/node_modules"
