@@ -62,7 +62,7 @@ Rails.application.configure do
 
   # Use Redis for high-performance caching (Critical for 100k+ users)
   config.cache_store = :redis_cache_store, {
-    url: ENV.fetch("REDIS_URL", "redis://localhost:6379/0"),
+    url: ENV["REDIS_URL"] || ENV["REDISCLOUD_URL"] || ENV["REDISTOGO_URL"] || "redis://localhost:6379/0",
     expires_in: 1.hour,
     error_handler: -> (method:, returning:, exception:) {
       Rails.logger.warn "Redis cache error: #{exception.message}"
