@@ -13,7 +13,8 @@ on:
 jobs:
   deploy:
     # This runs only on your PERSONAL repo after it is mirrored
-    if: github.repository_owner == 'UmarMahmoodShaikh'
+    # so it can access the HEROKU_API_KEY in your personal secrets.
+    if: github.repository == 'UmarMahmoodShaikh/fresh-grocery-app'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -25,7 +26,7 @@ jobs:
         uses: akhileshns/heroku-deploy@v3.13.15
         with:
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: "fresh-grocery-store" # Updated to your actual app name from logs
+          heroku_app_name: "fresh-grocery-store"
           heroku_email: "umarmahmoodshk@gmail.com"
           appdir: "backend"
-          branch: "HEAD"
+          branch: "HEAD" # This pushes the current branch that triggered the action
