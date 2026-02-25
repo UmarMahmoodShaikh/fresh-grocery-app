@@ -1,0 +1,31 @@
+name: Deploy Backend to Heroku
+
+on:
+  push:
+    branches:
+      - umar/dev
+      - master
+      - main
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-heroku.yml"
+
+jobs:
+  deploy:
+    # This runs only on your PERSONAL repo after it is mirrored
+    if: github.repository == 'UmarMahmoodShaikh/fresh-grocery-app'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Deploy Subdirectory to Heroku
+        uses: akhileshns/heroku-deploy@v3.13.15
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: "fresh-grocery-store" # Updated to your actual app name from logs
+          heroku_email: "umarmahmoodshk@gmail.com"
+          appdir: "backend"
+          branch: "HEAD"
