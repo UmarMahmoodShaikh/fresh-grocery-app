@@ -3,17 +3,18 @@ name: Mirror to Personal Repo
 on:
   push:
     branches:
-      - '**'
+      - "**"
 
 jobs:
   mirror:
+    if: github.repository == 'EpitechMscInternationalPromo2027/I-DEV-801-INT-8-1-trinitydevapp-5'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout with full history
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          persist-credentials: false  # 👈 THIS is the key fix
+          persist-credentials: false # 👈 THIS is the key fix
 
       - name: Mirror push to personal repo
         env:
@@ -22,4 +23,5 @@ jobs:
           git config --global credential.helper store
           echo "https://UmarMahmoodShaikh:${PAT}@github.com" > ~/.git-credentials
           git remote add personal https://github.com/UmarMahmoodShaikh/fresh-grocery-app.git
-          git push personal --mirror
+          git push personal --all --force
+          git push personal --tags --force
