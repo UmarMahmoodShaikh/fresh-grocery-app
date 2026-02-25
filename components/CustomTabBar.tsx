@@ -1,4 +1,5 @@
 import { useCart } from "@/context/CartContext";
+import { useFavorites } from "@/context/FavoritesContext";
 import { authApi } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
@@ -22,6 +23,8 @@ const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
     cart: "bag-outline",
     account: "person-outline",
     scanner: "scan-outline",
+    favorites: "heart-outline",
+    explore: "grid-outline",
 };
 
 const ICONS_ACTIVE: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -29,6 +32,8 @@ const ICONS_ACTIVE: Record<string, keyof typeof Ionicons.glyphMap> = {
     cart: "bag",
     account: "person",
     scanner: "scan",
+    favorites: "heart",
+    explore: "grid",
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -38,8 +43,10 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
     const router = useRouter();
     const { width } = useWindowDimensions();
     const { cartItems } = useCart();
+    const { favorites } = useFavorites();
 
     const cartItemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+    const hasFavorites = favorites.length > 0;
 
     const handleLogout = () => {
         Alert.alert("Logout", "Are you sure you want to log out?", [
@@ -55,11 +62,22 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
         ]);
     };
 
-    // We want to show exactly 3 items at a time horizontally.
-    // The tab bar has paddingHorizontal: 12 on each side (total 24).
-    // Inner width = width * 0.9 - 24.
+    // We want to show items horizontally. 
+    // Home, Cart, Account, Scanner are always there.
+    // Favorites is conditional.
+    // Logout is always there.
+    const visibleRoutesCount = state.routes.filter(route => {
+        const { options } = descriptors[route.key];
+        const isHidden = route.name.startsWith("_") || (options as any).href === null;
+        if (isHidden && route.name !== 'favorites') return false; // Stay hidden
+        if (route.name === 'favorites' && !hasFavorites) return false;
+        return !!ICONS[route.name];
+    }).length + 1; // +1 for the custom Logout button
+
     const innerWidth = width * 0.9 - 24;
-    const ITEM_WIDTH = innerWidth / 3;
+    const ITEM_WIDTH = innerWidth / Math.min(visibleRoutesCount, 5); // Max 5 items visible before scrolling? 
+    // Actually simplicity: if 5 items, ITEM_WIDTH = innerWidth / 5.
+
 
     return (
         <View style={[styles.wrapper, { paddingBottom: Platform.OS === "ios" ? insets.bottom + 6 : 16 }]}>
@@ -73,9 +91,13 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
                         const { options } = descriptors[route.key];
 
                         // Skip rendering if route has href: null (hidden) or starts with _
-                        if (route.name.startsWith("_") || (options as any).href === null) {
-                            return null;
-                        }
+                        // OR if we don't have an icon defined for it
+                        // EXCEPT favorites which we handle specially
+                        const isHidden = route.name.startsWith("_") || (options as any).href === null;
+
+                        if (isHidden && route.name !== 'favorites') return null;
+                        if (!ICONS[route.name]) return null;
+                        if (route.name === 'favorites' && !hasFavorites) return null;
 
                         const label =
                             options.tabBarLabel !== undefined

@@ -60,7 +60,8 @@ module Api
               )
               # Decrement stock
               product = Product.find(item[:product_id])
-              product.update(stock: product.stock - item[:quantity]) if product.stock.present?
+              qty = item[:quantity].to_i
+              product.update(stock: product.stock - qty) if product.stock.present?
             end
           end
 

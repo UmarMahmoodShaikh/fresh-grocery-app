@@ -1,7 +1,7 @@
 # Admin User for API
 User.find_or_create_by!(email: 'admin@trinity.com') do |user|
-  user.password = 'Admin@123'
-  user.password_confirmation = 'Admin@123'
+  user.password = ENV.fetch('ADMIN_PASSWORD', 'password')
+  user.password_confirmation = ENV.fetch('ADMIN_PASSWORD', 'password')
   user.role = :admin
   user.first_name = 'Admin'
   user.last_name = 'User'
@@ -10,15 +10,15 @@ end
 
 # Admin User for ActiveAdmin
 AdminUser.find_or_create_by!(email: 'admin@trinity.com') do |admin|
-  admin.password = 'Admin@123'
-  admin.password_confirmation = 'Admin@123'
+  admin.password = ENV.fetch('ADMIN_PASSWORD', 'password')
+  admin.password_confirmation = ENV.fetch('ADMIN_PASSWORD', 'password')
   admin.role = :admin
 end
 
 # Employee User for ActiveAdmin
 AdminUser.find_or_create_by!(email: 'employee@trinity.com') do |admin|
-  admin.password = 'Admin@123'
-  admin.password_confirmation = 'Admin@123'
+  admin.password = ENV.fetch('ADMIN_PASSWORD', 'password')
+  admin.password_confirmation = ENV.fetch('ADMIN_PASSWORD', 'password')
   admin.role = :employee
 end
 
@@ -32,5 +32,4 @@ end
 # end
 
 puts "✅ Seeded Admin Users"
-puts "   API Admin: admin@trinity.com / Admin@123"
-puts "   ActiveAdmin: admin@trinity.com / Admin@123"
+puts "   Passwords set from ENV['ADMIN_PASSWORD'] or 'password' by default."

@@ -1,4 +1,5 @@
 import { useCart } from "@/context/CartContext";
+import { useFavorites } from "@/context/FavoritesContext";
 import {
   addressesApi,
   brandsApi,
@@ -9,13 +10,13 @@ import {
 } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
-  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -66,23 +67,70 @@ const FloatingPlusOne = ({ x, y }: { x: number; y: number }) => {
   );
 };
 
-// Category icon mapping
-const CATEGORY_ICONS: Record<string, string> = {
-  fruits: "nutrition",
-  vegetables: "leaf",
-  dairy: "water",
-  bakery: "pizza",
-  beverages: "cafe",
-  snacks: "fast-food",
-  meat: "restaurant",
-  seafood: "fish",
-  frozen: "snow",
-  pantry: "basket",
+const FloatingHeart = ({ x, y }: { x: number; y: number }) => {
+  const translateY = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
+  const scale = useRef(new Animated.Value(0.5)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(translateY, {
+        toValue: -60,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1.5,
+        friction: 3,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [translateY, opacity, scale]);
+
+  return (
+    <Animated.View
+      style={{
+        position: "absolute",
+        top: y - 20,
+        left: x - 15,
+        transform: [{ translateY }, { scale }],
+        opacity,
+        zIndex: 9999,
+        pointerEvents: "none",
+      }}
+    >
+      <Ionicons name="heart" size={30} color="#EF4444" />
+    </Animated.View>
+  );
 };
 
-const getCategoryIcon = (name: string): string => {
-  const key = name?.toLowerCase() || "";
-  return CATEGORY_ICONS[key] || "grid";
+// Category icon mapping
+const CATEGORY_ICONS: Record<string, string> = {
+  "fruits & vegetables": "https://cdn-icons-png.flaticon.com/128/695/695296.png",
+  "dairy & eggs": "https://cdn-icons-png.flaticon.com/128/695/695353.png",
+  "bakery": "https://cdn-icons-png.flaticon.com/128/695/695333.png",
+  "meat & seafood": "https://cdn-icons-png.flaticon.com/128/2893/2893322.png",
+  "beverages": "https://cdn-icons-png.flaticon.com/128/2893/2893321.png",
+  "snacks": "https://cdn-icons-png.flaticon.com/128/695/695270.png",
+  "frozen foods": "https://cdn-icons-png.flaticon.com/128/695/695350.png",
+  "pantry": "https://cdn-icons-png.flaticon.com/128/2893/2893346.png",
+  "household": "https://cdn-icons-png.flaticon.com/128/695/695304.png",
+};
+
+const getCategoryIcon = (name: string): string | null => {
+  const lowerName = name?.toLowerCase() || "";
+  // Check for exact match or contains
+  for (const [key, url] of Object.entries(CATEGORY_ICONS)) {
+    if (lowerName === key || lowerName.includes(key.split(' ')[0])) {
+      return url;
+    }
+  }
+  return null;
 };
 
 const CATEGORY_COLORS = [
@@ -101,6 +149,7 @@ export default function HomeScreen() {
   const styles = getStyles(isDark);
 
   const { addToCart } = useCart();
+  const { toggleFavorite, isFavorite } = useFavorites();
   const [userName, setUserName] = useState("User");
   const [defaultAddress, setDefaultAddress] = useState<string | null>(null);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
@@ -108,6 +157,7 @@ export default function HomeScreen() {
   const [tourVisible, setTourVisible] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [plusAnimations, setPlusAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
+  const [heartAnimations, setHeartAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -258,14 +308,15 @@ export default function HomeScreen() {
         activeOpacity={0.75}
       >
         <View style={[styles.categoryCircle, { backgroundColor: color.bg }]}>
-          {cat.image_url ? (
+          {(cat.image_url || getCategoryIcon(cat.name)) ? (
             <Image
-              source={{ uri: cat.image_url }}
-              style={styles.categoryImage}
+              source={{ uri: cat.image_url || getCategoryIcon(cat.name) }}
+              style={styles.categoryIconImage}
+              contentFit="contain"
             />
           ) : (
             <Ionicons
-              name={getCategoryIcon(cat.name) as any}
+              name="grid-outline"
               size={26}
               color={color.text}
             />
@@ -372,17 +423,33 @@ export default function HomeScreen() {
     router.push("/(tabs)/search" as any);
   };
 
-  const handleAddCart = (e: any, product: any) => {
-    e.stopPropagation?.();
-    if (e.nativeEvent) {
+  const handleAddCart = (e: any, item: any) => {
+    e.stopPropagation();
+    addToCart(item);
+
+    const { pageX, pageY } = e.nativeEvent;
+    const id = Math.random().toString(36).substring(7);
+    setPlusAnimations((prev) => [...prev, { id, x: pageX, y: pageY }]);
+
+    setTimeout(() => {
+      setPlusAnimations((prev) => prev.filter((anim) => anim.id !== id));
+    }, 800);
+  };
+
+  const handleToggleFavorite = (e: any, item: any) => {
+    e.stopPropagation();
+    const becomingFavorite = !isFavorite(item.id);
+    toggleFavorite(item);
+
+    if (becomingFavorite) {
       const { pageX, pageY } = e.nativeEvent;
-      const id = Math.random().toString();
-      setPlusAnimations((prev) => [...prev, { id, x: pageX, y: pageY }]);
+      const id = Math.random().toString(36).substring(7);
+      setHeartAnimations((prev) => [...prev, { id, x: pageX, y: pageY }]);
+
       setTimeout(() => {
-        setPlusAnimations((prev) => prev.filter((a) => a.id !== id));
-      }, 800);
+        setHeartAnimations((prev) => prev.filter((anim) => anim.id !== id));
+      }, 1000);
     }
-    addToCart(product);
   };
 
   return (
@@ -557,7 +624,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Search Bar */}
-        <TouchableOpacity style={styles.searchBar}>
+        <TouchableOpacity style={styles.searchBar} onPress={handleSearch}>
           <Ionicons name="search-outline" size={20} color="#9CA3AF" />
           <Text style={styles.searchPlaceholder}>Search groceries...</Text>
         </TouchableOpacity>
@@ -597,7 +664,7 @@ export default function HomeScreen() {
                   Get <Text style={styles.promoHighlight}>20% OFF</Text>
                   {"\n"}on Fresh Produce
                 </Text>
-                <TouchableOpacity style={styles.shopButton}>
+                <TouchableOpacity style={styles.shopButton} onPress={handleShopNow}>
                   <Text style={styles.shopButtonText}>Shop Now</Text>
                   <Ionicons name="arrow-forward" size={16} color="#2D6A4F" />
                 </TouchableOpacity>
@@ -609,7 +676,7 @@ export default function HomeScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Categories</Text>
-                  <TouchableOpacity>
+                  <TouchableOpacity onPress={() => router.push({ pathname: "/explore", params: { tab: "categories" } } as any)}>
                     <Text style={styles.seeAll}>See All</Text>
                   </TouchableOpacity>
                 </View>
@@ -628,7 +695,7 @@ export default function HomeScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Featured Brands</Text>
-                  <TouchableOpacity>
+                  <TouchableOpacity onPress={() => router.push({ pathname: "/explore", params: { tab: "brands" } } as any)}>
                     <Text style={styles.seeAll}>See All</Text>
                   </TouchableOpacity>
                 </View>
@@ -647,7 +714,7 @@ export default function HomeScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Best Sellers</Text>
-                  <TouchableOpacity>
+                  <TouchableOpacity onPress={() => router.push("/best-sellers" as any)}>
                     <Text style={styles.seeAll}>See All</Text>
                   </TouchableOpacity>
                 </View>
@@ -690,6 +757,16 @@ export default function HomeScreen() {
                             />
                           </View>
                         )}
+                        <Pressable
+                          style={styles.favoriteButton}
+                          onPress={(e) => handleToggleFavorite(e, product)}
+                        >
+                          <Ionicons
+                            name={isFavorite(product.id) ? "heart" : "heart-outline"}
+                            size={18}
+                            color={isFavorite(product.id) ? "#EF4444" : "#9CA3AF"}
+                          />
+                        </Pressable>
                       </View>
                       <Text style={styles.gridProductName} numberOfLines={2}>
                         {product.name}
@@ -723,9 +800,12 @@ export default function HomeScreen() {
         )}
       </ScrollView>
 
-      {/* Render floating +1 animations globally */}
+      {/* Render floating animations globally */}
       {plusAnimations.map((anim) => (
         <FloatingPlusOne key={anim.id} x={anim.x} y={anim.y} />
+      ))}
+      {heartAnimations.map((anim) => (
+        <FloatingHeart key={anim.id} x={anim.x} y={anim.y} />
       ))}
     </SafeAreaView>
   );
@@ -920,11 +1000,22 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  categoryIconImage: {
+    width: 36,
+    height: 36,
+    resizeMode: "contain",
   },
   categoryImage: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: "100%",
+    height: "100%",
+    borderRadius: 30,
+    resizeMode: "cover",
   },
   categoryName: {
     fontSize: 12,
@@ -1084,13 +1175,27 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     height: 110,
     backgroundColor: isDark ? "#111827" : "#F9FAFB",
     alignItems: "center",
-    justifyContent: "center",
+    borderRadius: 12,
+    position: "relative",
+    overflow: "hidden",
   },
-  gridProductImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
+  favoriteButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
+  gridProductImage: { width: "100%", height: 120, resizeMode: "cover" },
   gridProductPlaceholder: {
     alignItems: "center",
     justifyContent: "center",

@@ -1,15 +1,17 @@
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
+import { productsApi } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
+    ActivityIndicator,
     Animated,
     FlatList,
     Image,
+    Pressable,
     StyleSheet,
     Text,
-    TouchableOpacity,
     View,
     useColorScheme
 } from "react-native";
@@ -53,13 +55,35 @@ const FloatingPlusOne = ({ x, y }: { x: number; y: number }) => {
     );
 };
 
-export default function FavoritesScreen() {
+export default function BestSellersScreen() {
     const isDark = useColorScheme() === 'dark';
     const styles = getStyles(isDark);
     const router = useRouter();
-    const { favorites, removeFavorite } = useFavorites();
     const { addToCart } = useCart();
+    const { isFavorite, toggleFavorite } = useFavorites();
+    const [products, setProducts] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [plusAnimations, setPlusAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
+
+    useEffect(() => {
+        fetchBestSellers();
+    }, []);
+
+    const fetchBestSellers = async () => {
+        setLoading(true);
+        try {
+            const result = await productsApi.getAll();
+            if (result.data) {
+                // For now, take first 20 as "best sellers" or filter if there's a flag
+                // Assuming Best Sellers are just the top items for this demo
+                setProducts(result.data.slice(0, 20));
+            }
+        } catch (error) {
+            console.error("Error fetching best sellers:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleAddCart = (e: any, item: any) => {
         e.stopPropagation();
@@ -74,24 +98,8 @@ export default function FavoritesScreen() {
         }, 800);
     };
 
-    const renderEmpty = () => (
-        <View style={styles.emptyContainer}>
-            <View style={styles.emptyIconContainer}>
-                <Ionicons name="heart-dislike-outline" size={80} color={isDark ? "#374151" : "#E5E7EB"} />
-            </View>
-            <Text style={styles.emptyTitle}>No Favorites Yet</Text>
-            <Text style={styles.emptySubtitle}>Tap the heart icon on any product to save it here for later.</Text>
-            <TouchableOpacity
-                style={styles.browseButton}
-                onPress={() => router.push("/(tabs)/" as any)}
-            >
-                <Text style={styles.browseButtonText}>Browse Products</Text>
-            </TouchableOpacity>
-        </View>
-    );
-
-    const renderItem = ({ item }: { item: any }) => (
-        <TouchableOpacity
+    const renderProduct = ({ item }: { item: any }) => (
+        <Pressable
             style={styles.card}
             onPress={() => router.push(`/product/${item.id}` as any)}
         >
@@ -101,44 +109,58 @@ export default function FavoritesScreen() {
                 ) : (
                     <Ionicons name="cube-outline" size={40} color="#ccc" />
                 )}
-                <TouchableOpacity
-                    style={styles.removeButton}
-                    onPress={() => removeFavorite(item.id)}
+                <Pressable
+                    style={styles.favoriteButton}
+                    onPress={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(item);
+                    }}
                 >
-                    <Ionicons name="heart" size={20} color="#EF4444" />
-                </TouchableOpacity>
+                    <Ionicons
+                        name={isFavorite(item.id) ? "heart" : "heart-outline"}
+                        size={20}
+                        color={isFavorite(item.id) ? "#EF4444" : "#9CA3AF"}
+                    />
+                </Pressable>
             </View>
             <View style={styles.info}>
                 <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
-                <Text style={styles.price}>€{Number(item.price).toFixed(2)}</Text>
+                <Text style={styles.brand}>{item.brand?.name || "Generic"}</Text>
+                <View style={styles.bottomRow}>
+                    <Text style={styles.price}>€{Number(item.price).toFixed(2)}</Text>
+                    <Pressable style={styles.addButton} onPress={(e) => handleAddCart(e, item)}>
+                        <Ionicons name="add" size={20} color="#fff" />
+                    </Pressable>
+                </View>
             </View>
-            <TouchableOpacity
-                style={styles.cardAddButton}
-                onPress={(e) => handleAddCart(e, item)}
-            >
-                <Ionicons name="add" size={24} color="#fff" />
-            </TouchableOpacity>
-        </TouchableOpacity>
+        </Pressable>
     );
 
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>My Favorites</Text>
-                {favorites.length > 0 && (
-                    <Text style={styles.count}>{favorites.length} items</Text>
-                )}
+                <Pressable style={styles.backButton} onPress={() => router.back()}>
+                    <Ionicons name="arrow-back" size={24} color={isDark ? "#F9FAFB" : "#1F2937"} />
+                </Pressable>
+                <Text style={styles.headerTitle}>Best Sellers</Text>
+                <View style={{ width: 40 }} />
             </View>
 
-            <FlatList
-                data={favorites}
-                renderItem={renderItem}
-                keyExtractor={(item) => item.id.toString()}
-                contentContainerStyle={favorites.length === 0 ? { flex: 1 } : styles.list}
-                ListEmptyComponent={renderEmpty}
-                numColumns={2}
-                columnWrapperStyle={styles.columnWrapper}
-            />
+            {loading ? (
+                <View style={styles.center}>
+                    <ActivityIndicator size="large" color="#2D6A4F" />
+                </View>
+            ) : (
+                <FlatList
+                    data={products}
+                    renderItem={renderProduct}
+                    keyExtractor={(item) => item.id.toString()}
+                    numColumns={2}
+                    columnWrapperStyle={styles.row}
+                    contentContainerStyle={styles.list}
+                    showsVerticalScrollIndicator={false}
+                />
+            )}
 
             {plusAnimations.map((anim) => (
                 <FloatingPlusOne key={anim.id} x={anim.x} y={anim.y} />
@@ -156,30 +178,40 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingHorizontal: 20,
-        paddingVertical: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: isDark ? "#374151" : "#F3F4F6",
+    },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: isDark ? "#1F2937" : "#fff",
+        alignItems: "center",
+        justifyContent: "center",
     },
     headerTitle: {
-        fontSize: 24,
+        fontSize: 18,
         fontWeight: "bold",
         color: isDark ? "#F9FAFB" : "#1F2937",
     },
-    count: {
-        fontSize: 14,
-        color: isDark ? "#9CA3AF" : "#6B7280",
+    center: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
     },
     list: {
-        paddingHorizontal: 12,
-        paddingBottom: 100, // Space for tab bar
+        padding: 12,
     },
-    columnWrapper: {
+    row: {
         justifyContent: "space-between",
-        marginBottom: 16,
     },
     card: {
         backgroundColor: isDark ? "#1F2937" : "#fff",
         borderRadius: 16,
         width: "48%",
+        marginBottom: 16,
         padding: 12,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
@@ -189,7 +221,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     },
     imageContainer: {
         width: "100%",
-        height: 140,
+        height: 120,
         backgroundColor: isDark ? "#111827" : "#F9FAFB",
         borderRadius: 12,
         alignItems: "center",
@@ -203,24 +235,18 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         borderRadius: 12,
         resizeMode: "cover",
     },
-    removeButton: {
+    favoriteButton: {
         position: "absolute",
         top: 8,
         right: 8,
         backgroundColor: "rgba(255,255,255,0.9)",
-        width: 32,
-        height: 32,
-        borderRadius: 16,
+        width: 28,
+        height: 28,
+        borderRadius: 14,
         alignItems: "center",
         justifyContent: "center",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
     },
     info: {
-        marginBottom: 8,
     },
     name: {
         fontSize: 14,
@@ -228,64 +254,27 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         color: isDark ? "#F9FAFB" : "#1F2937",
         marginBottom: 4,
     },
+    brand: {
+        fontSize: 12,
+        color: isDark ? "#9CA3AF" : "#6B7280",
+        marginBottom: 8,
+    },
+    bottomRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+    },
     price: {
         fontSize: 16,
         fontWeight: "bold",
         color: "#2D6A4F",
     },
-    cardAddButton: {
-        position: "absolute",
-        bottom: 12,
-        right: 12,
+    addButton: {
         backgroundColor: "#2D6A4F",
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         alignItems: "center",
         justifyContent: "center",
-    },
-    emptyContainer: {
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        paddingHorizontal: 40,
-    },
-    emptyIconContainer: {
-        width: 160,
-        height: 160,
-        borderRadius: 80,
-        backgroundColor: isDark ? "#1F2937" : "#fff",
-        alignItems: "center",
-        justifyContent: "center",
-        marginBottom: 24,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 12,
-        elevation: 2,
-    },
-    emptyTitle: {
-        fontSize: 20,
-        fontWeight: "bold",
-        color: isDark ? "#F9FAFB" : "#1F2937",
-        marginBottom: 12,
-    },
-    emptySubtitle: {
-        fontSize: 15,
-        color: isDark ? "#9CA3AF" : "#6B7280",
-        textAlign: "center",
-        lineHeight: 22,
-        marginBottom: 32,
-    },
-    browseButton: {
-        backgroundColor: "#2D6A4F",
-        paddingHorizontal: 32,
-        paddingVertical: 14,
-        borderRadius: 28,
-    },
-    browseButtonText: {
-        color: "#fff",
-        fontSize: 16,
-        fontWeight: "bold",
     },
 });

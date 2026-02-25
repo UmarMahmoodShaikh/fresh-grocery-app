@@ -1,5 +1,6 @@
 import { BasketLoader } from "@/components/BasketLoader";
 import { useCart } from "@/context/CartContext";
+import { useFavorites } from "@/context/FavoritesContext";
 import { productsApi } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -56,6 +57,48 @@ const FloatingPlusOne = ({ x, y }: { x: number; y: number }) => {
   );
 };
 
+const FloatingHeart = ({ x, y }: { x: number; y: number }) => {
+  const translateY = React.useRef(new Animated.Value(0)).current;
+  const opacity = React.useRef(new Animated.Value(1)).current;
+  const scale = React.useRef(new Animated.Value(0.5)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(translateY, {
+        toValue: -60,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1.5,
+        friction: 3,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [translateY, opacity, scale]);
+
+  return (
+    <Animated.View
+      style={{
+        position: "absolute",
+        top: y - 20,
+        left: x - 15,
+        transform: [{ translateY }, { scale }],
+        opacity,
+        zIndex: 9999,
+        pointerEvents: "none",
+      }}
+    >
+      <Ionicons name="heart" size={30} color="#EF4444" />
+    </Animated.View>
+  );
+};
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface NutritionData {
@@ -91,23 +134,40 @@ export default function ProductDetails() {
   const router = useRouter();
 
   const { addToCart } = useCart();
+  const { toggleFavorite, isFavorite } = useFavorites();
   const [product, setProduct] = useState<DbProduct | null>(null);
   const [offProduct, setOffProduct] = useState<any>(null); // Open Food Facts fallback
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [plusAnimations, setPlusAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
+  const [heartAnimations, setHeartAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
 
   const handleAddCart = (e: any, item: any) => {
-    e.stopPropagation?.();
+    e.stopPropagation();
     if (e.nativeEvent) {
       const { pageX, pageY } = e.nativeEvent;
-      const animId = Math.random().toString();
-      setPlusAnimations((prev) => [...prev, { id: animId, x: pageX, y: pageY }]);
+      const id = Math.random().toString(36).substring(7);
+      setPlusAnimations((prev) => [...prev, { id, x: pageX, y: pageY }]);
       setTimeout(() => {
-        setPlusAnimations((prev) => prev.filter((a) => a.id !== animId));
+        setPlusAnimations((prev) => prev.filter((a) => a.id !== id));
       }, 800);
     }
     addToCart(item);
+  };
+
+  const handleToggleFavorite = (e: any, item: any) => {
+    e.stopPropagation();
+    const becomingFavorite = !isFavorite(item.id);
+    toggleFavorite(item);
+
+    if (becomingFavorite && e.nativeEvent) {
+      const { pageX, pageY } = e.nativeEvent;
+      const id = Math.random().toString(36).substring(7);
+      setHeartAnimations((prev) => [...prev, { id, x: pageX, y: pageY }]);
+      setTimeout(() => {
+        setHeartAnimations((prev) => prev.filter((a) => a.id !== id));
+      }, 1000);
+    }
   };
 
   useEffect(() => {
@@ -181,7 +241,7 @@ export default function ProductDetails() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <Pressable style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#1F2937" />
+            <Ionicons name="arrow-back" size={24} color={isDark ? "#F9FAFB" : "#1F2937"} />
           </Pressable>
           <Text style={styles.headerTitle} numberOfLines={1}>
             {product.name}
@@ -239,12 +299,6 @@ export default function ProductDetails() {
                 </View>
               )}
             </View>
-
-            {/* Add to cart */}
-            <TouchableOpacity style={styles.addToCartButton} onPress={(e) => handleAddCart(e, product)}>
-              <Ionicons name="cart-outline" size={22} color="white" />
-              <Text style={styles.addToCartText}>Add to Cart</Text>
-            </TouchableOpacity>
           </View>
 
           {/* Description */}
@@ -305,9 +359,34 @@ export default function ProductDetails() {
             )}
           </View>
         </ScrollView>
-        {/* Render floating +1 animations globally */}
+
+        {/* Footer Sticky Bar */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[styles.favoriteDetailButton, isFavorite(product.id) && styles.favoriteDetailButtonActive]}
+            onPress={(e) => handleToggleFavorite(e, product)}
+          >
+            <Ionicons
+              name={isFavorite(product.id) ? "heart" : "heart-outline"}
+              size={24}
+              color={isFavorite(product.id) ? "#EF4444" : (isDark ? "#D1D5DB" : "#6B7280")}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.addToCartButton}
+            onPress={(e) => handleAddCart(e, product)}
+          >
+            <Ionicons name="cart-outline" size={24} color="#fff" />
+            <Text style={styles.addToCartText}>Add to Basket</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Render floating animations globally */}
         {plusAnimations.map((anim) => (
           <FloatingPlusOne key={anim.id} x={anim.x} y={anim.y} />
+        ))}
+        {heartAnimations.map((anim) => (
+          <FloatingHeart key={anim.id} x={anim.x} y={anim.y} />
         ))}
       </SafeAreaView>
     );
@@ -324,7 +403,7 @@ export default function ProductDetails() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#1F2937" />
+          <Ionicons name="arrow-back" size={24} color={isDark ? "#F9FAFB" : "#1F2937"} />
         </Pressable>
         <Text style={styles.headerTitle} numberOfLines={1}>
           {off.product_name || "Product Details"}
@@ -376,11 +455,6 @@ export default function ProductDetails() {
               </View>
             )}
           </View>
-
-          <TouchableOpacity style={styles.addToCartButton} onPress={(e) => handleAddCart(e, offProduct)}>
-            <Ionicons name="cart-outline" size={22} color="white" />
-            <Text style={styles.addToCartText}>Add to Cart</Text>
-          </TouchableOpacity>
         </View>
 
         <View style={styles.detailsSection}>
@@ -422,9 +496,39 @@ export default function ProductDetails() {
         )}
       </ScrollView>
 
-      {/* Render floating +1 animations globally */}
+      {/* Footer Sticky Bar */}
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={[styles.favoriteDetailButton, isFavorite(off.code) && styles.favoriteDetailButtonActive]}
+          onPress={(e) => handleToggleFavorite(e, {
+            id: off.code,
+            name: off.product_name || "Unknown Product",
+            price: 0, // Fallback price for external items
+            image_url: off.image_url,
+            description: off.brands
+          })}
+        >
+          <Ionicons
+            name={isFavorite(off.code) ? "heart" : "heart-outline"}
+            size={24}
+            color={isFavorite(off.code) ? "#EF4444" : (isDark ? "#D1D5DB" : "#6B7280")}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.addToCartButton}
+          onPress={(e) => handleAddCart(e, offProduct)}
+        >
+          <Ionicons name="cart-outline" size={24} color="#fff" />
+          <Text style={styles.addToCartText}>Add to Basket</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Render floating animations globally */}
       {plusAnimations.map((anim) => (
         <FloatingPlusOne key={anim.id} x={anim.x} y={anim.y} />
+      ))}
+      {heartAnimations.map((anim) => (
+        <FloatingHeart key={anim.id} x={anim.x} y={anim.y} />
       ))}
     </SafeAreaView>
   );
@@ -460,7 +564,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "white",
+    backgroundColor: isDark ? "#1F2937" : "white",
     borderBottomWidth: 1,
     borderBottomColor: isDark ? "#374151" : "#F3F4F6",
   },
@@ -515,11 +619,33 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
   },
   badge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
   badgeText: { color: "white", fontSize: 12, fontWeight: "bold" },
+  footer: {
+    paddingHorizontal: 20,
+    backgroundColor: isDark ? "#1F2937" : "#fff",
+    borderTopWidth: 1,
+    borderTopColor: isDark ? "#374151" : "#F3F4F6",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  favoriteDetailButton: {
+    width: 54,
+    height: 54,
+    borderRadius: 12,
+    backgroundColor: isDark ? "#374151" : "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  favoriteDetailButtonActive: {
+    backgroundColor: isDark ? "#4B2C35" : "#FCE4EC",
+  },
   addToCartButton: {
+    flex: 1,
     flexDirection: "row",
     backgroundColor: "#2D6A4F",
-    height: 52,
-    borderRadius: 26,
+    height: 54,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,

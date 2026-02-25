@@ -15,7 +15,8 @@ export default function TabLayout() {
       {/* Hidden from the tab bar but still accessible as screens */}
       <Tabs.Screen name="history" options={{ href: null }} />
       <Tabs.Screen name="favorites" options={{ href: null }} />
-      <Tabs.Screen name="explore" options={{ href: null }} />
+      <Tabs.Screen name="explore" options={{ title: "Explore", tabBarLabel: "Explore" }} />
+      <Tabs.Screen name="search" options={{ href: null }} />
     </Tabs>
   );
 }
