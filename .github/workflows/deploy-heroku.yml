@@ -13,7 +13,6 @@ on:
 jobs:
   deploy:
     # This runs only on your PERSONAL repo after it is mirrored
-    # so it can access the HEROKU_API_KEY in your personal secrets.
     if: github.repository == 'UmarMahmoodShaikh/fresh-grocery-app'
     runs-on: ubuntu-latest
     steps:
@@ -23,10 +22,16 @@ jobs:
           fetch-depth: 0
 
       - name: Deploy Subdirectory to Heroku
-        uses: akhileshns/heroku-deploy@v3.13.15
-        with:
-          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: "fresh-grocery-store"
-          heroku_email: "umarmahmoodshk@gmail.com"
-          appdir: "backend"
-          branch: "HEAD" # This pushes the current branch that triggered the action
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          # Configure git
+          git config --global user.email "umarmahmoodshk@gmail.com"
+          git config --global user.name "GitHub Action"
+
+          # Use subtree push to send only the backend folder to Heroku
+          # We use the API key in the URL for authentication
+          git remote add heroku https://x:$HEROKU_API_KEY@git.heroku.com/fresh-grocery-store.git
+
+          # Force push the backend subdirectory to Heroku's master branch
+          git push heroku `git subtree split --prefix backend HEAD`:refs/heads/master --force
