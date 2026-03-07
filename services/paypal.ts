@@ -3,12 +3,39 @@
  * Handles PayPal integration with local payment server
  */
 
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
+
 // Update this to your computer's local IP address when testing on physical device
 // For Android emulator: use 10.0.2.2
 // For iOS simulator: use localhost
 // For physical device: use your computer's IP (e.g., 192.168.1.100)
-const PAYMENT_SERVER_URL = __DEV__ 
-  ? 'http://localhost:3001'  // Change to your local IP for physical devices
+const getDevServerUrl = (): string => {
+  const envUrl = process.env.EXPO_PUBLIC_PAYMENT_SERVER_URL;
+  if (envUrl) {
+    return envUrl;
+  }
+
+  const hostUri =
+    Constants.expoConfig?.hostUri ||
+    (Constants as any).manifest2?.extra?.expoClient?.hostUri ||
+    '';
+
+  const host = hostUri.split(':')[0];
+
+  if (host && host !== 'localhost' && host !== '127.0.0.1') {
+    return `http://${host}:3001`;
+  }
+
+  if (Platform.OS === 'android') {
+    return 'http://10.0.2.2:3001';
+  }
+
+  return 'http://localhost:3001';
+};
+
+const PAYMENT_SERVER_URL = __DEV__
+  ? getDevServerUrl()
   : 'https://your-production-payment-server.com';
 
 export interface PayPalCreateOrderResponse {
@@ -27,6 +54,19 @@ export interface PayPalCaptureResponse {
   payer: any;
   purchase_units: any[];
 }
+
+const parseApiError = async (response: Response, fallback: string): Promise<string> => {
+  try {
+    const errorData = await response.json();
+    const message =
+      errorData?.details ||
+      errorData?.error ||
+      fallback;
+    return `${message} (HTTP ${response.status})`;
+  } catch {
+    return `${fallback} (HTTP ${response.status})`;
+  }
+};
 
 /**
  * Create a PayPal order
@@ -53,8 +93,8 @@ export const createPayPalOrder = async (
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to create PayPal order');
+      const message = await parseApiError(response, 'Failed to create PayPal order');
+      throw new Error(message);
     }
 
     const data = await response.json();
@@ -84,8 +124,8 @@ export const capturePayPalOrder = async (
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to capture PayPal payment');
+      const message = await parseApiError(response, 'Failed to capture PayPal payment');
+      throw new Error(message);
     }
 
     const data = await response.json();
@@ -105,8 +145,8 @@ export const getPayPalOrderDetails = async (orderID: string): Promise<any> => {
     const response = await fetch(`${PAYMENT_SERVER_URL}/api/paypal/order/${orderID}`);
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to get order details');
+      const message = await parseApiError(response, 'Failed to get order details');
+      throw new Error(message);
     }
 
     const data = await response.json();

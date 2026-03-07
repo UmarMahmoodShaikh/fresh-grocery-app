@@ -58,7 +58,7 @@ app.post('/api/paypal/create-order', async (req, res) => {
     // Call PayPal to create the order
     const order = await paypalClient().execute(request);
     
-    console.log('✅ PayPal order created:', order.result.id);
+    console.log('PayPal order created:', order.result.id);
 
     // Return order ID and approval URL
     res.json({
@@ -68,7 +68,7 @@ app.post('/api/paypal/create-order', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error creating PayPal order:', error);
+    console.error('Error creating PayPal order:', error);
     res.status(500).json({ 
       error: 'Failed to create PayPal order',
       details: error.message 
@@ -95,7 +95,7 @@ app.post('/api/paypal/capture-order', async (req, res) => {
     // Call PayPal to capture the order
     const capture = await paypalClient().execute(request);
     
-    console.log('✅ PayPal payment captured:', capture.result.id);
+    console.log('PayPal payment captured:', capture.result.id);
 
     // Return capture details
     res.json({
@@ -106,7 +106,7 @@ app.post('/api/paypal/capture-order', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error capturing PayPal order:', error);
+    console.error('Error capturing PayPal order:', error);
     res.status(500).json({ 
       error: 'Failed to capture PayPal order',
       details: error.message 
@@ -133,7 +133,7 @@ app.get('/api/paypal/order/:orderID', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching order:', error);
+    console.error('Error fetching order:', error);
     res.status(500).json({ 
       error: 'Failed to fetch order details',
       details: error.message 
@@ -149,7 +149,7 @@ app.use((err, req, res, next) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Payment server running on http://localhost:${PORT}`);
+  console.log(`Payment server running on http://localhost:${PORT}`);
   console.log(`📊 PayPal mode: ${process.env.PAYPAL_MODE || 'sandbox'}`);
   console.log(`💡 Health check: http://localhost:${PORT}/health`);
 });
