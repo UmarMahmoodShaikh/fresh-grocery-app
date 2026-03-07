@@ -1,8 +1,10 @@
 import { useCart } from "@/context/CartContext";
 import { addressesApi, ordersApi } from "@/services/api";
+import { createPayPalOrder, capturePayPalOrder, getApprovalUrl } from "@/services/paypal";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
@@ -106,6 +108,71 @@ export default function CheckoutScreen() {
         return true;
     };
 
+    // ── PayPal Payment Processing ──────────────────────────────────────────────
+
+    const handlePayPalPayment = async () => {
+        try {
+            // Create PayPal order
+            const paypalOrder = await createPayPalOrder(
+                orderTotal,
+                'USD',
+                `Grocery Order - ${cartItems.length} items`
+            );
+
+            console.log('PayPal order created:', paypalOrder.id);
+
+            // Get approval URL
+            const approvalUrl = getApprovalUrl(paypalOrder.links);
+            if (!approvalUrl) {
+                throw new Error('Could not get PayPal approval URL');
+            }
+
+            // Open PayPal in browser
+            const result = await WebBrowser.openBrowserAsync(approvalUrl);
+
+            if (result.type === 'cancel') {
+                Alert.alert('Payment Cancelled', 'You cancelled the PayPal payment.');
+                return false;
+            }
+
+            // In a real app, you would handle the redirect back and capture the payment
+            // For now, we'll show a prompt to confirm
+            Alert.alert(
+                'Payment Confirmation',
+                'Did you complete the PayPal payment?',
+                [
+                    {
+                        text: 'No',
+                        style: 'cancel',
+                        onPress: () => {
+                            throw new Error('Payment not completed');
+                        }
+                    },
+                    {
+                        text: 'Yes',
+                        onPress: async () => {
+                            try {
+                                // Capture the payment
+                                const capture = await capturePayPalOrder(paypalOrder.id);
+                                console.log('Payment captured:', capture.id);
+                                return true;
+                            } catch (captureError) {
+                                console.error('Capture error:', captureError);
+                                throw captureError;
+                            }
+                        }
+                    }
+                ]
+            );
+
+            return true;
+
+        } catch (error) {
+            console.error('PayPal payment error:', error);
+            throw error;
+        }
+    };
+
     // ── Place Order ────────────────────────────────────────────────────────────
 
     const handlePlaceOrder = async () => {
@@ -113,8 +180,20 @@ export default function CheckoutScreen() {
         setPlacing(true);
 
         try {
-            // Simulate PayPal/Stripe processing delay
-            if (paymentMethod !== "cash") {
+            // Process PayPal payment if selected
+            if (paymentMethod === "paypal") {
+                try {
+                    await handlePayPalPayment();
+                } catch (paypalError) {
+                    Alert.alert(
+                        "PayPal Payment Failed", 
+                        "Could not process PayPal payment. Please try again or choose another payment method."
+                    );
+                    setPlacing(false);
+                    return;
+                }
+            } else if (paymentMethod === "card") {
+                // Simulate card processing delay
                 await new Promise((resolve) => setTimeout(resolve, 1500));
             }
 
