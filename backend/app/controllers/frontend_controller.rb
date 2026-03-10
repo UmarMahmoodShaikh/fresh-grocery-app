@@ -7,7 +7,7 @@ class FrontendController < ApplicationController
       render file: index_file
     else
       render json: { 
-        message: "Welcome to GroceryGo API", 
+        message: "Welcome to GroceryGo", 
         version: "1.0.0",
         status: "Running"
       }
