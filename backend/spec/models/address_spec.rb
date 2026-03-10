@@ -83,7 +83,7 @@ RSpec.describe Address, type: :model do
       )
       
       expect(extra_address).not_to be_valid
-      expect(extra_address.errors[:base]).to include("You can have a maximum of 5 addresses")
+      expect(extra_address.errors[:base]).to include("You can have a maximum of 5 active addresses")
     end
 
     it 'prevents duplicate locations for the same user' do

@@ -10,7 +10,7 @@ class User < ApplicationRecord
   enum :role, { customer: 0, admin: 1 }
 
   # Normalize French phone numbers before saving
-  before_save :normalize_phone, if: :phone_changed?
+  before_validation :normalize_phone, if: :phone_changed?
 
   validates :phone, format: {
     with: /\A\+33[1-9]\d{8}\z/,

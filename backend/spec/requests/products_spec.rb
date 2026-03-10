@@ -49,7 +49,7 @@ RSpec.describe 'Products API', type: :request do
   # Admin‑only create / update / destroy
   # -------------------------------------------------------------------------
   context 'admin actions' do
-    let(:token) { JWT.encode({ user_id: admin.id }, Rails.application.credentials.secret_key_base) }
+    let(:token) { JWT.encode({ user_id: admin.id }, Rails.application.secret_key_base) }
     let(:headers) { { 'Authorization' => "Bearer #{token}" } }
 
     it 'creates a product' do
@@ -87,7 +87,7 @@ RSpec.describe 'Products API', type: :request do
   # Unauthorized or Non-Admin attempts
   # -------------------------------------------------------------------------
   context 'non‑admin attempts' do
-    let(:token) { JWT.encode({ user_id: customer.id }, Rails.application.credentials.secret_key_base) }
+    let(:token) { JWT.encode({ user_id: customer.id }, Rails.application.secret_key_base) }
     let(:headers) { { 'Authorization' => "Bearer #{token}" } }
 
     it 'rejects create' do

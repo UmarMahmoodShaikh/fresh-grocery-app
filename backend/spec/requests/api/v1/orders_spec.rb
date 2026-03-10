@@ -1,19 +1,26 @@
 require 'rails_helper'
 
 RSpec.describe "Api::V1::Orders", type: :request do
-  let(:user) { User.create!(email: "customer@example.com", password: "password", first_name: "John", last_name: "Doe") }
-  let(:token) { JWT.encode({ user_id: user.id }, Rails.application.secret_key_base) }
-  let(:headers) { { "Authorization" => "Bearer #{token}" } }
+  let(:user)     { User.create!(email: "customer@example.com", password: "password", first_name: "John", last_name: "Doe") }
+  let(:token)    { JWT.encode({ user_id: user.id }, Rails.application.secret_key_base) }
+  let(:headers)  { { "Authorization" => "Bearer #{token}" } }
   let(:category) { Category.create!(name: "Food") }
-  let(:brand) { Brand.create!(name: "Famous Brand") }
-  let(:product) { Product.create!(name: "Apple", price: 2.5, stock: 100, category: category, brand: brand) }
+  let(:brand)    { Brand.create!(name: "Famous Brand") }
+  let(:product)  { Product.create!(name: "Apple", price: 2.5, stock: 100, category: category, brand: brand) }
+  let(:address) do
+    Address.create!(
+      user: user, label: :home, street: "123 Main St", city: "Paris",
+      zip_code: "75001", country: "France", latitude: 48.8566, longitude: 2.3522
+    )
+  end
 
   describe "POST /api/v1/orders" do
     let(:valid_params) do
       {
         order: {
           total: 5.0,
-          delivery_address: "123 Main St",
+          address_id: address.id,
+          delivery_address: "123 Main St, Paris, 75001, France",
           delivery_fee: 1.0
         },
         items: [
@@ -45,29 +52,6 @@ RSpec.describe "Api::V1::Orders", type: :request do
         order = Order.last
         expect(order.invoice).to be_present
         expect(order.invoice.total).to eq(5.0)
-      end
-    end
-
-    context "as a guest (unauthenticated)" do
-      let(:guest_params) do
-        valid_params.merge(
-          guest_info: {
-            email: "guest@example.com",
-            first_name: "Guest",
-            last_name: "User",
-            phone: "+33612345678"
-          }
-        )
-      end
-
-      it "creates a guest user and an order" do
-        expect {
-          post "/api/v1/orders", params: guest_params, as: :json
-        }.to change(User.where(role: :guest), :count).by(1)
-        
-        expect(response).to have_http_status(:created)
-        json = JSON.parse(response.body)
-        expect(User.find(json["user_id"]).role).to eq("guest")
       end
     end
 

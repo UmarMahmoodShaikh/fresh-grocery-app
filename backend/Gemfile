@@ -53,3 +53,12 @@ end
 gem "chartkick"
 gem "groupdate"
 gem "dotenv-rails", groups: [:development, :test]
+
+# Pagination
+gem "kaminari"
+
+# Rate limiting
+gem "rack-attack"
+
+# Structured logging
+gem "lograge"
