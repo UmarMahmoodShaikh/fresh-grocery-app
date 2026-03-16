@@ -43,31 +43,35 @@ module Api
           @order.delivery_address = "#{a.street}, #{a.city}, #{a.zip_code}, #{a.country}"
         end
 
-        if @order.save
-          # Create order items and decrement stock
-          if params[:items].present?
-            params[:items].each do |item|
-              @order.order_items.create!(
-                product_id: item[:product_id],
-                quantity: item[:quantity],
-                price: item[:price]
-              )
-              # Decrement stock
-              product = Product.find(item[:product_id])
-              qty = item[:quantity].to_i
-              product.update(stock: product.stock - qty) if product.stock.present?
+        begin
+          ActiveRecord::Base.transaction do
+            @order.save!
+            
+            if params[:items].present?
+              params[:items].each do |item|
+                @order.order_items.create!(
+                  product_id: item[:product_id],
+                  quantity: item[:quantity],
+                  price: item[:price]
+                )
+                
+                # Decrement stock
+                product = Product.find(item[:product_id])
+                qty = item[:quantity].to_i
+                product.update!(stock: product.stock - qty) if product.stock.present?
+              end
             end
-          end
 
-          # Auto-generate Invoice
-          @order.create_invoice!(
-            total: @order.total,
-            status: :unpaid
-          )
+            # Auto-generate Invoice
+            @order.create_invoice!(
+              total: @order.total,
+              status: :unpaid
+            )
+          end
           
           render json: @order.as_json(include: [:order_items, :invoice]), status: :created
-        else
-          render json: { errors: @order.errors.full_messages }, status: :unprocessable_entity
+        rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
+          render json: { errors: [e.message] }, status: :unprocessable_entity
         end
       end
 
