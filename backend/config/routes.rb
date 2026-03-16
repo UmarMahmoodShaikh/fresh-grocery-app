@@ -34,6 +34,10 @@ Rails.application.routes.draw do
       # Admin dashboard endpoints
       get 'admin/dashboard/summary', to: 'admin#summary'
       get 'admin/dashboard/orders', to: 'admin#orders'
+
+      # PayPal payment routes (JWT required — enforced in PaypalController)
+      post 'paypal/create-order',  to: 'paypal#create_order'
+      post 'paypal/capture-order', to: 'paypal#capture_order'
     end
   end
 

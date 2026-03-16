@@ -109,68 +109,55 @@ export default function CheckoutScreen() {
     };
 
     // ── PayPal Payment Processing ──────────────────────────────────────────────
+    //
+    // Flow:
+    //  1. Create the DB order  ← amount is locked on the server
+    //  2. Create PayPal order  ← server resolves amount from DB (not from client body)
+    //  3. Open PayPal in browser for user approval
+    //  4. Capture PayPal payment (passing both IDs so server can verify ownership)
+    //
+    const handlePayPalPayment = async (): Promise<number> => {
+        // ── Step 1: create the DB order first ─────────────────────────────────
+        const deliveryStr = selectedAddress
+            ? `${selectedAddress.street}, ${selectedAddress.city}, ${selectedAddress.zip_code}, ${selectedAddress.country}`
+            : "";
 
-    const handlePayPalPayment = async () => {
-        try {
-            // Create PayPal order
-            const paypalOrder = await createPayPalOrder(
-                orderTotal,
-                'USD',
-                `Grocery Order - ${cartItems.length} items`
-            );
+        const payload = {
+            order: {
+                total: orderTotal,
+                address_id: selectedAddress?.id,
+                delivery_address: deliveryStr,
+                delivery_fee: DELIVERY_FEE,
+                status: "pending",
+            },
+            items: cartItems.map((item) => ({
+                product_id: item.id,
+                quantity: item.quantity,
+                price: item.price,
+            })),
+        };
 
-            console.log('PayPal order created:', paypalOrder.id);
-
-            // Get approval URL
-            const approvalUrl = getApprovalUrl(paypalOrder.links);
-            if (!approvalUrl) {
-                throw new Error('Could not get PayPal approval URL');
-            }
-
-            // Open PayPal in browser
-            const result = await WebBrowser.openBrowserAsync(approvalUrl);
-
-            if (result.type === 'cancel') {
-                Alert.alert('Payment Cancelled', 'You cancelled the PayPal payment.');
-                return false;
-            }
-
-            // In a real app, you would handle the redirect back and capture the payment
-            // For now, we'll show a prompt to confirm
-            Alert.alert(
-                'Payment Confirmation',
-                'Did you complete the PayPal payment?',
-                [
-                    {
-                        text: 'No',
-                        style: 'cancel',
-                        onPress: () => {
-                            throw new Error('Payment not completed');
-                        }
-                    },
-                    {
-                        text: 'Yes',
-                        onPress: async () => {
-                            try {
-                                // Capture the payment
-                                const capture = await capturePayPalOrder(paypalOrder.id);
-                                console.log('Payment captured:', capture.id);
-                                return true;
-                            } catch (captureError) {
-                                console.error('Capture error:', captureError);
-                                throw captureError;
-                            }
-                        }
-                    }
-                ]
-            );
-
-            return true;
-
-        } catch (error) {
-            console.error('PayPal payment error:', error);
-            throw error;
+        const orderResult = await ordersApi.create(payload);
+        if (orderResult.error || !orderResult.data) {
+            throw new Error(orderResult.error || "Failed to create order");
         }
+        const dbOrderId: number = orderResult.data.id;
+
+        // ── Step 2: create PayPal order (amount resolved server-side) ─────────
+        const paypalOrder = await createPayPalOrder(dbOrderId);
+        const approvalUrl = getApprovalUrl(paypalOrder.links);
+        if (!approvalUrl) throw new Error("Could not get PayPal approval URL");
+
+        // ── Step 3: open PayPal in browser ────────────────────────────────────
+        const browserResult = await WebBrowser.openBrowserAsync(approvalUrl);
+        if (browserResult.type === "cancel") {
+            throw new Error("Payment cancelled by user");
+        }
+
+        // ── Step 4: capture (server verifies ownership via order_id + JWT) ─────
+        await capturePayPalOrder(paypalOrder.id, dbOrderId);
+
+        return dbOrderId;
     };
 
     // ── Place Order ────────────────────────────────────────────────────────────
@@ -180,20 +167,32 @@ export default function CheckoutScreen() {
         setPlacing(true);
 
         try {
-            // Process PayPal payment if selected
             if (paymentMethod === "paypal") {
                 try {
-                    await handlePayPalPayment();
-                } catch (paypalError) {
-                    Alert.alert(
-                        "PayPal Payment Failed", 
-                        "Could not process PayPal payment. Please try again or choose another payment method."
-                    );
-                    setPlacing(false);
-                    return;
+                    const dbOrderId = await handlePayPalPayment();
+                    clearCart();
+                    const deliveryStr = selectedAddress
+                        ? `${selectedAddress.street}, ${selectedAddress.city}, ${selectedAddress.zip_code}, ${selectedAddress.country}`
+                        : "";
+                    router.replace({
+                        pathname: "/order-confirmation",
+                        params: {
+                            orderId: dbOrderId,
+                            total: orderTotal.toFixed(2),
+                            paymentMethod,
+                            itemCount: cartItems.length,
+                            address: deliveryStr,
+                        },
+                    } as any);
+                } catch (paypalError: any) {
+                    const msg = paypalError?.message || "Could not process PayPal payment.";
+                    Alert.alert("PayPal Payment Failed", msg);
                 }
-            } else if (paymentMethod === "card") {
-                // Simulate card processing delay
+                return;
+            }
+
+            // ── Cash / Card ────────────────────────────────────────────────────
+            if (paymentMethod === "card") {
                 await new Promise((resolve) => setTimeout(resolve, 1500));
             }
 
@@ -234,6 +233,7 @@ export default function CheckoutScreen() {
                     address: deliveryStr,
                 },
             } as any);
+
         } catch {
             Alert.alert("Error", "Network error. Please check your connection.");
         } finally {

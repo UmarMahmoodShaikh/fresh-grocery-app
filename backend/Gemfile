@@ -62,3 +62,6 @@ gem "rack-attack"
 
 # Structured logging
 gem "lograge"
+
+# PayPal REST API integration
+gem "httparty"
