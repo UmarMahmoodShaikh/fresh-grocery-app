@@ -205,7 +205,7 @@ export default function Scanner() {
             router.push("/(tabs)");
           }}
         >
-          <Ionicons name="arrow-back" size={24} color="white" />
+          <Ionicons name="arrow-back" size={24} color={isDark ? "white" : "#111827"} />
         </Pressable>
         <Text style={styles.headerTitle}>Scan Product</Text>
         <View style={styles.headerSpacer} />
@@ -239,11 +239,6 @@ export default function Scanner() {
             <View style={[styles.corner, styles.cornerBottomLeft]} />
             {/* Bottom-right corner */}
             <View style={[styles.corner, styles.cornerBottomRight]} />
-
-            {/* Barcode Icon */}
-            <View style={styles.barcodeIconContainer}>
-              <Ionicons name="barcode-outline" size={60} color="white" />
-            </View>
           </View>
         </CameraView>
       </View>
@@ -404,7 +399,7 @@ export default function Scanner() {
 const getStyles = (isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: isDark ? "#F9FAFB" : "#1F2937",
+    backgroundColor: isDark ? "#111827" : "#F9FAFB",
     paddingTop: Platform.OS === "android" ? 35 : 0,
   },
   loadingContainer: {
@@ -413,7 +408,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     alignItems: "center",
   },
   loadingText: {
-    color: "white",
+    color: isDark ? "white" : "#111827",
     fontSize: 16,
   },
   permissionContainer: {
@@ -425,7 +420,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
   permissionTitle: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "white",
+    color: isDark ? "white" : "#111827",
     marginTop: 20,
     marginBottom: 10,
   },
@@ -466,14 +461,14 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)",
     alignItems: "center",
     justifyContent: "center",
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "white",
+    color: isDark ? "white" : "#111827",
   },
   headerSpacer: {
     width: 40,
@@ -534,7 +529,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     borderRadius: 16,
   },
   instructionText: {
-    color: "white",
+    color: isDark ? "white" : "#4B5563",
     fontSize: 16,
     textAlign: "center",
     marginTop: 20,
@@ -567,10 +562,10 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     fontWeight: "bold",
   },
   tipsCard: {
-    backgroundColor: isDark ? "#D1D5DB" : "#374151",
+    backgroundColor: isDark ? "#1F2937" : "#F3F4F6",
     marginHorizontal: 20,
     marginTop: 16,
-    marginBottom: 20,
+    marginBottom: 110, // Increased margin to clear the custom bottom tab bar
     padding: 16,
     borderRadius: 12,
   },
@@ -581,7 +576,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     marginBottom: 12,
   },
   tipsTitle: {
-    color: "white",
+    color: isDark ? "white" : "#111827",
     fontSize: 16,
     fontWeight: "600",
   },
@@ -589,7 +584,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     gap: 6,
   },
   tipText: {
-    color: "#D1D5DB",
+    color: isDark ? "#D1D5DB" : "#4B5563",
     fontSize: 14,
   },
   loadingOverlay: {
@@ -604,7 +599,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     zIndex: 1000,
   },
   loadingCard: {
-    backgroundColor: "white",
+    backgroundColor: isDark ? "#1F2937" : "white",
     paddingHorizontal: 32,
     paddingVertical: 24,
     borderRadius: 16,
@@ -630,7 +625,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     padding: 20,
   },
   modalCard: {
-    backgroundColor: "white",
+    backgroundColor: isDark ? "#1F2937" : "white",
     borderRadius: 20,
     padding: 24,
     width: "100%",
