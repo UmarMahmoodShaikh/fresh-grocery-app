@@ -145,15 +145,21 @@ export const authApi = {
 
 export const productsApi = {
     getAll: async () => {
-        return apiRequest("/products");
+        const res = await apiRequest("/products");
+        if (res.data?.products) res.data = res.data.products;
+        return res;
     },
 
     getByBrand: async (brandId: number) => {
-        return apiRequest(`/products?brand_id=${brandId}`);
+        const res = await apiRequest(`/products?brand_id=${brandId}`);
+        if (res.data?.products) res.data = res.data.products;
+        return res;
     },
 
     getByCategory: async (categoryId: number) => {
-        return apiRequest(`/products?category_id=${categoryId}`);
+        const res = await apiRequest(`/products?category_id=${categoryId}`);
+        if (res.data?.products) res.data = res.data.products;
+        return res;
     },
 
     getById: async (id: number) => {
@@ -161,7 +167,9 @@ export const productsApi = {
     },
 
     getByBarcode: async (barcode: string) => {
-        return apiRequest(`/products?barcode=${barcode}`);
+        const res = await apiRequest(`/products?barcode=${barcode}`);
+        if (res.data?.products) res.data = res.data.products;
+        return res;
     },
 
     create: async (productData: any) => {

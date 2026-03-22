@@ -1,4 +1,3 @@
-import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Apple,
   DotsPattern,
@@ -9,6 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useState } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
   Alert,
@@ -19,12 +19,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-    useColorScheme
+  useColorScheme,
 } from "react-native";
 
-
 export default function ForgotPasswordScreen() {
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useColorScheme() === "dark";
   const styles = getStyles(isDark);
 
   const [email, setEmail] = useState("");
@@ -116,7 +115,7 @@ export default function ForgotPasswordScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="your.email@example.com"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor="#6B7280"
                     value={email}
                     onChangeText={setEmail}
                     keyboardType="email-address"
@@ -157,183 +156,184 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-const getStyles = (isDark: boolean) => StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  gradient: {
-    flex: 1,
-  },
-  keyboardView: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  backButton: {
-    position: "absolute",
-    top: 20,
-    left: 20,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(255, 255, 255, 0.25)",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
-  },
-  logoContainer: {
-    marginBottom: 12,
-  },
-  logoCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: "white",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: isDark ? "#F9FAFB" : "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
+const getStyles = (isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "white",
-    opacity: 0.9,
-  },
-  card: {
-    backgroundColor: "rgba(255, 255, 255, 0.20)",
-    borderRadius: 20,
-    paddingHorizontal: 24,
-    paddingVertical: 28,
-    marginHorizontal: 4,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.3)",
-    shadowColor: isDark ? "#F9FAFB" : "#000",
-    shadowOffset: {
-      width: 0,
-      height: 8,
+    gradient: {
+      flex: 1,
     },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 12,
-  },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: isDark ? "#F9FAFB" : "#111827",
-    marginBottom: 4,
-    textAlign: "center",
-  },
-  cardSubtitle: {
-    fontSize: 14,
-    color: isDark ? "#9CA3AF" : "#6B7280",
-    marginBottom: 24,
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  form: {
-    width: "100%",
-  },
-  inputContainer: {
-    marginBottom: 24,
-  },
-  labelText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: isDark ? "#D1D5DB" : "#374151",
-    marginBottom: 6,
-  },
-  inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: isDark ? "#374151" : "#E5E7EB",
-    borderRadius: 10,
-    backgroundColor: "rgba(249, 250, 251, 0.8)",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-  inputIcon: {
-    marginRight: 8,
-  },
-  input: {
-    flex: 1,
-    fontSize: 14,
-    color: isDark ? "#F9FAFB" : "#111827",
-  },
-  resetButton: {
-    backgroundColor: "#2D6A4F",
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginBottom: 20,
-    shadowColor: "#2D6A4F",
-    shadowOffset: {
-      width: 0,
-      height: 4,
+    keyboardView: {
+      flex: 1,
+      justifyContent: "center",
+      paddingHorizontal: 20,
+      paddingVertical: 10,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  resetButtonDisabled: {
-    opacity: 0.6,
-  },
-  resetButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "white",
-  },
-  backToLoginContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  backToLoginText: {
-    fontSize: 14,
-    color: isDark ? "#9CA3AF" : "#6B7280",
-  },
-  backToLoginLink: {
-    fontSize: 14,
-    color: "#2D6A4F",
-    fontWeight: "600",
-  },
-  // Decorative fruit positions
-  dotsPattern: {
-    opacity: 0.4,
-  },
-  strawberry: {
-    position: "absolute",
-    top: 120,
-    left: 20,
-    opacity: 0.9,
-  },
-  pineapple: {
-    position: "absolute",
-    bottom: 100,
-    right: 20,
-    opacity: 0.9,
-  },
-  apple: {
-    position: "absolute",
-    top: 200,
-    right: 25,
-    opacity: 0.85,
-  },
-});
+    header: {
+      alignItems: "center",
+      marginBottom: 20,
+    },
+    backButton: {
+      position: "absolute",
+      top: 20,
+      left: 20,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: "rgba(255, 255, 255, 0.25)",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 10,
+    },
+    logoContainer: {
+      marginBottom: 12,
+    },
+    logoCircle: {
+      width: 70,
+      height: 70,
+      borderRadius: 35,
+      backgroundColor: "white",
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: isDark ? "#F9FAFB" : "#000",
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: "bold",
+      color: "white",
+      marginBottom: 4,
+    },
+    subtitle: {
+      fontSize: 14,
+      color: "white",
+      opacity: 0.9,
+    },
+    card: {
+      backgroundColor: "rgba(255, 255, 255, 0.20)",
+      borderRadius: 20,
+      paddingHorizontal: 24,
+      paddingVertical: 28,
+      marginHorizontal: 4,
+      borderWidth: 1,
+      borderColor: "rgba(255, 255, 255, 0.3)",
+      shadowColor: isDark ? "#F9FAFB" : "#000",
+      shadowOffset: {
+        width: 0,
+        height: 8,
+      },
+      shadowOpacity: 0.15,
+      shadowRadius: 12,
+      elevation: 12,
+    },
+    cardTitle: {
+      fontSize: 20,
+      fontWeight: "bold",
+      color: "white",
+      marginBottom: 4,
+      textAlign: "center",
+    },
+    cardSubtitle: {
+      fontSize: 14,
+      color: "rgba(255, 255, 255, 0.8)",
+      marginBottom: 24,
+      textAlign: "center",
+      lineHeight: 20,
+    },
+    form: {
+      width: "100%",
+    },
+    inputContainer: {
+      marginBottom: 24,
+    },
+    labelText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: "white",
+      marginBottom: 6,
+    },
+    inputWrapper: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: "rgba(255, 255, 255, 0.3)",
+      borderRadius: 10,
+      backgroundColor: "rgba(255, 255, 255, 0.9)",
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+    },
+    inputIcon: {
+      marginRight: 8,
+    },
+    input: {
+      flex: 1,
+      fontSize: 14,
+      color: "#111827",
+    },
+    resetButton: {
+      backgroundColor: "#2D6A4F",
+      borderRadius: 10,
+      paddingVertical: 14,
+      alignItems: "center",
+      marginBottom: 20,
+      shadowColor: "#2D6A4F",
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+    resetButtonDisabled: {
+      opacity: 0.6,
+    },
+    resetButtonText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: "white",
+    },
+    backToLoginContainer: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    backToLoginText: {
+      fontSize: 14,
+      color: "rgba(255, 255, 255, 0.8)",
+    },
+    backToLoginLink: {
+      fontSize: 14,
+      color: "white",
+      fontWeight: "bold",
+    },
+    // Decorative fruit positions
+    dotsPattern: {
+      opacity: 0.4,
+    },
+    strawberry: {
+      position: "absolute",
+      top: 120,
+      left: 20,
+      opacity: 0.9,
+    },
+    pineapple: {
+      position: "absolute",
+      bottom: 100,
+      right: 20,
+      opacity: 0.9,
+    },
+    apple: {
+      position: "absolute",
+      top: 200,
+      right: 25,
+      opacity: 0.85,
+    },
+  });

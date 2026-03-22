@@ -4,11 +4,7 @@ require 'json'
 namespace :db do
   desc "Sync product data from Open Food Facts with high quality images and proper names"
   task sync_products: :environment do
-    puts "Clearing existing products, categories, and brands..."
-    OrderItem.delete_all
-    Product.delete_all
-    Category.delete_all
-    Brand.delete_all
+    puts "Syncing products, categories, and brands without deleting existing data..."
 
     # 1. Define Categories with generated theme-consistent images
     categories_data = [
@@ -16,14 +12,14 @@ namespace :db do
       { name: "Dairy & Eggs", query: "dairy eggs", img: "/categories/dairy.png" },
       { name: "Bakery", query: "bakery", img: "/categories/bakery.png" },
       { name: "Meat & Seafood", query: "meat seafood", img: "/categories/meat.png" },
-      { name: "Beverages", query: "beverages", img: "/categories/beverages.png" }, # Need placeholder or generate
+      { name: "Beverages", query: "beverages", img: "/categories/beverages.png" },
       { name: "Snacks", query: "snacks", img: "/categories/snacks.png" },
       { name: "Frozen Foods", query: "frozen", img: "/categories/frozen.png" },
       { name: "Pantry", query: "pantry", img: "/categories/pantry.png" },
       { name: "Household", query: "cleaning", img: "/categories/household.png" }
     ]
 
-    # Pre-defined Brand Logos for major brands (Using more reliable sources)
+    # Pre-defined Brand Logos for major brands
     brand_logos = {
       "Nestle" => "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Nestl%C3%A9_text_logo.svg/2560px-Nestl%C3%A9_text_logo.svg.png",
       "Pepsico" => "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/PepsiCo_logo.svg/2560px-PepsiCo_logo.svg.png",
@@ -40,10 +36,10 @@ namespace :db do
 
     categories = {}
     categories_data.each do |cat|
-      categories[cat[:name]] = Category.create!(
-        name: cat[:name],
-        image_url: cat[:img]
-      )
+      c = Category.find_or_initialize_by(name: cat[:name])
+      c.image_url = cat[:img]
+      c.save!
+      categories[cat[:name]] = c
     end
 
     # 2. Fetch products for each category from Open Food Facts
@@ -67,14 +63,14 @@ namespace :db do
           next if p_data['product_name'].blank?
           next if p_data['image_url'].blank? && p_data['image_front_url'].blank?
           
-          # Brand logic
-          original_brand_name = (p_data['brands'] || "Generic").split(',').first.strip
+          # Brand logic (fixed undefined method `strip' for nil error)
+          original_brand_name = (p_data['brands'].to_s.presence || "Generic").split(',').first.to_s.strip
           brand_name = original_brand_name.split(' ').map(&:capitalize).join(' ')
           brand_logo = brand_logos[brand_name] || "https://ui-avatars.com/api/?name=#{ERB::Util.url_encode(brand_name)}&background=10b981&color=fff&size=128"
           
-          brand = Brand.find_or_create_by!(name: brand_name) do |b|
-            b.image_url = brand_logo
-          end
+          brand = Brand.find_or_initialize_by(name: brand_name)
+          brand.image_url = brand_logo
+          brand.save!
           
           # Nutrition Info (Extracting key fields)
           nutriments = p_data['nutriments'] || {}
@@ -88,21 +84,29 @@ namespace :db do
           
           # Description cleaning
           desc = p_data['generic_name'] || p_data['ingredients_text']
-          desc = desc.to_s.truncate(500) if desc
+          desc = desc.to_s.truncate(500) if desc.present?
           desc = "A premium quality #{p_data['product_name']} item, carefully selected for our customers." if desc.blank?
 
-          # Create Product
-          Product.create!(
-            name: p_data['product_name'].split(' ').map(&:capitalize).join(' '),
-            description: desc,
-            price: rand(4.99..45.99).round(2),
-            stock: rand(10..150),
-            image_url: p_data['image_url'] || p_data['image_front_url'],
-            barcode: p_data['code'],
-            category: categories[cat[:name]],
-            brand: brand,
-            nutrition: nutrition_summary
-          )
+          # Upsert Product using barcode as unique key
+          barcode = p_data['code'].to_s
+          
+          # Some products don't have barcodes but we still need a key
+          next if barcode.blank?
+          
+          product = Product.find_or_initialize_by(barcode: barcode)
+          product.name = p_data['product_name'].split(' ').map(&:capitalize).join(' ')
+          product.description = desc
+          product.image_url = p_data['image_url'] || p_data['image_front_url']
+          product.category = categories[cat[:name]]
+          product.brand = brand
+          product.nutrition = nutrition_summary
+          
+          if product.new_record?
+            product.price = rand(4.99..45.99).round(2)
+            product.stock = rand(10..150)
+          end
+          
+          product.save!
           print "✔"
         end
       rescue => e

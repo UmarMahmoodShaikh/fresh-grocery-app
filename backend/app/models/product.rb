@@ -4,8 +4,10 @@ class Product < ApplicationRecord
   has_many :order_items
   has_many :orders, through: :order_items
 
-  validates :name, presence: true
+  validates :name, presence: true, length: { maximum: 255 }
   validates :barcode, uniqueness: true, allow_nil: true
+  validates :price, numericality: { greater_than: 0 }, allow_nil: true
+  validates :stock, numericality: { greater_than_or_equal_to: 0, only_integer: true }, allow_nil: true
 
   # Ransack configuration for ActiveAdmin search
   def self.ransackable_attributes(auth_object = nil)

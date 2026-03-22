@@ -4,13 +4,18 @@ RSpec.describe 'Invoices API', type: :request do
   let!(:admin)    { User.create!(email: 'admin2@example.com', password: 'password', role: :admin) }
   let!(:customer) { User.create!(email: 'cust@example.com', password: 'password', role: :customer) }
 
+  let!(:address) do
+    Address.create!(
+      user: customer, label: :home, street: '1 Test St',
+      city: 'Paris', zip_code: '75001', country: 'France',
+      latitude: 48.8566, longitude: 2.3522
+    )
+  end
+
   let!(:order) do
     Order.create!(
-      user: customer,
-      total: 50.0,
-      status: :pending,
-      delivery_address: '123 Test St',
-      delivery_fee: 0.0
+      user: customer, address: address, total: 50.0,
+      status: :pending, delivery_address: '1 Test St, Paris', delivery_fee: 0.0
     )
   end
 

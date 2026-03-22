@@ -1,8 +1,10 @@
 Rails.application.routes.draw do
   devise_for :admin_users, ActiveAdmin::Devise.config
   ActiveAdmin.routes(self)
-  mount Rswag::Ui::Engine => '/api-docs'
-  mount Rswag::Api::Engine => '/api-docs'
+  authenticate :admin_user do
+    mount Rswag::Ui::Engine => '/api-docs'
+    mount Rswag::Api::Engine => '/api-docs'
+  end
   
   devise_for :users
   
@@ -34,6 +36,10 @@ Rails.application.routes.draw do
       # Admin dashboard endpoints
       get 'admin/dashboard/summary', to: 'admin#summary'
       get 'admin/dashboard/orders', to: 'admin#orders'
+
+      # PayPal payment routes (JWT required — enforced in PaypalController)
+      post 'paypal/create-order',  to: 'paypal#create_order'
+      post 'paypal/capture-order', to: 'paypal#capture_order'
     end
   end
 

@@ -187,6 +187,176 @@ paths:
       responses:
         '200':
           description: status updated
+  /api/v1/paypal/create-order:
+    post:
+      summary: Create a PayPal Order
+      tags:
+        - PayPal
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order_id:
+                  type: integer
+      responses:
+        '200':
+          description: PayPal order created
+  /api/v1/paypal/capture-order:
+    post:
+      summary: Capture a PayPal Payment
+      tags:
+        - PayPal
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paypalOrderId:
+                  type: string
+                order_id:
+                  type: integer
+      responses:
+        '200':
+          description: Payment successful
+  /api/v1/categories:
+    get:
+      summary: List all categories
+      tags:
+        - Categories
+      responses:
+        '200':
+          description: successful
+  /api/v1/categories/{id}:
+    get:
+      summary: Get a category
+      tags:
+        - Categories
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: successful
+  /api/v1/brands:
+    get:
+      summary: List all brands
+      tags:
+        - Brands
+      responses:
+        '200':
+          description: successful
+  /api/v1/brands/{id}:
+    get:
+      summary: Get a brand
+      tags:
+        - Brands
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: successful
+  /api/v1/addresses:
+    get:
+      summary: List addresses for user
+      tags:
+        - Addresses
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: successful
+    post:
+      summary: Create an address
+      tags:
+        - Addresses
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                address:
+                  type: object
+                  properties:
+                    label:
+                      type: string
+                    street:
+                      type: string
+                    city:
+                      type: string
+                    zip_code:
+                      type: string
+                    country:
+                      type: string
+      responses:
+        '201':
+          description: created
+  /api/v1/addresses/{id}:
+    patch:
+      summary: Update an address
+      tags:
+        - Addresses
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: successful
+    delete:
+      summary: Delete an address
+      tags:
+        - Addresses
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: no content
+  /api/v1/addresses/{id}/set_default:
+    patch:
+      summary: Set address as default
+      tags:
+        - Addresses
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: successful
 components:
   securitySchemes:
     Bearer:
