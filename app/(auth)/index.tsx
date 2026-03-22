@@ -5,4 +5,4 @@ export default function AuthIndex() {
 }
 
 
-const getStyles = (isDark: boolean) => StyleSheet.create({});
+

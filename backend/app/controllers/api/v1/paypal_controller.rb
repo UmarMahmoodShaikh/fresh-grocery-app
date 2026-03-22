@@ -166,8 +166,8 @@ module Api
             brand_name:   "Fresh Grocery Store",
             landing_page: "BILLING",
             user_action:  "PAY_NOW",
-            return_url:   "https://fresh-grocery-store.herokuapp.com/paypal/success",
-            cancel_url:   "https://fresh-grocery-store.herokuapp.com/paypal/cancel"
+            return_url:   "#{ENV.fetch('HEROKU_APP_URL', 'https://fresh-grocery-store-74f6cf859e50.herokuapp.com')}/paypal/success",
+            cancel_url:   "#{ENV.fetch('HEROKU_APP_URL', 'https://fresh-grocery-store-74f6cf859e50.herokuapp.com')}/paypal/cancel"
           }
         }
       end

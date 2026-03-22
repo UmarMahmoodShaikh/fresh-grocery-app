@@ -25,10 +25,12 @@ RSpec.describe 'Products API', type: :request do
       get '/api/v1/products'
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
-      expect(json).to be_an(Array)
-      expect(json.map { |p| p['name'] }).to include('Banana')
-      banana = json.find { |p| p['name'] == 'Banana' }
+      expect(json).to be_a(Hash)
+      expect(json['products']).to be_an(Array)
+      expect(json['products'].map { |p| p['name'] }).to include('Banana')
+      banana = json['products'].find { |p| p['name'] == 'Banana' }
       expect(banana['stock_label']).to eq('in stock')
+      expect(json['meta']).to include('current_page', 'total_pages', 'total_count')
     end
   end
 
