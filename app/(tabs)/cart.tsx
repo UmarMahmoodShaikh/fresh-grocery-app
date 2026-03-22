@@ -92,8 +92,16 @@ export default function CartScreen() {
 
             <View style={styles.footer}>
                 <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>Subtotal</Text>
+                    <Text style={[styles.totalValue, { fontSize: 18, color: isDark ? "#9CA3AF" : "#6B7280" }]}>€{cartTotal.toFixed(2)}</Text>
+                </View>
+                <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>Special Offer (20%)</Text>
+                    <Text style={[styles.totalValue, { fontSize: 18, color: "#059669" }]}>-€{(cartTotal * 0.20).toFixed(2)}</Text>
+                </View>
+                <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>Total</Text>
-                    <Text style={styles.totalValue}>€{cartTotal.toFixed(2)}</Text>
+                    <Text style={styles.totalValue}>€{(cartTotal * 0.80).toFixed(2)}</Text>
                 </View>
                 <TouchableOpacity style={styles.checkoutBtn} onPress={handleCheckout}>
                     <Text style={styles.checkoutText}>Proceed to Checkout</Text>

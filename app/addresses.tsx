@@ -98,14 +98,16 @@ export default function AddressesScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                    <Ionicons name="arrow-back" size={24} color="#374151" />
+                    <Ionicons name="arrow-back" size={24} color={isDark ? "#F9FAFB" : "#374151"} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Saved Addresses</Text>
                 <View style={{ width: 40 }} />
             </View>
 
             {isLoading ? (
-                <BasketLoader text="Loading your addresses..." />
+                <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+                    <BasketLoader text="Loading your addresses..." backgroundColor="transparent" />
+                </View>
             ) : (
                 <ScrollView
                     style={styles.scrollContainer}

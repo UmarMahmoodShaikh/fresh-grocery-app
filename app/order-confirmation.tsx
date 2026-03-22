@@ -61,7 +61,7 @@ export default function OrderConfirmationScreen() {
     if (!showDetails) {
         return (
             <SafeAreaView style={styles.loaderContainer}>
-                <BasketLoader text="Placing your order…" />
+                <BasketLoader text="Placing your order…" backgroundColor="transparent" />
             </SafeAreaView>
         );
     }

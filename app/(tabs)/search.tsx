@@ -140,7 +140,7 @@ export default function SearchScreen() {
       <View style={styles.content}>
         {isSearching && results.length === 0 ? (
           <View style={styles.centerContainer}>
-            <BasketLoader text="Searching groceries..." />
+            <BasketLoader text="Searching groceries..." backgroundColor="transparent" />
           </View>
         ) : query.length > 0 && results.length === 0 ? (
           <View style={styles.centerContainer}>
