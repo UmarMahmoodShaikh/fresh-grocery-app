@@ -1,4 +1,3 @@
-import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Apple,
   Banana,
@@ -21,12 +20,12 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-    useColorScheme
+  useColorScheme,
 } from "react-native";
-
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SignUpScreen() {
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useColorScheme() === "dark";
   const styles = getStyles(isDark);
 
   const [fullName, setFullName] = useState("");
@@ -68,7 +67,13 @@ export default function SignUpScreen() {
       const nameParts = fullName.trim().split(" ");
       const firstName = nameParts[0] || "";
       const lastName = nameParts.slice(1).join(" ") || "";
-      const result = await authApi.signup(email, password, firstName, lastName, phone || undefined);
+      const result = await authApi.signup(
+        email,
+        password,
+        firstName,
+        lastName,
+        phone || undefined,
+      );
       if (result.error) {
         Alert.alert("Error", result.error);
       } else {
@@ -137,7 +142,7 @@ export default function SignUpScreen() {
                     <TextInput
                       style={styles.input}
                       placeholder="John Doe"
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor="#6B7280"
                       value={fullName}
                       onChangeText={setFullName}
                       autoCapitalize="words"
@@ -158,7 +163,7 @@ export default function SignUpScreen() {
                     <TextInput
                       style={styles.input}
                       placeholder="your.email@example.com"
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor="#6B7280"
                       value={email}
                       onChangeText={setEmail}
                       keyboardType="email-address"
@@ -181,13 +186,20 @@ export default function SignUpScreen() {
                     <TextInput
                       style={styles.input}
                       placeholder="06 12 34 56 78"
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor="#6B7280"
                       value={phone}
                       onChangeText={setPhone}
                       keyboardType="phone-pad"
                     />
                   </View>
-                  <Text style={{ fontSize: 11, color: isDark ? "#D1D5DB" : "#9CA3AF", marginTop: 4, marginLeft: 4 }}>
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      color: "rgba(255, 255, 255, 0.8)",
+                      marginTop: 4,
+                      marginLeft: 4,
+                    }}
+                  >
                     French format (0x xx xx xx xx) — saved as +33
                   </Text>
                 </View>
@@ -205,7 +217,7 @@ export default function SignUpScreen() {
                     <TextInput
                       style={styles.input}
                       placeholder="Create a password"
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor="#6B7280"
                       value={password}
                       onChangeText={setPassword}
                       secureTextEntry={!showPassword}
@@ -238,7 +250,7 @@ export default function SignUpScreen() {
                     <TextInput
                       style={styles.input}
                       placeholder="Confirm your password"
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor="#6B7280"
                       value={confirmPassword}
                       onChangeText={setConfirmPassword}
                       secureTextEntry={!showConfirmPassword}
@@ -318,215 +330,217 @@ export default function SignUpScreen() {
   );
 }
 
-const getStyles = (isDark: boolean) => StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  gradient: {
-    flex: 1,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  logoContainer: {
-    marginBottom: 12,
-  },
-  logoCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: "white",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: isDark ? "#F9FAFB" : "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
+const getStyles = (isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "white",
-    opacity: 0.9,
-  },
-  card: {
-    backgroundColor: "rgba(255, 255, 255, 0.20)",
-    borderRadius: 20,
-    paddingHorizontal: 24,
-    paddingVertical: 18,
-    marginHorizontal: 4,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.3)",
-    shadowColor: isDark ? "#F9FAFB" : "#000",
-    shadowOffset: {
-      width: 0,
-      height: 8,
+    gradient: {
+      flex: 1,
     },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 12,
-  },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: isDark ? "#F9FAFB" : "#111827",
-    marginBottom: 4,
-    textAlign: "center",
-  },
-  cardSubtitle: {
-    fontSize: 14,
-    color: isDark ? "#9CA3AF" : "#6B7280",
-    marginBottom: 14,
-    textAlign: "center",
-  },
-  form: {
-    width: "100%",
-  },
-  inputContainer: {
-    marginBottom: 12,
-  },
-  labelText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: isDark ? "#D1D5DB" : "#374151",
-    marginBottom: 6,
-  },
-  inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: isDark ? "#374151" : "#E5E7EB",
-    borderRadius: 10,
-    backgroundColor: "rgba(249, 250, 251, 0.8)",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  inputIcon: {
-    marginRight: 8,
-  },
-  input: {
-    flex: 1,
-    fontSize: 14,
-    color: isDark ? "#F9FAFB" : "#111827",
-  },
-  eyeIcon: {
-    padding: 4,
-  },
-  signUpButton: {
-    backgroundColor: "#2D6A4F",
-    borderRadius: 10,
-    paddingVertical: 13,
-    alignItems: "center",
-    marginBottom: 12,
-    marginTop: 4,
-    shadowColor: "#2D6A4F",
-    shadowOffset: {
-      width: 0,
-      height: 2,
+    keyboardView: {
+      flex: 1,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  signUpButtonDisabled: {
-    opacity: 0.6,
-  },
-  signUpButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "white",
-  },
-  signInContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  signInText: {
-    fontSize: 14,
-    color: isDark ? "#9CA3AF" : "#6B7280",
-  },
-  signInLink: {
-    fontSize: 14,
-    color: "#2D6A4F",
-    fontWeight: "600",
-  },
-  checkboxContainer: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 14,
-    paddingHorizontal: 2,
-  },
-  checkbox: {
-    width: 18,
-    height: 18,
-    borderRadius: 3,
-    borderWidth: 2,
-    borderColor: "#D1D5DB",
-    backgroundColor: "transparent",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 8,
-    marginTop: 1,
-  },
-  checkboxChecked: {
-    backgroundColor: "#2D6A4F",
-    borderColor: "#2D6A4F",
-  },
-  agreementText: {
-    flex: 1,
-    fontSize: 12,
-    color: isDark ? "#9CA3AF" : "#6B7280",
-    lineHeight: 16,
-  },
-  linkText: {
-    color: "#2D6A4F",
-    fontWeight: "600",
-  },
-  // Decorative fruit positions
-  dotsPattern: {
-    opacity: 0.4,
-  },
-  strawberry: {
-    position: "absolute",
-    top: 70,
-    left: 15,
-    opacity: 0.9,
-  },
-  pineapple: {
-    position: "absolute",
-    bottom: 80,
-    right: 10,
-    opacity: 0.9,
-  },
-  banana: {
-    position: "absolute",
-    top: 180,
-    right: 20,
-    opacity: 0.85,
-  },
-  apple: {
-    position: "absolute",
-    bottom: 200,
-    left: 25,
-    opacity: 0.85,
-  },
-});
+    scrollContent: {
+      flexGrow: 1,
+      justifyContent: "center",
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+    },
+    header: {
+      alignItems: "center",
+      marginBottom: 20,
+    },
+    logoContainer: {
+      marginBottom: 12,
+    },
+    logoCircle: {
+      width: 70,
+      height: 70,
+      borderRadius: 35,
+      backgroundColor: "white",
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: isDark ? "#F9FAFB" : "#000",
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: "bold",
+      color: "white",
+      marginBottom: 4,
+    },
+    subtitle: {
+      fontSize: 14,
+      color: "white",
+      opacity: 0.9,
+    },
+    card: {
+      backgroundColor: "rgba(255, 255, 255, 0.20)",
+      borderRadius: 20,
+      paddingHorizontal: 24,
+      paddingVertical: 18,
+      marginHorizontal: 4,
+      borderWidth: 1,
+      borderColor: "rgba(255, 255, 255, 0.3)",
+      shadowColor: isDark ? "#F9FAFB" : "#000",
+      shadowOffset: {
+        width: 0,
+        height: 8,
+      },
+      shadowOpacity: 0.15,
+      shadowRadius: 12,
+      elevation: 12,
+    },
+    cardTitle: {
+      fontSize: 20,
+      fontWeight: "bold",
+      color: "white",
+      marginBottom: 4,
+      textAlign: "center",
+    },
+    cardSubtitle: {
+      fontSize: 14,
+      color: "rgba(255, 255, 255, 0.8)",
+      marginBottom: 14,
+      textAlign: "center",
+    },
+    form: {
+      width: "100%",
+    },
+    inputContainer: {
+      marginBottom: 12,
+    },
+    labelText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: "white",
+      marginBottom: 6,
+    },
+    inputWrapper: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: "rgba(255, 255, 255, 0.3)",
+      borderRadius: 10,
+      backgroundColor: "rgba(255, 255, 255, 0.9)",
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    inputIcon: {
+      marginRight: 8,
+    },
+    input: {
+      flex: 1,
+      fontSize: 14,
+      color: "#111827",
+    },
+    eyeIcon: {
+      padding: 4,
+    },
+    signUpButton: {
+      backgroundColor: "#2D6A4F",
+      borderRadius: 10,
+      paddingVertical: 13,
+      alignItems: "center",
+      marginBottom: 12,
+      marginTop: 4,
+      shadowColor: "#2D6A4F",
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 4,
+    },
+    signUpButtonDisabled: {
+      opacity: 0.6,
+    },
+    signUpButtonText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: "white",
+    },
+    signInContainer: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    signInText: {
+      fontSize: 14,
+      color: "rgba(255, 255, 255, 0.8)",
+    },
+    signInLink: {
+      fontSize: 14,
+      color: "white",
+      fontWeight: "bold",
+    },
+    checkboxContainer: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      marginBottom: 14,
+      paddingHorizontal: 2,
+    },
+    checkbox: {
+      width: 18,
+      height: 18,
+      borderRadius: 3,
+      borderWidth: 2,
+      borderColor: "#D1D5DB",
+      backgroundColor: "transparent",
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 8,
+      marginTop: 1,
+    },
+    checkboxChecked: {
+      backgroundColor: "#2D6A4F",
+      borderColor: "#2D6A4F",
+    },
+    agreementText: {
+      flex: 1,
+      fontSize: 12,
+      color: "rgba(255, 255, 255, 0.9)",
+      lineHeight: 16,
+    },
+    linkText: {
+      color: "white",
+      fontWeight: "bold",
+      textDecorationLine: "underline",
+    },
+    // Decorative fruit positions
+    dotsPattern: {
+      opacity: 0.4,
+    },
+    strawberry: {
+      position: "absolute",
+      top: 70,
+      left: 15,
+      opacity: 0.9,
+    },
+    pineapple: {
+      position: "absolute",
+      bottom: 80,
+      right: 10,
+      opacity: 0.9,
+    },
+    banana: {
+      position: "absolute",
+      top: 180,
+      right: 20,
+      opacity: 0.85,
+    },
+    apple: {
+      position: "absolute",
+      bottom: 200,
+      left: 25,
+      opacity: 0.85,
+    },
+  });

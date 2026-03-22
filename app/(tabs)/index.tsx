@@ -8,7 +8,7 @@ import {
   ordersApi,
   productsApi,
 } from "@/services/api";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -24,10 +24,9 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useColorScheme
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
 
 const FloatingPlusOne = ({ x, y }: { x: number; y: number }) => {
   const translateY = useRef(new Animated.Value(0)).current;
@@ -60,7 +59,16 @@ const FloatingPlusOne = ({ x, y }: { x: number; y: number }) => {
         pointerEvents: "none",
       }}
     >
-      <Text style={{ color: "#2D6A4F", fontSize: 24, fontWeight: "bold", textshadowColor: "rgba(255,255,255,0.8)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 4 }}>
+      <Text
+        style={{
+          color: "#2D6A4F",
+          fontSize: 24,
+          fontWeight: "bold",
+          textShadowColor: "rgba(255,255,255,0.8)",
+          textShadowOffset: { width: 0, height: 0 },
+          textShadowRadius: 4,
+        }}
+      >
         +1
       </Text>
     </Animated.View>
@@ -109,28 +117,37 @@ const FloatingHeart = ({ x, y }: { x: number; y: number }) => {
   );
 };
 
-// Category icon mapping
-const CATEGORY_ICONS: Record<string, string> = {
-  "fruits & vegetables": "https://cdn-icons-png.flaticon.com/128/695/695296.png",
-  "dairy & eggs": "https://cdn-icons-png.flaticon.com/128/695/695353.png",
-  "bakery": "https://cdn-icons-png.flaticon.com/128/695/695333.png",
-  "meat & seafood": "https://cdn-icons-png.flaticon.com/128/2893/2893322.png",
-  "beverages": "https://cdn-icons-png.flaticon.com/128/2893/2893321.png",
-  "snacks": "https://cdn-icons-png.flaticon.com/128/695/695270.png",
-  "frozen foods": "https://cdn-icons-png.flaticon.com/128/695/695350.png",
-  "pantry": "https://cdn-icons-png.flaticon.com/128/2893/2893346.png",
-  "household": "https://cdn-icons-png.flaticon.com/128/695/695304.png",
+// Category icon mapping (Using embedded Vector Icons for 100% reliability)
+const CATEGORY_ICONS: Record<string, any> = {
+  "fruits & vegetables": "fruit-watermelon",
+  "dairy & eggs": "cheese",
+  bakery: "baguette",
+  "meat & seafood": "food-steak",
+  beverages: "cup-water",
+  snacks: "cookie",
+  "frozen foods": "snowflake",
+  pantry: "archive",
+  household: "spray-bottle",
 };
 
 const getCategoryIcon = (name: string): string | null => {
   const lowerName = name?.toLowerCase() || "";
   // Check for exact match or contains
   for (const [key, url] of Object.entries(CATEGORY_ICONS)) {
-    if (lowerName === key || lowerName.includes(key.split(' ')[0])) {
+    if (lowerName === key || lowerName.includes(key.split(" ")[0])) {
       return url;
     }
   }
   return null;
+};
+
+const getInitials = (name: string) => {
+  if (!name) return "";
+  const words = name.trim().split(/\s+/);
+  if (words.length >= 2) {
+    return (words[0][0] + words[1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
 };
 
 const CATEGORY_COLORS = [
@@ -145,7 +162,7 @@ const CATEGORY_COLORS = [
 ];
 
 export default function HomeScreen() {
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useColorScheme() === "dark";
   const styles = getStyles(isDark);
 
   const { addToCart } = useCart();
@@ -156,8 +173,12 @@ export default function HomeScreen() {
   const [activeOrders, setActiveOrders] = useState<any[]>([]);
   const [tourVisible, setTourVisible] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [plusAnimations, setPlusAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
-  const [heartAnimations, setHeartAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
+  const [plusAnimations, setPlusAnimations] = useState<
+    { id: string; x: number; y: number }[]
+  >([]);
+  const [heartAnimations, setHeartAnimations] = useState<
+    { id: string; x: number; y: number }[]
+  >([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -180,7 +201,9 @@ export default function HomeScreen() {
       const result = await ordersApi.getAll();
       if (result.data && Array.isArray(result.data)) {
         const active = (result.data as any[]).filter((o) =>
-          ["pending", "processing", "shipped"].includes(o.status?.toLowerCase())
+          ["pending", "processing", "shipped"].includes(
+            o.status?.toLowerCase(),
+          ),
         );
         setActiveOrders(active);
       }
@@ -275,7 +298,7 @@ export default function HomeScreen() {
           setCurrentStep(0);
         }, 1000);
       }
-    } catch { }
+    } catch {}
   };
 
   const handleTourNext = () => {
@@ -293,7 +316,7 @@ export default function HomeScreen() {
       await AsyncStorage.setItem("hasSeenTour", "true");
       setTourVisible(false);
       setCurrentStep(0);
-    } catch { }
+    } catch {}
   };
 
   // ── Render helpers ────────────────────────────────────
@@ -304,22 +327,28 @@ export default function HomeScreen() {
       <TouchableOpacity
         key={cat.id}
         style={styles.categoryItem}
-        onPress={() => router.push(`/category/${cat.id}?name=${encodeURIComponent(cat.name)}` as any)}
+        onPress={() =>
+          router.push(
+            `/category/${cat.id}?name=${encodeURIComponent(cat.name)}` as any,
+          )
+        }
         activeOpacity={0.75}
       >
         <View style={[styles.categoryCircle, { backgroundColor: color.bg }]}>
-          {(cat.image_url || getCategoryIcon(cat.name)) ? (
+          {getCategoryIcon(cat.name) ? (
+            <MaterialCommunityIcons
+              name={getCategoryIcon(cat.name) as any}
+              size={30}
+              color={color.text}
+            />
+          ) : cat.image_url ? (
             <Image
-              source={{ uri: cat.image_url || getCategoryIcon(cat.name) }}
+              source={{ uri: cat.image_url }}
               style={styles.categoryIconImage}
               contentFit="contain"
             />
           ) : (
-            <Ionicons
-              name="grid-outline"
-              size={26}
-              color={color.text}
-            />
+            <Ionicons name="grid-outline" size={26} color={color.text} />
           )}
         </View>
         <Text style={styles.categoryName} numberOfLines={1}>
@@ -329,31 +358,29 @@ export default function HomeScreen() {
     );
   };
 
-  const renderBrandItem = (brand: any) => (
-    <TouchableOpacity
-      key={brand.id}
-      style={styles.brandCard}
-      onPress={() => router.push(`/brand/${brand.id}?name=${encodeURIComponent(brand.name)}` as any)}
-      activeOpacity={0.75}
-    >
-      <View style={styles.brandImageWrap}>
-        {brand.image_url ? (
-          <Image
-            source={{ uri: brand.image_url }}
-            style={styles.brandImage}
-            resizeMode="contain"
-          />
-        ) : (
-          <View style={styles.brandPlaceholder}>
-            <Ionicons name="storefront" size={28} color="#2D6A4F" />
-          </View>
-        )}
-      </View>
-      <Text style={styles.brandName} numberOfLines={1}>
-        {brand.name}
-      </Text>
-    </TouchableOpacity>
-  );
+  const renderBrandItem = (brand: any) => {
+    return (
+      <TouchableOpacity
+        key={brand.id}
+        style={styles.brandCard}
+        onPress={() =>
+          router.push(
+            `/brand/${brand.id}?name=${encodeURIComponent(brand.name)}` as any,
+          )
+        }
+        activeOpacity={0.75}
+      >
+        <View style={styles.brandImageWrap}>
+          <Text style={{ fontSize: 20, fontWeight: "700", color: "#2D6A4F" }}>
+            {getInitials(brand.name)}
+          </Text>
+        </View>
+        <Text style={styles.brandName} numberOfLines={1}>
+          {brand.name}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   const renderProductCard = (product: any) => (
     <TouchableOpacity
@@ -375,7 +402,9 @@ export default function HomeScreen() {
         )}
         {product.category && (
           <View style={styles.categoryBadge}>
-            <Text style={styles.categoryBadgeText}>{product.category.name}</Text>
+            <Text style={styles.categoryBadgeText}>
+              {product.category.name}
+            </Text>
           </View>
         )}
       </View>
@@ -465,16 +494,16 @@ export default function HomeScreen() {
           <View style={styles.notifPanel}>
             <View style={styles.notifHeader}>
               <Text style={styles.notifHeaderTitle}>Notifications</Text>
-              <TouchableOpacity
-                onPress={() => setNotificationsVisible(false)}
-              >
+              <TouchableOpacity onPress={() => setNotificationsVisible(false)}>
                 <Ionicons name="close" size={24} color="#1F2937" />
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
               {activeOrders.length === 0 ? (
                 <View style={{ padding: 20, alignItems: "center" }}>
-                  <Text style={{ color: isDark ? "#9CA3AF" : "#6B7280" }}>No new notifications</Text>
+                  <Text style={{ color: isDark ? "#9CA3AF" : "#6B7280" }}>
+                    No new notifications
+                  </Text>
                 </View>
               ) : (
                 activeOrders.map((order) => {
@@ -482,8 +511,16 @@ export default function HomeScreen() {
                   let bg = "#FEF3C7";
                   let icon = "time-outline";
                   const status = order.status?.toLowerCase();
-                  if (status === "processing") { color = "#2563EB"; bg = "#DBEAFE"; icon = "refresh-outline"; }
-                  if (status === "shipped") { color = "#7C3AED"; bg = "#EDE9FE"; icon = "bicycle-outline"; }
+                  if (status === "processing") {
+                    color = "#2563EB";
+                    bg = "#DBEAFE";
+                    icon = "refresh-outline";
+                  }
+                  if (status === "shipped") {
+                    color = "#7C3AED";
+                    bg = "#EDE9FE";
+                    icon = "bicycle-outline";
+                  }
 
                   return (
                     <TouchableOpacity
@@ -498,9 +535,12 @@ export default function HomeScreen() {
                         <Ionicons name={icon as any} size={20} color={color} />
                       </View>
                       <View style={styles.notifContent}>
-                        <Text style={styles.notifTitle}>Order #{order.id} is {status}</Text>
+                        <Text style={styles.notifTitle}>
+                          Order #{order.id} is {status}
+                        </Text>
                         <Text style={styles.notifDescription}>
-                          {order.order_items?.length ?? 0} items • €{Number(order.total).toFixed(2)}
+                          {order.order_items?.length ?? 0} items • €
+                          {Number(order.total).toFixed(2)}
                         </Text>
                         <Text style={styles.notifTime}>
                           {new Date(order.created_at).toLocaleDateString()}
@@ -536,8 +576,7 @@ export default function HomeScreen() {
               style={[
                 styles.tourIconContainer,
                 {
-                  backgroundColor:
-                    tourSteps[currentStep]?.iconBg || "#FFF4ED",
+                  backgroundColor: tourSteps[currentStep]?.iconBg || "#FFF4ED",
                 },
               ]}
             >
@@ -664,7 +703,10 @@ export default function HomeScreen() {
                   Get <Text style={styles.promoHighlight}>20% OFF</Text>
                   {"\n"}on Fresh Produce
                 </Text>
-                <TouchableOpacity style={styles.shopButton} onPress={handleShopNow}>
+                <TouchableOpacity
+                  style={styles.shopButton}
+                  onPress={handleShopNow}
+                >
                   <Text style={styles.shopButtonText}>Shop Now</Text>
                   <Ionicons name="arrow-forward" size={16} color="#2D6A4F" />
                 </TouchableOpacity>
@@ -676,7 +718,14 @@ export default function HomeScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Categories</Text>
-                  <TouchableOpacity onPress={() => router.push({ pathname: "/explore", params: { tab: "categories" } } as any)}>
+                  <TouchableOpacity
+                    onPress={() =>
+                      router.push({
+                        pathname: "/explore",
+                        params: { tab: "categories" },
+                      } as any)
+                    }
+                  >
                     <Text style={styles.seeAll}>See All</Text>
                   </TouchableOpacity>
                 </View>
@@ -695,7 +744,14 @@ export default function HomeScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Featured Brands</Text>
-                  <TouchableOpacity onPress={() => router.push({ pathname: "/explore", params: { tab: "brands" } } as any)}>
+                  <TouchableOpacity
+                    onPress={() =>
+                      router.push({
+                        pathname: "/explore",
+                        params: { tab: "brands" },
+                      } as any)
+                    }
+                  >
                     <Text style={styles.seeAll}>See All</Text>
                   </TouchableOpacity>
                 </View>
@@ -714,7 +770,9 @@ export default function HomeScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Best Sellers</Text>
-                  <TouchableOpacity onPress={() => router.push("/best-sellers" as any)}>
+                  <TouchableOpacity
+                    onPress={() => router.push("/best-sellers" as any)}
+                  >
                     <Text style={styles.seeAll}>See All</Text>
                   </TouchableOpacity>
                 </View>
@@ -739,7 +797,9 @@ export default function HomeScreen() {
                     <TouchableOpacity
                       key={product.id}
                       style={styles.gridProductCard}
-                      onPress={() => router.push(`/product/${product.id}` as any)}
+                      onPress={() =>
+                        router.push(`/product/${product.id}` as any)
+                      }
                       activeOpacity={0.75}
                     >
                       <View style={styles.gridProductImageWrap}>
@@ -762,9 +822,13 @@ export default function HomeScreen() {
                           onPress={(e) => handleToggleFavorite(e, product)}
                         >
                           <Ionicons
-                            name={isFavorite(product.id) ? "heart" : "heart-outline"}
+                            name={
+                              isFavorite(product.id) ? "heart" : "heart-outline"
+                            }
                             size={18}
-                            color={isFavorite(product.id) ? "#EF4444" : "#9CA3AF"}
+                            color={
+                              isFavorite(product.id) ? "#EF4444" : "#9CA3AF"
+                            }
                           />
                         </Pressable>
                       </View>
@@ -811,578 +875,579 @@ export default function HomeScreen() {
   );
 }
 
-const getStyles = (isDark: boolean) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F5F5F5",
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  loadingWrap: {
-    paddingTop: 80,
-    alignItems: "center",
-  },
+const getStyles = (isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: "#F5F5F5",
+    },
+    scrollContainer: {
+      flex: 1,
+    },
+    loadingWrap: {
+      paddingTop: 80,
+      alignItems: "center",
+    },
 
-  // ── Header ──────────────────────────────────────
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-  },
-  addressBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 12,
-    paddingVertical: 4,
-  },
-  addressText: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "600",
-    flex: 1,
-    opacity: 0.95,
-  },
-  headerTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 16,
-  },
-  welcomeText: {
-    fontSize: 14,
-    color: "rgba(255,255,255,0.85)",
-    fontWeight: "500",
-  },
-  userName: {
-    fontSize: 22,
-    color: "#fff",
-    fontWeight: "800",
-  },
-  notificationButton: {
-    position: "relative",
-    padding: 8,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: 12,
-  },
-  badge: {
-    position: "absolute",
-    top: 2,
-    right: 2,
-    backgroundColor: "#EF4444",
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  badgeText: {
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: isDark ? "#1F2937" : "#fff",
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 10,
-  },
-  searchPlaceholder: {
-    color: isDark ? "#D1D5DB" : "#9CA3AF",
-    fontSize: 15,
-  },
+    // ── Header ──────────────────────────────────────
+    header: {
+      paddingHorizontal: 20,
+      paddingTop: 16,
+      paddingBottom: 20,
+      borderBottomLeftRadius: 24,
+      borderBottomRightRadius: 24,
+    },
+    addressBar: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginBottom: 12,
+      paddingVertical: 4,
+    },
+    addressText: {
+      color: "#fff",
+      fontSize: 13,
+      fontWeight: "600",
+      flex: 1,
+      opacity: 0.95,
+    },
+    headerTop: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      marginBottom: 16,
+    },
+    welcomeText: {
+      fontSize: 14,
+      color: "rgba(255,255,255,0.85)",
+      fontWeight: "500",
+    },
+    userName: {
+      fontSize: 22,
+      color: "#fff",
+      fontWeight: "800",
+    },
+    notificationButton: {
+      position: "relative",
+      padding: 8,
+      backgroundColor: "rgba(255,255,255,0.2)",
+      borderRadius: 12,
+    },
+    badge: {
+      position: "absolute",
+      top: 2,
+      right: 2,
+      backgroundColor: "#EF4444",
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    badgeText: {
+      color: "#fff",
+      fontSize: 10,
+      fontWeight: "700",
+    },
+    searchBar: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: isDark ? "#1F2937" : "#fff",
+      borderRadius: 14,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      gap: 10,
+    },
+    searchPlaceholder: {
+      color: isDark ? "#D1D5DB" : "#9CA3AF",
+      fontSize: 15,
+    },
 
-  // ── Content ─────────────────────────────────────
-  content: {
-    paddingTop: 16,
-  },
+    // ── Content ─────────────────────────────────────
+    content: {
+      paddingTop: 16,
+    },
 
-  // ── Promo ───────────────────────────────────────
-  promoBanner: {
-    marginHorizontal: 20,
-    borderRadius: 20,
-    padding: 20,
-    overflow: "hidden",
-  },
-  promoContentWrapper: {},
-  promoHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 12,
-  },
-  promoIconLarge: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: isDark ? "#1F2937" : "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  promoLabel: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  promoValidity: {
-    color: "rgba(255,255,255,0.75)",
-    fontSize: 11,
-  },
-  promoTitle: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "800",
-    lineHeight: 26,
-    marginBottom: 16,
-  },
-  promoHighlight: {
-    fontSize: 24,
-    color: "#FFEB3B",
-  },
-  shopButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: isDark ? "#1F2937" : "#fff",
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 25,
-    alignSelf: "flex-start",
-    gap: 6,
-  },
-  shopButtonText: {
-    color: "#2D6A4F",
-    fontWeight: "700",
-    fontSize: 14,
-  },
+    // ── Promo ───────────────────────────────────────
+    promoBanner: {
+      marginHorizontal: 20,
+      borderRadius: 20,
+      padding: 20,
+      overflow: "hidden",
+    },
+    promoContentWrapper: {},
+    promoHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 12,
+    },
+    promoIconLarge: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      backgroundColor: isDark ? "#1F2937" : "#fff",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    promoLabel: {
+      color: "#fff",
+      fontSize: 13,
+      fontWeight: "700",
+    },
+    promoValidity: {
+      color: "rgba(255,255,255,0.75)",
+      fontSize: 11,
+    },
+    promoTitle: {
+      color: "#fff",
+      fontSize: 20,
+      fontWeight: "800",
+      lineHeight: 26,
+      marginBottom: 16,
+    },
+    promoHighlight: {
+      fontSize: 24,
+      color: "#FFEB3B",
+    },
+    shopButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: isDark ? "#1F2937" : "#fff",
+      paddingHorizontal: 18,
+      paddingVertical: 10,
+      borderRadius: 25,
+      alignSelf: "flex-start",
+      gap: 6,
+    },
+    shopButtonText: {
+      color: "#2D6A4F",
+      fontWeight: "700",
+      fontSize: 14,
+    },
 
-  // ── Section shared ──────────────────────────────
-  section: {
-    marginTop: 24,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    marginBottom: 14,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: isDark ? "#F9FAFB" : "#1F2937",
-  },
-  seeAll: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#2D6A4F",
-  },
+    // ── Section shared ──────────────────────────────
+    section: {
+      marginTop: 24,
+    },
+    sectionHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: 20,
+      marginBottom: 14,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: "800",
+      color: isDark ? "#F9FAFB" : "#1F2937",
+    },
+    seeAll: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: "#2D6A4F",
+    },
 
-  // ── Categories ──────────────────────────────────
-  categoryScroll: {
-    paddingLeft: 20,
-    paddingRight: 8,
-    gap: 16,
-  },
-  categoryItem: {
-    alignItems: "center",
-    width: 72,
-  },
-  categoryCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  categoryIconImage: {
-    width: 36,
-    height: 36,
-    resizeMode: "contain",
-  },
-  categoryImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 30,
-    resizeMode: "cover",
-  },
-  categoryName: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: isDark ? "#D1D5DB" : "#4B5563",
-    textAlign: "center",
-  },
+    // ── Categories ──────────────────────────────────
+    categoryScroll: {
+      paddingLeft: 20,
+      paddingRight: 8,
+      gap: 16,
+    },
+    categoryItem: {
+      alignItems: "center",
+      width: 72,
+    },
+    categoryCircle: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 8,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    categoryIconImage: {
+      width: 36,
+      height: 36,
+      resizeMode: "contain",
+    },
+    categoryImage: {
+      width: "100%",
+      height: "100%",
+      borderRadius: 30,
+      resizeMode: "cover",
+    },
+    categoryName: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: isDark ? "#D1D5DB" : "#4B5563",
+      textAlign: "center",
+    },
 
-  // ── Brands ──────────────────────────────────────
-  brandScroll: {
-    paddingLeft: 20,
-    paddingRight: 8,
-    gap: 12,
-  },
-  brandCard: {
-    alignItems: "center",
-    width: 90,
-    backgroundColor: isDark ? "#1F2937" : "#fff",
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 8,
-    shadowColor: isDark ? "#F9FAFB" : "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  brandImageWrap: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    overflow: "hidden",
-    marginBottom: 8,
-    backgroundColor: "#FFF3E0",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  brandImage: {
-    width: 50,
-    height: 50,
-  },
-  brandPlaceholder: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  brandName: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: isDark ? "#D1D5DB" : "#374151",
-    textAlign: "center",
-  },
+    // ── Brands ──────────────────────────────────────
+    brandScroll: {
+      paddingLeft: 20,
+      paddingRight: 8,
+      gap: 12,
+    },
+    brandCard: {
+      alignItems: "center",
+      width: 90,
+      backgroundColor: isDark ? "#1F2937" : "#fff",
+      borderRadius: 16,
+      paddingVertical: 14,
+      paddingHorizontal: 8,
+      shadowColor: isDark ? "#F9FAFB" : "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    brandImageWrap: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      overflow: "hidden",
+      marginBottom: 8,
+      backgroundColor: "#FFF3E0",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    brandImage: {
+      width: 50,
+      height: 50,
+    },
+    brandPlaceholder: {
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    brandName: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: isDark ? "#D1D5DB" : "#374151",
+      textAlign: "center",
+    },
 
-  // ── Products (horizontal) ──────────────────────
-  productScroll: {
-    paddingLeft: 20,
-    paddingRight: 8,
-    gap: 14,
-  },
-  productCard: {
-    width: 160,
-    backgroundColor: isDark ? "#1F2937" : "#fff",
-    borderRadius: 18,
-    overflow: "hidden",
-    shadowColor: isDark ? "#F9FAFB" : "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  productImageWrap: {
-    width: "100%",
-    height: 120,
-    backgroundColor: isDark ? "#111827" : "#F9FAFB",
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-  },
-  productImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
-  productPlaceholder: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  categoryBadge: {
-    position: "absolute",
-    top: 8,
-    left: 8,
-    backgroundColor: "rgba(255, 107, 53, 0.9)",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  categoryBadgeText: {
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  productInfo: {
-    padding: 12,
-  },
-  productName: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: isDark ? "#F9FAFB" : "#1F2937",
-    marginBottom: 2,
-    lineHeight: 18,
-  },
-  productBrand: {
-    fontSize: 11,
-    color: isDark ? "#D1D5DB" : "#9CA3AF",
-    fontWeight: "500",
-    marginBottom: 8,
-  },
-  productBottom: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  productPrice: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#2D6A4F",
-  },
-  addButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
-    backgroundColor: "#2D6A4F",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+    // ── Products (horizontal) ──────────────────────
+    productScroll: {
+      paddingLeft: 20,
+      paddingRight: 8,
+      gap: 14,
+    },
+    productCard: {
+      width: 160,
+      backgroundColor: isDark ? "#1F2937" : "#fff",
+      borderRadius: 18,
+      overflow: "hidden",
+      shadowColor: isDark ? "#F9FAFB" : "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.07,
+      shadowRadius: 10,
+      elevation: 3,
+    },
+    productImageWrap: {
+      width: "100%",
+      height: 120,
+      backgroundColor: isDark ? "#111827" : "#F9FAFB",
+      alignItems: "center",
+      justifyContent: "center",
+      position: "relative",
+    },
+    productImage: {
+      width: "100%",
+      height: "100%",
+      resizeMode: "cover",
+    },
+    productPlaceholder: {
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    categoryBadge: {
+      position: "absolute",
+      top: 8,
+      left: 8,
+      backgroundColor: "rgba(255, 107, 53, 0.9)",
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 8,
+    },
+    categoryBadgeText: {
+      color: "#fff",
+      fontSize: 10,
+      fontWeight: "700",
+    },
+    productInfo: {
+      padding: 12,
+    },
+    productName: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: isDark ? "#F9FAFB" : "#1F2937",
+      marginBottom: 2,
+      lineHeight: 18,
+    },
+    productBrand: {
+      fontSize: 11,
+      color: isDark ? "#D1D5DB" : "#9CA3AF",
+      fontWeight: "500",
+      marginBottom: 8,
+    },
+    productBottom: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    productPrice: {
+      fontSize: 16,
+      fontWeight: "800",
+      color: "#2D6A4F",
+    },
+    addButton: {
+      width: 30,
+      height: 30,
+      borderRadius: 10,
+      backgroundColor: "#2D6A4F",
+      alignItems: "center",
+      justifyContent: "center",
+    },
 
-  // ── Products Grid (all) ────────────────────────
-  productGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingHorizontal: 14,
-    gap: 12,
-  },
-  gridProductCard: {
-    width: "47%",
-    backgroundColor: isDark ? "#1F2937" : "#fff",
-    borderRadius: 16,
-    overflow: "hidden",
-    shadowColor: isDark ? "#F9FAFB" : "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-    marginBottom: 4,
-  },
-  gridProductImageWrap: {
-    width: "100%",
-    height: 110,
-    backgroundColor: isDark ? "#111827" : "#F9FAFB",
-    alignItems: "center",
-    borderRadius: 12,
-    position: "relative",
-    overflow: "hidden",
-  },
-  favoriteButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  gridProductImage: { width: "100%", height: 120, resizeMode: "cover" },
-  gridProductPlaceholder: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  gridProductName: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: isDark ? "#F9FAFB" : "#1F2937",
-    marginTop: 10,
-    marginHorizontal: 10,
-    lineHeight: 17,
-  },
-  gridProductBrand: {
-    fontSize: 11,
-    color: isDark ? "#D1D5DB" : "#9CA3AF",
-    fontWeight: "500",
-    marginHorizontal: 10,
-    marginTop: 2,
-  },
-  gridProductBottom: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingBottom: 10,
-    paddingTop: 6,
-  },
-  gridProductPrice: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: "#2D6A4F",
-  },
+    // ── Products Grid (all) ────────────────────────
+    productGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      paddingHorizontal: 14,
+      gap: 12,
+    },
+    gridProductCard: {
+      width: "47%",
+      backgroundColor: isDark ? "#1F2937" : "#fff",
+      borderRadius: 16,
+      overflow: "hidden",
+      shadowColor: isDark ? "#F9FAFB" : "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.06,
+      shadowRadius: 6,
+      elevation: 2,
+      marginBottom: 4,
+    },
+    gridProductImageWrap: {
+      width: "100%",
+      height: 110,
+      backgroundColor: isDark ? "#111827" : "#F9FAFB",
+      alignItems: "center",
+      borderRadius: 12,
+      position: "relative",
+      overflow: "hidden",
+    },
+    favoriteButton: {
+      position: "absolute",
+      top: 8,
+      right: 8,
+      backgroundColor: "rgba(255,255,255,0.9)",
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      justifyContent: "center",
+      alignItems: "center",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    gridProductImage: { width: "100%", height: 120, resizeMode: "cover" },
+    gridProductPlaceholder: {
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    gridProductName: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: isDark ? "#F9FAFB" : "#1F2937",
+      marginTop: 10,
+      marginHorizontal: 10,
+      lineHeight: 17,
+    },
+    gridProductBrand: {
+      fontSize: 11,
+      color: isDark ? "#D1D5DB" : "#9CA3AF",
+      fontWeight: "500",
+      marginHorizontal: 10,
+      marginTop: 2,
+    },
+    gridProductBottom: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: 10,
+      paddingBottom: 10,
+      paddingTop: 6,
+    },
+    gridProductPrice: {
+      fontSize: 15,
+      fontWeight: "800",
+      color: "#2D6A4F",
+    },
 
-  // ── Notifications ──────────────────────────────
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  notifPanel: {
-    backgroundColor: isDark ? "#1F2937" : "#fff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: "70%",
-    paddingBottom: 30,
-  },
-  notifHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: isDark ? "#374151" : "#F3F4F6",
-  },
-  notifHeaderTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: isDark ? "#F9FAFB" : "#1F2937",
-  },
-  notificationItem: {
-    flexDirection: "row",
-    padding: 16,
-    paddingHorizontal: 20,
-    gap: 12,
-  },
-  notifIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  notifContent: {
-    flex: 1,
-  },
-  notifTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: isDark ? "#F9FAFB" : "#1F2937",
-  },
-  notifDescription: {
-    fontSize: 13,
-    color: isDark ? "#9CA3AF" : "#6B7280",
-    marginTop: 2,
-    lineHeight: 18,
-  },
-  notifTime: {
-    fontSize: 11,
-    color: isDark ? "#D1D5DB" : "#9CA3AF",
-    marginTop: 4,
-  },
+    // ── Notifications ──────────────────────────────
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      justifyContent: "flex-end",
+    },
+    notifPanel: {
+      backgroundColor: isDark ? "#1F2937" : "#fff",
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      maxHeight: "70%",
+      paddingBottom: 30,
+    },
+    notifHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? "#374151" : "#F3F4F6",
+    },
+    notifHeaderTitle: {
+      fontSize: 20,
+      fontWeight: "800",
+      color: isDark ? "#F9FAFB" : "#1F2937",
+    },
+    notificationItem: {
+      flexDirection: "row",
+      padding: 16,
+      paddingHorizontal: 20,
+      gap: 12,
+    },
+    notifIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    notifContent: {
+      flex: 1,
+    },
+    notifTitle: {
+      fontSize: 15,
+      fontWeight: "700",
+      color: isDark ? "#F9FAFB" : "#1F2937",
+    },
+    notifDescription: {
+      fontSize: 13,
+      color: isDark ? "#9CA3AF" : "#6B7280",
+      marginTop: 2,
+      lineHeight: 18,
+    },
+    notifTime: {
+      fontSize: 11,
+      color: isDark ? "#D1D5DB" : "#9CA3AF",
+      marginTop: 4,
+    },
 
-  // ── Tour ───────────────────────────────────────
-  tourOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 30,
-  },
-  tourTooltip: {
-    backgroundColor: isDark ? "#1F2937" : "#fff",
-    borderRadius: 24,
-    padding: 28,
-    width: "100%",
-    alignItems: "center",
-  },
-  tourHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "100%",
-    marginBottom: 20,
-  },
-  tourStepIndicator: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: isDark ? "#D1D5DB" : "#9CA3AF",
-  },
-  tourIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  tourTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: isDark ? "#F9FAFB" : "#1F2937",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  tourDescription: {
-    fontSize: 15,
-    color: isDark ? "#9CA3AF" : "#6B7280",
-    textAlign: "center",
-    lineHeight: 22,
-    marginBottom: 20,
-  },
-  tourDots: {
-    flexDirection: "row",
-    gap: 6,
-    marginBottom: 20,
-  },
-  tourDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: isDark ? "#374151" : "#E5E7EB",
-  },
-  tourDotActive: {
-    backgroundColor: "#2D6A4F",
-    width: 24,
-  },
-  tourActions: {
-    flexDirection: "row",
-    gap: 12,
-    width: "100%",
-  },
-  tourSkipButton: {
-    flex: 1,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: isDark ? "#374151" : "#E5E7EB",
-  },
-  tourSkipText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: isDark ? "#9CA3AF" : "#6B7280",
-  },
-  tourNextButton: {
-    flex: 2,
-    flexDirection: "row",
-    gap: 6,
-    paddingVertical: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 14,
-    backgroundColor: "#2D6A4F",
-  },
-  tourNextText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#fff",
-  },
-});
+    // ── Tour ───────────────────────────────────────
+    tourOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.7)",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 30,
+    },
+    tourTooltip: {
+      backgroundColor: isDark ? "#1F2937" : "#fff",
+      borderRadius: 24,
+      padding: 28,
+      width: "100%",
+      alignItems: "center",
+    },
+    tourHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      width: "100%",
+      marginBottom: 20,
+    },
+    tourStepIndicator: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: isDark ? "#D1D5DB" : "#9CA3AF",
+    },
+    tourIconContainer: {
+      width: 80,
+      height: 80,
+      borderRadius: 20,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 16,
+    },
+    tourTitle: {
+      fontSize: 20,
+      fontWeight: "800",
+      color: isDark ? "#F9FAFB" : "#1F2937",
+      marginBottom: 8,
+      textAlign: "center",
+    },
+    tourDescription: {
+      fontSize: 15,
+      color: isDark ? "#9CA3AF" : "#6B7280",
+      textAlign: "center",
+      lineHeight: 22,
+      marginBottom: 20,
+    },
+    tourDots: {
+      flexDirection: "row",
+      gap: 6,
+      marginBottom: 20,
+    },
+    tourDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: isDark ? "#374151" : "#E5E7EB",
+    },
+    tourDotActive: {
+      backgroundColor: "#2D6A4F",
+      width: 24,
+    },
+    tourActions: {
+      flexDirection: "row",
+      gap: 12,
+      width: "100%",
+    },
+    tourSkipButton: {
+      flex: 1,
+      paddingVertical: 14,
+      alignItems: "center",
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: isDark ? "#374151" : "#E5E7EB",
+    },
+    tourSkipText: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: isDark ? "#9CA3AF" : "#6B7280",
+    },
+    tourNextButton: {
+      flex: 2,
+      flexDirection: "row",
+      gap: 6,
+      paddingVertical: 14,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 14,
+      backgroundColor: "#2D6A4F",
+    },
+    tourNextText: {
+      fontSize: 15,
+      fontWeight: "700",
+      color: "#fff",
+    },
+  });

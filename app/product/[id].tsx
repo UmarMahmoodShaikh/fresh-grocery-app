@@ -14,10 +14,9 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useColorScheme
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
 
 const FloatingPlusOne = ({ x, y }: { x: number; y: number }) => {
   const translateY = React.useRef(new Animated.Value(0)).current;
@@ -50,7 +49,16 @@ const FloatingPlusOne = ({ x, y }: { x: number; y: number }) => {
         pointerEvents: "none",
       }}
     >
-      <Text style={{ color: "#2D6A4F", fontSize: 24, fontWeight: "bold", textshadowColor: "rgba(255,255,255,0.8)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 4 }}>
+      <Text
+        style={{
+          color: "#2D6A4F",
+          fontSize: 24,
+          fontWeight: "bold",
+          textshadowColor: "rgba(255,255,255,0.8)",
+          textShadowOffset: { width: 0, height: 0 },
+          textShadowRadius: 4,
+        }}
+      >
         +1
       </Text>
     </Animated.View>
@@ -127,7 +135,7 @@ interface DbProduct {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ProductDetails() {
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useColorScheme() === "dark";
   const styles = getStyles(isDark);
 
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -139,8 +147,12 @@ export default function ProductDetails() {
   const [offProduct, setOffProduct] = useState<any>(null); // Open Food Facts fallback
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [plusAnimations, setPlusAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
-  const [heartAnimations, setHeartAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
+  const [plusAnimations, setPlusAnimations] = useState<
+    { id: string; x: number; y: number }[]
+  >([]);
+  const [heartAnimations, setHeartAnimations] = useState<
+    { id: string; x: number; y: number }[]
+  >([]);
 
   const handleAddCart = (e: any, item: any) => {
     e.stopPropagation();
@@ -241,7 +253,11 @@ export default function ProductDetails() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <Pressable style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color={isDark ? "#F9FAFB" : "#1F2937"} />
+            <Ionicons
+              name="arrow-back"
+              size={24}
+              color={isDark ? "#F9FAFB" : "#1F2937"}
+            />
           </Pressable>
           <Text style={styles.headerTitle} numberOfLines={1}>
             {product.name}
@@ -313,7 +329,8 @@ export default function ProductDetails() {
           {product.nutrition ? (
             <View style={styles.detailsSection}>
               <Text style={styles.sectionTitle}>Nutrition</Text>
-              {typeof product.nutrition === "object" && product.nutrition !== null ? (
+              {typeof product.nutrition === "object" &&
+              product.nutrition !== null ? (
                 <View style={styles.nutritionGrid}>
                   {Object.entries(product.nutrition as Record<string, any>).map(
                     ([key, value]) => (
@@ -325,7 +342,7 @@ export default function ProductDetails() {
                           {String(value ?? "—")}
                         </Text>
                       </View>
-                    )
+                    ),
                   )}
                 </View>
               ) : (
@@ -342,7 +359,9 @@ export default function ProductDetails() {
             {product.barcode ? (
               <View style={styles.detailRow}>
                 <Ionicons name="barcode-outline" size={20} color="#6B7280" />
-                <Text style={styles.detailText}>Barcode: {product.barcode}</Text>
+                <Text style={styles.detailText}>
+                  Barcode: {product.barcode}
+                </Text>
               </View>
             ) : null}
             <View style={styles.detailRow}>
@@ -354,7 +373,9 @@ export default function ProductDetails() {
             {product.brand && (
               <View style={styles.detailRow}>
                 <Ionicons name="business-outline" size={20} color="#6B7280" />
-                <Text style={styles.detailText}>Brand: {product.brand.name}</Text>
+                <Text style={styles.detailText}>
+                  Brand: {product.brand.name}
+                </Text>
               </View>
             )}
           </View>
@@ -363,13 +384,22 @@ export default function ProductDetails() {
         {/* Footer Sticky Bar */}
         <View style={styles.footer}>
           <TouchableOpacity
-            style={[styles.favoriteDetailButton, isFavorite(product.id) && styles.favoriteDetailButtonActive]}
+            style={[
+              styles.favoriteDetailButton,
+              isFavorite(product.id) && styles.favoriteDetailButtonActive,
+            ]}
             onPress={(e) => handleToggleFavorite(e, product)}
           >
             <Ionicons
               name={isFavorite(product.id) ? "heart" : "heart-outline"}
               size={24}
-              color={isFavorite(product.id) ? "#EF4444" : (isDark ? "#D1D5DB" : "#6B7280")}
+              color={
+                isFavorite(product.id)
+                  ? "#EF4444"
+                  : isDark
+                  ? "#D1D5DB"
+                  : "#6B7280"
+              }
             />
           </TouchableOpacity>
           <TouchableOpacity
@@ -403,7 +433,11 @@ export default function ProductDetails() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={isDark ? "#F9FAFB" : "#1F2937"} />
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color={isDark ? "#F9FAFB" : "#1F2937"}
+          />
         </Pressable>
         <Text style={styles.headerTitle} numberOfLines={1}>
           {off.product_name || "Product Details"}
@@ -465,11 +499,15 @@ export default function ProductDetails() {
           </View>
           <View style={styles.detailRow}>
             <Ionicons name="scale-outline" size={20} color="#6B7280" />
-            <Text style={styles.detailText}>Quantity: {off.quantity || "N/A"}</Text>
+            <Text style={styles.detailText}>
+              Quantity: {off.quantity || "N/A"}
+            </Text>
           </View>
           <View style={styles.detailRow}>
             <Ionicons name="business-outline" size={20} color="#6B7280" />
-            <Text style={styles.detailText}>Packaging: {off.packaging || "N/A"}</Text>
+            <Text style={styles.detailText}>
+              Packaging: {off.packaging || "N/A"}
+            </Text>
           </View>
         </View>
 
@@ -499,19 +537,26 @@ export default function ProductDetails() {
       {/* Footer Sticky Bar */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.favoriteDetailButton, isFavorite(off.code) && styles.favoriteDetailButtonActive]}
-          onPress={(e) => handleToggleFavorite(e, {
-            id: off.code,
-            name: off.product_name || "Unknown Product",
-            price: 0, // Fallback price for external items
-            image_url: off.image_url,
-            description: off.brands
-          })}
+          style={[
+            styles.favoriteDetailButton,
+            isFavorite(off.code) && styles.favoriteDetailButtonActive,
+          ]}
+          onPress={(e) =>
+            handleToggleFavorite(e, {
+              id: off.code,
+              name: off.product_name || "Unknown Product",
+              price: 0, // Fallback price for external items
+              image_url: off.image_url,
+              description: off.brands,
+            })
+          }
         >
           <Ionicons
             name={isFavorite(off.code) ? "heart" : "heart-outline"}
             size={24}
-            color={isFavorite(off.code) ? "#EF4444" : (isDark ? "#D1D5DB" : "#6B7280")}
+            color={
+              isFavorite(off.code) ? "#EF4444" : isDark ? "#D1D5DB" : "#6B7280"
+            }
           />
         </TouchableOpacity>
         <TouchableOpacity
@@ -536,175 +581,188 @@ export default function ProductDetails() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const getStyles = (isDark: boolean) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: isDark ? "#111827" : "#F9FAFB" },
-  centerContainer: {
-    flex: 1,
-    backgroundColor: isDark ? "#111827" : "#F9FAFB",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-  },
-  errorText: {
-    marginTop: 16,
-    fontSize: 18,
-    color: "#EF4444",
-    textAlign: "center",
-    marginBottom: 24,
-  },
-  backButtonLarge: {
-    backgroundColor: isDark ? "#F9FAFB" : "#1F2937",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  backButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: isDark ? "#1F2937" : "white",
-    borderBottomWidth: 1,
-    borderBottomColor: isDark ? "#374151" : "#F3F4F6",
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: isDark ? "#111827" : "#f3f4f6",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: "bold",
-    color: isDark ? "#F9FAFB" : "#1F2937",
-    textAlign: "center",
-  },
-  headerSpacer: { width: 40 },
-  scrollContent: { paddingBottom: 40 },
-  imageContainer: {
-    backgroundColor: "white",
-    width: "100%",
-    height: 280,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-  productImage: { width: "100%", height: "100%" },
-  productImagePlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: isDark ? "#111827" : "#f3f4f6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  infoSection: { backgroundColor: "white", padding: 20, marginBottom: 8 },
-  productName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: isDark ? "#F9FAFB" : "#1F2937",
-    marginBottom: 4,
-  },
-  productBrand: { fontSize: 16, color: isDark ? "#9CA3AF" : "#6B7280", marginBottom: 16 },
-  badgesContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 20,
-  },
-  badge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
-  badgeText: { color: "white", fontSize: 12, fontWeight: "bold" },
-  footer: {
-    paddingHorizontal: 20,
-    backgroundColor: isDark ? "#1F2937" : "#fff",
-    borderTopWidth: 1,
-    borderTopColor: isDark ? "#374151" : "#F3F4F6",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-  },
-  favoriteDetailButton: {
-    width: 54,
-    height: 54,
-    borderRadius: 12,
-    backgroundColor: isDark ? "#374151" : "#F3F4F6",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  favoriteDetailButtonActive: {
-    backgroundColor: isDark ? "#4B2C35" : "#FCE4EC",
-  },
-  addToCartButton: {
-    flex: 1,
-    flexDirection: "row",
-    backgroundColor: "#2D6A4F",
-    height: 54,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    shadowColor: "#2D6A4F",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  addToCartText: { color: "white", fontSize: 17, fontWeight: "bold" },
-  detailsSection: { backgroundColor: "white", padding: 20, marginBottom: 8 },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: isDark ? "#F9FAFB" : "#1F2937",
-    marginBottom: 16,
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-    gap: 12,
-  },
-  detailText: { fontSize: 15, color: isDark ? "#D1D5DB" : "#4B5563", flex: 1 },
-  paragraphText: { fontSize: 15, color: isDark ? "#D1D5DB" : "#4B5563", lineHeight: 24 },
-  tagsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  tag: {
-    backgroundColor: isDark ? "#111827" : "#f3f4f6",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  tagText: { fontSize: 14, color: isDark ? "#D1D5DB" : "#4B5563" },
-  // Nutrition grid
-  nutritionGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  nutritionCell: {
-    width: "47%",
-    backgroundColor: isDark ? "#111827" : "#F9FAFB",
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: isDark ? "#374151" : "#E5E7EB",
-  },
-  nutritionKey: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: isDark ? "#D1D5DB" : "#9CA3AF",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  nutritionValue: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: isDark ? "#F9FAFB" : "#111827",
-  },
-});
+const getStyles = (isDark: boolean) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: isDark ? "#111827" : "#F9FAFB" },
+    centerContainer: {
+      flex: 1,
+      backgroundColor: isDark ? "#111827" : "#F9FAFB",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 20,
+    },
+    errorText: {
+      marginTop: 16,
+      fontSize: 18,
+      color: "#EF4444",
+      textAlign: "center",
+      marginBottom: 24,
+    },
+    backButtonLarge: {
+      backgroundColor: isDark ? "#F9FAFB" : "#1F2937",
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: 8,
+    },
+    backButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: isDark ? "#1F2937" : "white",
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? "#374151" : "#F3F4F6",
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: isDark ? "#111827" : "#f3f4f6",
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 12,
+    },
+    headerTitle: {
+      flex: 1,
+      fontSize: 18,
+      fontWeight: "bold",
+      color: isDark ? "#F9FAFB" : "#1F2937",
+      textAlign: "center",
+    },
+    headerSpacer: { width: 40 },
+    scrollContent: { paddingBottom: 40 },
+    imageContainer: {
+      backgroundColor: "white",
+      width: "100%",
+      height: 280,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 8,
+    },
+    productImage: { width: "100%", height: "100%" },
+    productImagePlaceholder: {
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      backgroundColor: isDark ? "#111827" : "#f3f4f6",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    infoSection: { backgroundColor: "white", padding: 20, marginBottom: 8 },
+    productName: {
+      fontSize: 24,
+      fontWeight: "bold",
+      color: isDark ? "#F9FAFB" : "#1F2937",
+      marginBottom: 4,
+    },
+    productBrand: {
+      fontSize: 16,
+      color: isDark ? "#9CA3AF" : "#6B7280",
+      marginBottom: 16,
+    },
+    badgesContainer: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginBottom: 20,
+    },
+    badge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
+    badgeText: { color: "white", fontSize: 12, fontWeight: "bold" },
+    footer: {
+      paddingHorizontal: 20,
+      backgroundColor: isDark ? "#1F2937" : "#fff",
+      borderTopWidth: 1,
+      borderTopColor: isDark ? "#374151" : "#F3F4F6",
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 12,
+    },
+    favoriteDetailButton: {
+      width: 54,
+      height: 54,
+      borderRadius: 12,
+      backgroundColor: isDark ? "#374151" : "#F3F4F6",
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 12,
+    },
+    favoriteDetailButtonActive: {
+      backgroundColor: isDark ? "#4B2C35" : "#FCE4EC",
+    },
+    addToCartButton: {
+      flex: 1,
+      flexDirection: "row",
+      backgroundColor: "#2D6A4F",
+      height: 54,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      shadowColor: "#2D6A4F",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+    addToCartText: { color: "white", fontSize: 17, fontWeight: "bold" },
+    detailsSection: { backgroundColor: "white", padding: 20, marginBottom: 8 },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: "bold",
+      color: isDark ? "#F9FAFB" : "#1F2937",
+      marginBottom: 16,
+    },
+    detailRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 12,
+      gap: 12,
+    },
+    detailText: {
+      fontSize: 15,
+      color: isDark ? "#D1D5DB" : "#4B5563",
+      flex: 1,
+    },
+    paragraphText: {
+      fontSize: 15,
+      color: isDark ? "#D1D5DB" : "#4B5563",
+      lineHeight: 24,
+    },
+    tagsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    tag: {
+      backgroundColor: isDark ? "#111827" : "#f3f4f6",
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 8,
+    },
+    tagText: { fontSize: 14, color: isDark ? "#D1D5DB" : "#4B5563" },
+    // Nutrition grid
+    nutritionGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 10,
+    },
+    nutritionCell: {
+      width: "47%",
+      backgroundColor: isDark ? "#111827" : "#F9FAFB",
+      borderRadius: 10,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+      borderWidth: 1,
+      borderColor: isDark ? "#374151" : "#E5E7EB",
+    },
+    nutritionKey: {
+      fontSize: 11,
+      fontWeight: "600",
+      color: isDark ? "#D1D5DB" : "#9CA3AF",
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+      marginBottom: 4,
+    },
+    nutritionValue: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: isDark ? "#F9FAFB" : "#111827",
+    },
+  });
