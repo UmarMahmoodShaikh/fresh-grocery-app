@@ -54,7 +54,7 @@ const FloatingPlusOne = ({ x, y }: { x: number; y: number }) => {
           color: "#2D6A4F",
           fontSize: 24,
           fontWeight: "bold",
-          textshadowColor: "rgba(255,255,255,0.8)",
+          textShadowColor: "rgba(255,255,255,0.8)",
           textShadowOffset: { width: 0, height: 0 },
           textShadowRadius: 4,
         }}
@@ -633,7 +633,7 @@ const getStyles = (isDark: boolean) =>
     headerSpacer: { width: 40 },
     scrollContent: { paddingBottom: 40 },
     imageContainer: {
-      backgroundColor: "white",
+      backgroundColor: isDark ? "#1F2937" : "white",
       width: "100%",
       height: 280,
       alignItems: "center",
@@ -649,7 +649,11 @@ const getStyles = (isDark: boolean) =>
       alignItems: "center",
       justifyContent: "center",
     },
-    infoSection: { backgroundColor: "white", padding: 20, marginBottom: 8 },
+    infoSection: {
+      backgroundColor: isDark ? "#1F2937" : "white",
+      padding: 20,
+      marginBottom: 8,
+    },
     productName: {
       fontSize: 24,
       fontWeight: "bold",
@@ -706,7 +710,11 @@ const getStyles = (isDark: boolean) =>
       elevation: 8,
     },
     addToCartText: { color: "white", fontSize: 17, fontWeight: "bold" },
-    detailsSection: { backgroundColor: "white", padding: 20, marginBottom: 8 },
+    detailsSection: {
+      backgroundColor: isDark ? "#1F2937" : "white",
+      padding: 20,
+      marginBottom: 8,
+    },
     sectionTitle: {
       fontSize: 18,
       fontWeight: "bold",
