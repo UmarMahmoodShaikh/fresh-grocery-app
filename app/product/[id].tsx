@@ -1,7 +1,13 @@
 import { BasketLoader } from "@/components/BasketLoader";
+import { RecommendedProducts } from "@/components/RecommendedProducts";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
-import { productsApi } from "@/services/api";
+import {
+  trackProductView,
+  trackProductClick,
+  trackAddToCart,
+} from "@/services/algolia";
+import { getStoredUser, productsApi } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -107,7 +113,7 @@ const FloatingHeart = ({ x, y }: { x: number; y: number }) => {
   );
 };
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+
 
 interface NutritionData {
   energy?: number | string;
@@ -132,7 +138,7 @@ interface DbProduct {
   brand?: { id: number; name: string; image_url?: string };
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+
 
 export default function ProductDetails() {
   const isDark = useColorScheme() === "dark";
@@ -144,15 +150,22 @@ export default function ProductDetails() {
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
   const [product, setProduct] = useState<DbProduct | null>(null);
-  const [offProduct, setOffProduct] = useState<any>(null); // Open Food Facts fallback
+  const [offProduct, setOffProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [plusAnimations, setPlusAnimations] = useState<
-    { id: string; x: number; y: number }[]
-  >([]);
-  const [heartAnimations, setHeartAnimations] = useState<
-    { id: string; x: number; y: number }[]
-  >([]);
+  const [plusAnimations, setPlusAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
+  const [heartAnimations, setHeartAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
+  const [userToken, setUserToken] = useState<string>("anonymous");
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const user = await getStoredUser();
+      if (user && user.id) {
+        setUserToken(user.id.toString());
+      }
+    };
+    fetchUser();
+  }, []);
 
   const handleAddCart = (e: any, item: any) => {
     e.stopPropagation();
@@ -164,6 +177,7 @@ export default function ProductDetails() {
         setPlusAnimations((prev) => prev.filter((a) => a.id !== id));
       }, 800);
     }
+    trackAddToCart(userToken, item.id.toString());
     addToCart(item);
   };
 
@@ -192,19 +206,20 @@ export default function ProductDetails() {
     setLoading(true);
     setError(null);
 
-    // ── 1. Try our backend first ─────────────────────────────────────────────
-    // objectID from Algolia equals the database product ID (integer)
+    
+    
     const numericId = parseInt(rawId, 10);
     if (!isNaN(numericId)) {
       const result = await productsApi.getById(numericId);
       if (result.data && !result.error) {
         setProduct(result.data as DbProduct);
         setLoading(false);
+        trackProductView(userToken, numericId.toString());
         return;
       }
     }
 
-    // ── 2. Treat rawId as a barcode → Open Food Facts fallback ───────────────
+    
     try {
       const response = await fetch(
         `https://world.openfoodfacts.org/api/v0/product/${rawId}.json`,
@@ -222,7 +237,7 @@ export default function ProductDetails() {
     }
   };
 
-  // ── Loading ────────────────────────────────────────────────────────────────
+  
 
   if (loading) {
     return (
@@ -232,7 +247,7 @@ export default function ProductDetails() {
     );
   }
 
-  // ── Error ──────────────────────────────────────────────────────────────────
+  
 
   if (error || (!product && !offProduct)) {
     return (
@@ -246,7 +261,7 @@ export default function ProductDetails() {
     );
   }
 
-  // ── Render from DB product ─────────────────────────────────────────────────
+  
 
   if (product) {
     return (
@@ -266,7 +281,7 @@ export default function ProductDetails() {
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {/* Image */}
+          
           <View style={styles.imageContainer}>
             {product.image_url ? (
               <Image
@@ -281,7 +296,7 @@ export default function ProductDetails() {
             )}
           </View>
 
-          {/* Core Info */}
+          
           <View style={styles.infoSection}>
             <Text style={styles.productName}>{product.name}</Text>
 
@@ -289,7 +304,7 @@ export default function ProductDetails() {
               <Text style={styles.productBrand}>{product.brand.name}</Text>
             )}
 
-            {/* Price & Stock badges */}
+            
             <View style={styles.badgesContainer}>
               <View style={[styles.badge, { backgroundColor: "#2D6A4F" }]}>
                 <Text style={styles.badgeText}>
@@ -317,7 +332,7 @@ export default function ProductDetails() {
             </View>
           </View>
 
-          {/* Description */}
+          
           {product.description ? (
             <View style={styles.detailsSection}>
               <Text style={styles.sectionTitle}>Description</Text>
@@ -325,7 +340,7 @@ export default function ProductDetails() {
             </View>
           ) : null}
 
-          {/* Nutrition — handles both jsonb objects and plain strings */}
+          
           {product.nutrition ? (
             <View style={styles.detailsSection}>
               <Text style={styles.sectionTitle}>Nutrition</Text>
@@ -353,7 +368,7 @@ export default function ProductDetails() {
             </View>
           ) : null}
 
-          {/* Details */}
+          
           <View style={styles.detailsSection}>
             <Text style={styles.sectionTitle}>Details</Text>
             {product.barcode ? (
@@ -379,9 +394,10 @@ export default function ProductDetails() {
               </View>
             )}
           </View>
+          <RecommendedProducts objectID={product.id.toString()} userToken={userToken} />
         </ScrollView>
 
-        {/* Footer Sticky Bar */}
+        
         <View style={styles.footer}>
           <TouchableOpacity
             style={[
@@ -411,7 +427,7 @@ export default function ProductDetails() {
           </TouchableOpacity>
         </View>
 
-        {/* Render floating animations globally */}
+        
         {plusAnimations.map((anim) => (
           <FloatingPlusOne key={anim.id} x={anim.x} y={anim.y} />
         ))}
@@ -422,7 +438,7 @@ export default function ProductDetails() {
     );
   }
 
-  // ── Render from Open Food Facts fallback ───────────────────────────────────
+  
 
   const off = offProduct;
   const categories = off.categories
@@ -534,7 +550,7 @@ export default function ProductDetails() {
         )}
       </ScrollView>
 
-      {/* Footer Sticky Bar */}
+      
       <View style={styles.footer}>
         <TouchableOpacity
           style={[
@@ -545,7 +561,7 @@ export default function ProductDetails() {
             handleToggleFavorite(e, {
               id: off.code,
               name: off.product_name || "Unknown Product",
-              price: 0, // Fallback price for external items
+              price: 0, 
               image_url: off.image_url,
               description: off.brands,
             })
@@ -568,7 +584,7 @@ export default function ProductDetails() {
         </TouchableOpacity>
       </View>
 
-      {/* Render floating animations globally */}
+      
       {plusAnimations.map((anim) => (
         <FloatingPlusOne key={anim.id} x={anim.x} y={anim.y} />
       ))}
@@ -579,7 +595,7 @@ export default function ProductDetails() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+
 
 const getStyles = (isDark: boolean) =>
   StyleSheet.create({
@@ -745,7 +761,7 @@ const getStyles = (isDark: boolean) =>
       borderRadius: 8,
     },
     tagText: { fontSize: 14, color: isDark ? "#D1D5DB" : "#4B5563" },
-    // Nutrition grid
+    
     nutritionGrid: {
       flexDirection: "row",
       flexWrap: "wrap",

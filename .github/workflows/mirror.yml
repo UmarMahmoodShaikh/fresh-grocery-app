@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - "**"
+    tags:
+      - "**"
 
 jobs:
   mirror:
@@ -14,14 +16,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          persist-credentials: false # 👈 THIS is the key fix
+          persist-credentials: false
 
       - name: Mirror push to personal repo
         env:
-          PAT: ${{ secrets.PERSONAL_TOKEN }}
+          # Using both common secret names as fallbacks
+          PAT: ${{ secrets.MIRROR_PAT || secrets.PERSONAL_TOKEN }}
         run: |
-          git config --global credential.helper store
-          echo "https://UmarMahmoodShaikh:${PAT}@github.com" > ~/.git-credentials
-          git remote add personal https://github.com/UmarMahmoodShaikh/fresh-grocery-app.git
-          git push personal --all --force
-          git push personal --tags --force
+          # Add the personal repo as a remote with the token embedded in the URL
+          git remote add personal "https://UmarMahmoodShaikh:${PAT}@github.com/UmarMahmoodShaikh/fresh-grocery-app.git"
+          
+          # Force mirror everything (branches, tags, etc.)
+          git push --force --mirror personal
+

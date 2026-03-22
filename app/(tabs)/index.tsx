@@ -8,6 +8,7 @@ import {
   ordersApi,
   productsApi,
 } from "@/services/api";
+import { PersonalizedRecommendations } from "@/components/PersonalizedRecommendations";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "expo-image";
@@ -117,7 +118,7 @@ const FloatingHeart = ({ x, y }: { x: number; y: number }) => {
   );
 };
 
-// Category icon mapping (Using embedded Vector Icons for 100% reliability)
+
 const CATEGORY_ICONS: Record<string, any> = {
   "fruits & vegetables": "fruit-watermelon",
   "dairy & eggs": "cheese",
@@ -132,7 +133,7 @@ const CATEGORY_ICONS: Record<string, any> = {
 
 const getCategoryIcon = (name: string): string | null => {
   const lowerName = name?.toLowerCase() || "";
-  // Check for exact match or contains
+  
   for (const [key, url] of Object.entries(CATEGORY_ICONS)) {
     if (lowerName === key || lowerName.includes(key.split(" ")[0])) {
       return url;
@@ -208,7 +209,7 @@ export default function HomeScreen() {
         setActiveOrders(active);
       }
     } catch {
-      // silently fail
+      
     }
   };
 
@@ -233,7 +234,7 @@ export default function HomeScreen() {
         }
       }
     } catch {
-      // silently fail
+      
     }
   };
 
@@ -249,7 +250,7 @@ export default function HomeScreen() {
       if (brandRes.data) setBrands(brandRes.data as any[]);
       if (prodRes.data) setProducts(prodRes.data as any[]);
     } catch {
-      // silently fail
+      
     } finally {
       setLoading(false);
     }
@@ -328,7 +329,7 @@ export default function HomeScreen() {
     } catch {}
   };
 
-  // ── Render helpers ────────────────────────────────────
+  
 
   const renderCategoryItem = (cat: any, index: number) => {
     const color = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
@@ -492,7 +493,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Notifications Modal */}
+      
       <Modal
         visible={notificationsVisible}
         animationType="slide"
@@ -564,7 +565,7 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      {/* Guided Tour Modal */}
+      
       <Modal
         visible={tourVisible}
         transparent={true}
@@ -635,9 +636,9 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      {/* Header */}
+      
       <LinearGradient colors={["#2D6A4F", "#52B788"]} style={styles.header}>
-        {/* Address Bar */}
+        
         <TouchableOpacity
           style={styles.addressBar}
           onPress={() => router.push("/addresses")}
@@ -671,14 +672,14 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Search Bar */}
+        
         <TouchableOpacity style={styles.searchBar} onPress={handleSearch}>
           <Ionicons name="search-outline" size={20} color="#9CA3AF" />
           <Text style={styles.searchPlaceholder}>Search groceries...</Text>
         </TouchableOpacity>
       </LinearGradient>
 
-      {/* Content */}
+      
       <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
@@ -689,7 +690,7 @@ export default function HomeScreen() {
           </View>
         ) : (
           <View style={styles.content}>
-            {/* Promotional Banner */}
+            
             <LinearGradient
               colors={["#2D6A4F", "#4ADE80"]}
               start={{ x: 0, y: 0 }}
@@ -722,7 +723,7 @@ export default function HomeScreen() {
               </View>
             </LinearGradient>
 
-            {/* Categories */}
+            <PersonalizedRecommendations />
             {categories.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
@@ -748,7 +749,7 @@ export default function HomeScreen() {
               </View>
             )}
 
-            {/* Brands */}
+            
             {brands.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
@@ -774,7 +775,7 @@ export default function HomeScreen() {
               </View>
             )}
 
-            {/* Best Sellers */}
+            
             {products.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
@@ -795,7 +796,7 @@ export default function HomeScreen() {
               </View>
             )}
 
-            {/* All Products Grid */}
+            
             {products.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
@@ -853,7 +854,7 @@ export default function HomeScreen() {
                         <Text style={styles.gridProductPrice}>
                           €{Number(product.price).toFixed(2)}
                         </Text>
-                        {/* Pressable stops the touch from bubbling to the card's onPress */}
+                        
                         <Pressable
                           style={styles.addButton}
                           onPress={(e) => handleAddCart(e, product)}
@@ -873,7 +874,7 @@ export default function HomeScreen() {
         )}
       </ScrollView>
 
-      {/* Render floating animations globally */}
+      
       {plusAnimations.map((anim) => (
         <FloatingPlusOne key={anim.id} x={anim.x} y={anim.y} />
       ))}
@@ -898,7 +899,7 @@ const getStyles = (isDark: boolean) =>
       alignItems: "center",
     },
 
-    // ── Header ──────────────────────────────────────
+    
     header: {
       paddingHorizontal: 20,
       paddingTop: 16,
@@ -972,12 +973,12 @@ const getStyles = (isDark: boolean) =>
       fontSize: 15,
     },
 
-    // ── Content ─────────────────────────────────────
+    
     content: {
       paddingTop: 16,
     },
 
-    // ── Promo ───────────────────────────────────────
+    
     promoBanner: {
       marginHorizontal: 20,
       borderRadius: 20,
@@ -1035,7 +1036,7 @@ const getStyles = (isDark: boolean) =>
       fontSize: 14,
     },
 
-    // ── Section shared ──────────────────────────────
+    
     section: {
       marginTop: 24,
     },
@@ -1057,7 +1058,7 @@ const getStyles = (isDark: boolean) =>
       color: "#2D6A4F",
     },
 
-    // ── Categories ──────────────────────────────────
+    
     categoryScroll: {
       paddingLeft: 20,
       paddingRight: 8,
@@ -1098,7 +1099,7 @@ const getStyles = (isDark: boolean) =>
       textAlign: "center",
     },
 
-    // ── Brands ──────────────────────────────────────
+    
     brandScroll: {
       paddingLeft: 20,
       paddingRight: 8,
@@ -1142,7 +1143,7 @@ const getStyles = (isDark: boolean) =>
       textAlign: "center",
     },
 
-    // ── Products (horizontal) ──────────────────────
+    
     productScroll: {
       paddingLeft: 20,
       paddingRight: 8,
@@ -1225,7 +1226,7 @@ const getStyles = (isDark: boolean) =>
       justifyContent: "center",
     },
 
-    // ── Products Grid (all) ────────────────────────
+    
     productGrid: {
       flexDirection: "row",
       flexWrap: "wrap",
@@ -1303,7 +1304,7 @@ const getStyles = (isDark: boolean) =>
       color: "#2D6A4F",
     },
 
-    // ── Notifications ──────────────────────────────
+    
     modalOverlay: {
       flex: 1,
       backgroundColor: "rgba(0,0,0,0.5)",
@@ -1362,7 +1363,7 @@ const getStyles = (isDark: boolean) =>
       marginTop: 4,
     },
 
-    // ── Tour ───────────────────────────────────────
+    
     tourOverlay: {
       flex: 1,
       backgroundColor: "rgba(0,0,0,0.7)",

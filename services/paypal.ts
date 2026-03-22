@@ -7,7 +7,9 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const PAYMENT_SERVER_URL = 'https://fresh-grocery-store.herokuapp.com/api/v1';
+import { API_BASE_URL } from './api';
+
+const PAYMENT_SERVER_URL = `${API_BASE_URL}/api/v1`;
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
