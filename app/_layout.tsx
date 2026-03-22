@@ -38,7 +38,7 @@ export default function RootLayout() {
             {/* Stand-alone screens */}
             <Stack.Screen
               name="product/[id]"
-              options={{ title: "Product Details", headerBackTitle: "Back" }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="brand/[id]"

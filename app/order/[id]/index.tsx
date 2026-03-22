@@ -64,8 +64,8 @@ export default function OrderDetailScreen() {
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.container}>
-                <BasketLoader text="Loading order details…" />
+            <SafeAreaView style={[styles.container, { alignItems: "center", justifyContent: "center" }]}>
+                <BasketLoader text="Loading order details…" backgroundColor="transparent" />
             </SafeAreaView>
         );
     }
@@ -95,7 +95,7 @@ export default function OrderDetailScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.headerBack} onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color="#1F2937" />
+                    <Ionicons name="arrow-back" size={24} color={isDark ? "#F9FAFB" : "#1F2937"} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Order #{order.id}</Text>
                 <View style={[styles.statusChip, { backgroundColor: s.bg }]}>

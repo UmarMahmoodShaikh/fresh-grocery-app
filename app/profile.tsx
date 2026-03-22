@@ -157,8 +157,8 @@ export default function ProfileScreen() {
 
     if (isLoading) {
         return (
-            <SafeAreaView style={styles.container}>
-                <BasketLoader text="Loading your profile..." />
+            <SafeAreaView style={[styles.container, { alignItems: "center", justifyContent: "center" }]}>
+                <BasketLoader text="Loading your profile..." backgroundColor="transparent" />
             </SafeAreaView>
         );
     }

@@ -242,7 +242,7 @@ export default function ProductDetails() {
   if (loading) {
     return (
       <SafeAreaView style={styles.centerContainer}>
-        <BasketLoader text="Loading product details..." />
+        <BasketLoader text="Loading product details..." backgroundColor="transparent" />
       </SafeAreaView>
     );
   }
