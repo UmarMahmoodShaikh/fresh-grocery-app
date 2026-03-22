@@ -12,13 +12,12 @@ import {
   StyleSheet,
   Text,
   View,
-    useColorScheme
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-
 export default function Scanner() {
-  const isDark = useColorScheme() === 'dark';
+  const isDark = useColorScheme() === "dark";
   const styles = getStyles(isDark);
 
   const router = useRouter();
@@ -41,7 +40,11 @@ export default function Scanner() {
       // 1. Check if the product exists in OUR database
       const internalCheck = await productsApi.getByBarcode(barcode);
       let internalProd = null;
-      if (internalCheck.data && Array.isArray(internalCheck.data) && internalCheck.data.length > 0) {
+      if (
+        internalCheck.data &&
+        Array.isArray(internalCheck.data) &&
+        internalCheck.data.length > 0
+      ) {
         internalProd = internalCheck.data[0];
       }
 
@@ -52,18 +55,36 @@ export default function Scanner() {
         let nutDetails = "";
         try {
           if (internalProd.nutrition) {
-            const nut = typeof internalProd.nutrition === 'string' ? JSON.parse(internalProd.nutrition) : internalProd.nutrition;
+            const nut =
+              typeof internalProd.nutrition === "string"
+                ? JSON.parse(internalProd.nutrition)
+                : internalProd.nutrition;
             if (nut.calories || nut.protein || nut.fat || nut.carbohydrates) {
-              nutDetails = `\n\n🥗 Nutrition Facts:\nCalories: ${nut.calories || 0} kcal\nProtein: ${nut.protein || 0}g\nFat: ${nut.fat || 0}g\nCarbs: ${nut.carbohydrates || 0}g`;
+              nutDetails = `\n\n🥗 Nutrition Facts:\nCalories: ${
+                nut.calories || 0
+              } kcal\nProtein: ${nut.protein || 0}g\nFat: ${
+                nut.fat || 0
+              }g\nCarbs: ${nut.carbohydrates || 0}g`;
             }
           }
-        } catch (e) { }
+        } catch (e) {}
 
-        const description = internalProd.description ? `\n\n📝 Details:\n${internalProd.description}` : "";
+        const description = internalProd.description
+          ? `\n\n📝 Details:\n${internalProd.description}`
+          : "";
 
         setResultData({
-          title: internalProd.stock > 0 ? "✅ Product Found in Store!" : "⚠️ Product Out of Stock",
-          message: `${internalProd.name}\n\n🏷️ Brand: ${internalProd.brand?.name || "N/A"}\n📦 Category: ${internalProd.category?.name || "N/A"}\n💰 Price: €${Number(internalProd.price).toFixed(2)}\n📊 Stock: ${internalProd.stock}${nutDetails}${description}`,
+          title:
+            internalProd.stock > 0
+              ? "✅ Product Found in Store!"
+              : "⚠️ Product Out of Stock",
+          message: `${internalProd.name}\n\n🏷️ Brand: ${
+            internalProd.brand?.name || "N/A"
+          }\n📦 Category: ${
+            internalProd.category?.name || "N/A"
+          }\n💰 Price: €${Number(internalProd.price).toFixed(2)}\n📊 Stock: ${
+            internalProd.stock
+          }${nutDetails}${description}`,
           type: internalProd.stock > 0 ? "success" : "warning",
         });
 
@@ -92,7 +113,8 @@ export default function Scanner() {
           category: { name: categories },
           price: 0,
           stock: 0,
-          description: "⚠️ This item is recognized internationally but we do not currently carry it in our local store."
+          description:
+            "⚠️ This item is recognized internationally but we do not currently carry it in our local store.",
         };
 
         setInternalProduct(externalMapped);
@@ -205,7 +227,11 @@ export default function Scanner() {
             router.push("/(tabs)");
           }}
         >
-          <Ionicons name="arrow-back" size={24} color="white" />
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color={isDark ? "white" : "#111827"}
+          />
         </Pressable>
         <Text style={styles.headerTitle}>Scan Product</Text>
         <View style={styles.headerSpacer} />
@@ -239,11 +265,6 @@ export default function Scanner() {
             <View style={[styles.corner, styles.cornerBottomLeft]} />
             {/* Bottom-right corner */}
             <View style={[styles.corner, styles.cornerBottomRight]} />
-
-            {/* Barcode Icon */}
-            <View style={styles.barcodeIconContainer}>
-              <Ionicons name="barcode-outline" size={60} color="white" />
-            </View>
           </View>
         </CameraView>
       </View>
@@ -257,7 +278,9 @@ export default function Scanner() {
       {loading && (
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingCard}>
-            <Text style={styles.overlayLoadingText}>🔍 Fetching product data...</Text>
+            <Text style={styles.overlayLoadingText}>
+              🔍 Fetching product data...
+            </Text>
           </View>
         </View>
       )}
@@ -288,7 +311,7 @@ export default function Scanner() {
         }}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { maxHeight: '80%' }]}>
+          <View style={[styles.modalCard, { maxHeight: "80%" }]}>
             <Text style={styles.modalTitle}>{resultData.title}</Text>
             <ScrollView style={{ maxHeight: 250, marginBottom: 20 }}>
               <Text style={styles.modalMessage}>{resultData.message}</Text>
@@ -301,7 +324,11 @@ export default function Scanner() {
                   style={({ pressed }) => [
                     styles.modalButton,
                     styles.modalButtonPrimary,
-                    { backgroundColor: internalProduct.stock > 0 ? "#2D6A4F" : "#9CA3AF", marginBottom: 10 },
+                    {
+                      backgroundColor:
+                        internalProduct.stock > 0 ? "#2D6A4F" : "#9CA3AF",
+                      marginBottom: 10,
+                    },
                     pressed && styles.modalButtonPressed,
                   ]}
                   onPress={() => {
@@ -335,7 +362,9 @@ export default function Scanner() {
                         router.push(`/product/${id}` as any);
                       }}
                     >
-                      <Text style={styles.modalButtonTextSecondary}>View Details</Text>
+                      <Text style={styles.modalButtonTextSecondary}>
+                        View Details
+                      </Text>
                     </Pressable>
                   )}
                   <Pressable
@@ -352,7 +381,9 @@ export default function Scanner() {
                       setInternalProduct(null);
                     }}
                   >
-                    <Text style={styles.modalButtonTextSecondary}>Scan Again</Text>
+                    <Text style={styles.modalButtonTextSecondary}>
+                      Scan Again
+                    </Text>
                   </Pressable>
                 </View>
               </View>
@@ -401,292 +432,295 @@ export default function Scanner() {
   );
 }
 
-const getStyles = (isDark: boolean) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: isDark ? "#F9FAFB" : "#1F2937",
-    paddingTop: Platform.OS === "android" ? 35 : 0,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    color: "white",
-    fontSize: 16,
-  },
-  permissionContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  permissionTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  permissionText: {
-    fontSize: 16,
-    color: isDark ? "#D1D5DB" : "#9CA3AF",
-    textAlign: "center",
-    marginBottom: 30,
-  },
-  permissionButton: {
-    backgroundColor: "#2D6A4F",
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  permissionButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  backButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
-  backButtonText: {
-    color: isDark ? "#D1D5DB" : "#9CA3AF",
-    fontSize: 16,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  headerBackButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "white",
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  cameraContainer: {
-    flex: 1,
-    marginHorizontal: 20,
-    marginTop: 20,
-    borderRadius: 20,
-    overflow: "hidden",
-  },
-  camera: {
-    flex: 1,
-  },
-  scanFrame: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  corner: {
-    position: "absolute",
-    width: 60,
-    height: 60,
-    borderColor: "#10B981",
-    borderWidth: 4,
-  },
-  cornerTopLeft: {
-    top: "25%",
-    left: "15%",
-    borderRightWidth: 0,
-    borderBottomWidth: 0,
-    borderTopLeftRadius: 8,
-  },
-  cornerTopRight: {
-    top: "25%",
-    right: "15%",
-    borderLeftWidth: 0,
-    borderBottomWidth: 0,
-    borderTopRightRadius: 8,
-  },
-  cornerBottomLeft: {
-    bottom: "25%",
-    left: "15%",
-    borderRightWidth: 0,
-    borderTopWidth: 0,
-    borderBottomLeftRadius: 8,
-  },
-  cornerBottomRight: {
-    bottom: "25%",
-    right: "15%",
-    borderLeftWidth: 0,
-    borderTopWidth: 0,
-    borderBottomRightRadius: 8,
-  },
-  barcodeIconContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    padding: 20,
-    borderRadius: 16,
-  },
-  instructionText: {
-    color: "white",
-    fontSize: 16,
-    textAlign: "center",
-    marginTop: 20,
-    marginBottom: 16,
-  },
-  scanButton: {
-    backgroundColor: "#10B981",
-    marginHorizontal: 20,
-    paddingVertical: 16,
-    borderRadius: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    shadowColor: "#10B981",
-    shadowOffset: {
-      width: 0,
-      height: 4,
+const getStyles = (isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: isDark ? "#111827" : "#F9FAFB",
+      paddingTop: Platform.OS === "android" ? 35 : 0,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  scanButtonPressed: {
-    backgroundColor: "#059669",
-  },
-  scanButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  tipsCard: {
-    backgroundColor: isDark ? "#D1D5DB" : "#374151",
-    marginHorizontal: 20,
-    marginTop: 16,
-    marginBottom: 20,
-    padding: 16,
-    borderRadius: 12,
-  },
-  tipsHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
-  },
-  tipsTitle: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  tipsList: {
-    gap: 6,
-  },
-  tipText: {
-    color: "#D1D5DB",
-    fontSize: 14,
-  },
-  loadingOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-  },
-  loadingCard: {
-    backgroundColor: "white",
-    paddingHorizontal: 32,
-    paddingVertical: 24,
-    borderRadius: 16,
-    shadowColor: isDark ? "#F9FAFB" : "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
-  },
-  overlayLoadingText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: isDark ? "#F9FAFB" : "#1F2937",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  modalCard: {
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 24,
-    width: "100%",
-    maxWidth: 400,
-    shadowColor: isDark ? "#F9FAFB" : "#000",
-    shadowOffset: {
-      width: 0,
-      height: 8,
+    loadingText: {
+      color: isDark ? "white" : "#111827",
+      fontSize: 16,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 15,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: isDark ? "#F9FAFB" : "#1F2937",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  modalMessage: {
-    fontSize: 16,
-    color: isDark ? "#D1D5DB" : "#374151",
-    lineHeight: 26,
-    marginBottom: 24,
-  },
-  modalButtons: {
-    gap: 12,
-  },
-  modalButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  modalButtonPrimary: {
-    backgroundColor: "#2D6A4F",
-  },
-  modalButtonPressed: {
-    backgroundColor: "#E55A28",
-  },
-  modalButtonSecondary: {
-    backgroundColor: isDark ? "#374151" : "#E5E7EB",
-  },
-  modalButtonSecondaryPressed: {
-    backgroundColor: "#D1D5DB",
-  },
-  modalButtonTextPrimary: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  modalButtonTextSecondary: {
-    color: isDark ? "#F9FAFB" : "#1F2937",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});
+    permissionContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 20,
+    },
+    permissionTitle: {
+      fontSize: 24,
+      fontWeight: "bold",
+      color: isDark ? "white" : "#111827",
+      marginTop: 20,
+      marginBottom: 10,
+    },
+    permissionText: {
+      fontSize: 16,
+      color: isDark ? "#D1D5DB" : "#9CA3AF",
+      textAlign: "center",
+      marginBottom: 30,
+    },
+    permissionButton: {
+      backgroundColor: "#2D6A4F",
+      paddingHorizontal: 32,
+      paddingVertical: 16,
+      borderRadius: 12,
+      marginBottom: 12,
+    },
+    permissionButtonText: {
+      color: "white",
+      fontSize: 16,
+      fontWeight: "bold",
+    },
+    backButton: {
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+    },
+    backButtonText: {
+      color: isDark ? "#D1D5DB" : "#9CA3AF",
+      fontSize: 16,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+    },
+    headerBackButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: isDark
+        ? "rgba(255, 255, 255, 0.1)"
+        : "rgba(0, 0, 0, 0.05)",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    headerTitle: {
+      fontSize: 20,
+      fontWeight: "bold",
+      color: isDark ? "white" : "#111827",
+    },
+    headerSpacer: {
+      width: 40,
+    },
+    cameraContainer: {
+      flex: 1,
+      marginHorizontal: 20,
+      marginTop: 20,
+      borderRadius: 20,
+      overflow: "hidden",
+    },
+    camera: {
+      flex: 1,
+    },
+    scanFrame: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    corner: {
+      position: "absolute",
+      width: 60,
+      height: 60,
+      borderColor: "#10B981",
+      borderWidth: 4,
+    },
+    cornerTopLeft: {
+      top: "25%",
+      left: "15%",
+      borderRightWidth: 0,
+      borderBottomWidth: 0,
+      borderTopLeftRadius: 8,
+    },
+    cornerTopRight: {
+      top: "25%",
+      right: "15%",
+      borderLeftWidth: 0,
+      borderBottomWidth: 0,
+      borderTopRightRadius: 8,
+    },
+    cornerBottomLeft: {
+      bottom: "25%",
+      left: "15%",
+      borderRightWidth: 0,
+      borderTopWidth: 0,
+      borderBottomLeftRadius: 8,
+    },
+    cornerBottomRight: {
+      bottom: "25%",
+      right: "15%",
+      borderLeftWidth: 0,
+      borderTopWidth: 0,
+      borderBottomRightRadius: 8,
+    },
+    barcodeIconContainer: {
+      backgroundColor: "rgba(255, 255, 255, 0.9)",
+      padding: 20,
+      borderRadius: 16,
+    },
+    instructionText: {
+      color: isDark ? "white" : "#4B5563",
+      fontSize: 16,
+      textAlign: "center",
+      marginTop: 20,
+      marginBottom: 16,
+    },
+    scanButton: {
+      backgroundColor: "#10B981",
+      marginHorizontal: 20,
+      paddingVertical: 16,
+      borderRadius: 12,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      shadowColor: "#10B981",
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 5,
+    },
+    scanButtonPressed: {
+      backgroundColor: "#059669",
+    },
+    scanButtonText: {
+      color: "white",
+      fontSize: 18,
+      fontWeight: "bold",
+    },
+    tipsCard: {
+      backgroundColor: isDark ? "#1F2937" : "#F3F4F6",
+      marginHorizontal: 20,
+      marginTop: 16,
+      marginBottom: 110, // Increased margin to clear the custom bottom tab bar
+      padding: 16,
+      borderRadius: 12,
+    },
+    tipsHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 12,
+    },
+    tipsTitle: {
+      color: isDark ? "white" : "#111827",
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    tipsList: {
+      gap: 6,
+    },
+    tipText: {
+      color: isDark ? "#D1D5DB" : "#4B5563",
+      fontSize: 14,
+    },
+    loadingOverlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0, 0, 0, 0.7)",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 1000,
+    },
+    loadingCard: {
+      backgroundColor: isDark ? "#1F2937" : "white",
+      paddingHorizontal: 32,
+      paddingVertical: 24,
+      borderRadius: 16,
+      shadowColor: isDark ? "#F9FAFB" : "#000",
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 10,
+    },
+    overlayLoadingText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: isDark ? "#F9FAFB" : "#1F2937",
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.7)",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 20,
+    },
+    modalCard: {
+      backgroundColor: isDark ? "#1F2937" : "white",
+      borderRadius: 20,
+      padding: 24,
+      width: "100%",
+      maxWidth: 400,
+      shadowColor: isDark ? "#F9FAFB" : "#000",
+      shadowOffset: {
+        width: 0,
+        height: 8,
+      },
+      shadowOpacity: 0.3,
+      shadowRadius: 12,
+      elevation: 15,
+    },
+    modalTitle: {
+      fontSize: 22,
+      fontWeight: "bold",
+      color: isDark ? "#F9FAFB" : "#1F2937",
+      marginBottom: 12,
+      textAlign: "center",
+    },
+    modalMessage: {
+      fontSize: 16,
+      color: isDark ? "#D1D5DB" : "#374151",
+      lineHeight: 26,
+      marginBottom: 24,
+    },
+    modalButtons: {
+      gap: 12,
+    },
+    modalButton: {
+      paddingVertical: 14,
+      paddingHorizontal: 24,
+      borderRadius: 12,
+      alignItems: "center",
+      marginBottom: 10,
+    },
+    modalButtonPrimary: {
+      backgroundColor: "#2D6A4F",
+    },
+    modalButtonPressed: {
+      backgroundColor: "#E55A28",
+    },
+    modalButtonSecondary: {
+      backgroundColor: isDark ? "#374151" : "#E5E7EB",
+    },
+    modalButtonSecondaryPressed: {
+      backgroundColor: "#D1D5DB",
+    },
+    modalButtonTextPrimary: {
+      color: "white",
+      fontSize: 16,
+      fontWeight: "bold",
+    },
+    modalButtonTextSecondary: {
+      color: isDark ? "#F9FAFB" : "#1F2937",
+      fontSize: 16,
+      fontWeight: "600",
+    },
+  });

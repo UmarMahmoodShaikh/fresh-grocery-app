@@ -649,7 +649,7 @@ const getStyles = (isDark: boolean) =>
     headerSpacer: { width: 40 },
     scrollContent: { paddingBottom: 40 },
     imageContainer: {
-      backgroundColor: "white",
+      backgroundColor: isDark ? "#1F2937" : "white",
       width: "100%",
       height: 280,
       alignItems: "center",
@@ -665,7 +665,11 @@ const getStyles = (isDark: boolean) =>
       alignItems: "center",
       justifyContent: "center",
     },
-    infoSection: { backgroundColor: "white", padding: 20, marginBottom: 8 },
+    infoSection: {
+      backgroundColor: isDark ? "#1F2937" : "white",
+      padding: 20,
+      marginBottom: 8,
+    },
     productName: {
       fontSize: 24,
       fontWeight: "bold",
@@ -722,7 +726,11 @@ const getStyles = (isDark: boolean) =>
       elevation: 8,
     },
     addToCartText: { color: "white", fontSize: 17, fontWeight: "bold" },
-    detailsSection: { backgroundColor: "white", padding: 20, marginBottom: 8 },
+    detailsSection: {
+      backgroundColor: isDark ? "#1F2937" : "white",
+      padding: 20,
+      marginBottom: 8,
+    },
     sectionTitle: {
       fontSize: 18,
       fontWeight: "bold",
