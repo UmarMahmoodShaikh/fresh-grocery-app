@@ -1,3 +1,4 @@
+import { PersonalizedRecommendations } from "@/components/PersonalizedRecommendations";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import {
@@ -8,7 +9,6 @@ import {
   ordersApi,
   productsApi,
 } from "@/services/api";
-import { PersonalizedRecommendations } from "@/components/PersonalizedRecommendations";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "expo-image";
@@ -118,7 +118,6 @@ const FloatingHeart = ({ x, y }: { x: number; y: number }) => {
   );
 };
 
-
 const CATEGORY_ICONS: Record<string, any> = {
   "fruits & vegetables": "fruit-watermelon",
   "dairy & eggs": "cheese",
@@ -133,7 +132,7 @@ const CATEGORY_ICONS: Record<string, any> = {
 
 const getCategoryIcon = (name: string): string | null => {
   const lowerName = name?.toLowerCase() || "";
-  
+
   for (const [key, url] of Object.entries(CATEGORY_ICONS)) {
     if (lowerName === key || lowerName.includes(key.split(" ")[0])) {
       return url;
@@ -208,9 +207,7 @@ export default function HomeScreen() {
         );
         setActiveOrders(active);
       }
-    } catch {
-      
-    }
+    } catch {}
   };
 
   const loadUser = async () => {
@@ -233,9 +230,7 @@ export default function HomeScreen() {
           setDefaultAddress(`${first.street}, ${first.city}`);
         }
       }
-    } catch {
-      
-    }
+    } catch {}
   };
 
   const loadData = async () => {
@@ -250,7 +245,6 @@ export default function HomeScreen() {
       if (brandRes.data) setBrands(brandRes.data as any[]);
       if (prodRes.data) setProducts(prodRes.data as any[]);
     } catch {
-      
     } finally {
       setLoading(false);
     }
@@ -328,8 +322,6 @@ export default function HomeScreen() {
       setCurrentStep(0);
     } catch {}
   };
-
-  
 
   const renderCategoryItem = (cat: any, index: number) => {
     const color = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
@@ -493,7 +485,6 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      
       <Modal
         visible={notificationsVisible}
         animationType="slide"
@@ -565,7 +556,6 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      
       <Modal
         visible={tourVisible}
         transparent={true}
@@ -636,9 +626,7 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      
       <LinearGradient colors={["#2D6A4F", "#52B788"]} style={styles.header}>
-        
         <TouchableOpacity
           style={styles.addressBar}
           onPress={() => router.push("/addresses")}
@@ -672,14 +660,12 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        
         <TouchableOpacity style={styles.searchBar} onPress={handleSearch}>
           <Ionicons name="search-outline" size={20} color="#9CA3AF" />
           <Text style={styles.searchPlaceholder}>Search groceries...</Text>
         </TouchableOpacity>
       </LinearGradient>
 
-      
       <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
@@ -690,7 +676,6 @@ export default function HomeScreen() {
           </View>
         ) : (
           <View style={styles.content}>
-            
             <LinearGradient
               colors={["#2D6A4F", "#4ADE80"]}
               start={{ x: 0, y: 0 }}
@@ -705,7 +690,7 @@ export default function HomeScreen() {
                   <View>
                     <Text style={styles.promoLabel}>🎉 Special Offer</Text>
                     <Text style={styles.promoValidity}>
-                      Valid until Feb 28, 2026
+                      Valid until April 30, 2026
                     </Text>
                   </View>
                 </View>
@@ -749,7 +734,6 @@ export default function HomeScreen() {
               </View>
             )}
 
-            
             {brands.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
@@ -775,7 +759,6 @@ export default function HomeScreen() {
               </View>
             )}
 
-            
             {products.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
@@ -796,7 +779,6 @@ export default function HomeScreen() {
               </View>
             )}
 
-            
             {products.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
@@ -854,7 +836,7 @@ export default function HomeScreen() {
                         <Text style={styles.gridProductPrice}>
                           €{Number(product.price).toFixed(2)}
                         </Text>
-                        
+
                         <Pressable
                           style={styles.addButton}
                           onPress={(e) => handleAddCart(e, product)}
@@ -874,7 +856,6 @@ export default function HomeScreen() {
         )}
       </ScrollView>
 
-      
       {plusAnimations.map((anim) => (
         <FloatingPlusOne key={anim.id} x={anim.x} y={anim.y} />
       ))}
@@ -899,7 +880,6 @@ const getStyles = (isDark: boolean) =>
       alignItems: "center",
     },
 
-    
     header: {
       paddingHorizontal: 20,
       paddingTop: 16,
@@ -973,12 +953,10 @@ const getStyles = (isDark: boolean) =>
       fontSize: 15,
     },
 
-    
     content: {
       paddingTop: 16,
     },
 
-    
     promoBanner: {
       marginHorizontal: 20,
       borderRadius: 20,
@@ -1036,7 +1014,6 @@ const getStyles = (isDark: boolean) =>
       fontSize: 14,
     },
 
-    
     section: {
       marginTop: 24,
     },
@@ -1058,7 +1035,6 @@ const getStyles = (isDark: boolean) =>
       color: "#2D6A4F",
     },
 
-    
     categoryScroll: {
       paddingLeft: 20,
       paddingRight: 8,
@@ -1099,7 +1075,6 @@ const getStyles = (isDark: boolean) =>
       textAlign: "center",
     },
 
-    
     brandScroll: {
       paddingLeft: 20,
       paddingRight: 8,
@@ -1143,7 +1118,6 @@ const getStyles = (isDark: boolean) =>
       textAlign: "center",
     },
 
-    
     productScroll: {
       paddingLeft: 20,
       paddingRight: 8,
@@ -1226,7 +1200,6 @@ const getStyles = (isDark: boolean) =>
       justifyContent: "center",
     },
 
-    
     productGrid: {
       flexDirection: "row",
       flexWrap: "wrap",
@@ -1304,7 +1277,6 @@ const getStyles = (isDark: boolean) =>
       color: "#2D6A4F",
     },
 
-    
     modalOverlay: {
       flex: 1,
       backgroundColor: "rgba(0,0,0,0.5)",
@@ -1363,7 +1335,6 @@ const getStyles = (isDark: boolean) =>
       marginTop: 4,
     },
 
-    
     tourOverlay: {
       flex: 1,
       backgroundColor: "rgba(0,0,0,0.7)",
