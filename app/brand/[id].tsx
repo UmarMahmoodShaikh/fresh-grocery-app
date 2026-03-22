@@ -116,7 +116,7 @@ export default function BrandProductsScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color="#1F2937" />
+                    <Ionicons name="arrow-back" size={24} color={isDark ? "#F9FAFB" : "#1F2937"} />
                 </TouchableOpacity>
                 {brand?.image_url ? (
                     <Image
@@ -136,7 +136,9 @@ export default function BrandProductsScreen() {
             </View>
 
             {loading ? (
-                <BasketLoader text={`Loading ${displayName} products…`} />
+                <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+                    <BasketLoader text={`Loading ${displayName} products…`} backgroundColor="transparent" />
+                </View>
             ) : products.length === 0 ? (
                 <View style={styles.empty}>
                     <Ionicons name="storefront-outline" size={64} color="#D1D5DB" />
