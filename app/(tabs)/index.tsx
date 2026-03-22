@@ -257,35 +257,44 @@ export default function HomeScreen() {
 
   const tourSteps = [
     {
-      title: "Scan Products",
+      title: "Home Dashboard",
       description:
-        "📸 Tap here to scan product barcodes instantly and get detailed information!",
-      icon: "scan-outline",
+        "🏠 Tap the Home icon to return here anytime, browse categories, and find our best deals!",
+      icon: "home-outline",
       iconColor: "#2D6A4F",
       iconBg: "#D1FAE5",
     },
     {
-      title: "My Cart",
+      title: "Your Shopping Bag",
       description:
-        "🛒 View and manage your shopping cart. Add, remove, or update quantities easily!",
-      icon: "cart-outline",
+        "🛍️ View everything you've added to your cart and proceed to checkout quickly from the Bag tab.",
+      icon: "bag-outline",
       iconColor: "#4A90E2",
       iconBg: "#DBEAFE",
     },
     {
-      title: "Order History",
-      description: "📜 Check your order history and track past purchases!",
-      icon: "time-outline",
+      title: "Profile & Settings",
+      description:
+        "👤 Tap the Person icon to manage your personal details, saved addresses, and view your order history.",
+      icon: "person-outline",
       iconColor: "#9B59B6",
       iconBg: "#F3E8FF",
     },
     {
-      title: "Account Settings",
+      title: "Barcode Scanner",
       description:
-        "👤 Manage your profile, payment methods, saved addresses, and app settings!",
-      icon: "person-outline",
-      iconColor: "#2D6A4F",
-      iconBg: "#FFF4ED",
+        "📸 Looking for something specific? Use the Scanner to scan physical barcodes and add items instantly!",
+      icon: "scan-outline",
+      iconColor: "#F59E0B",
+      iconBg: "#FEF3C7",
+    },
+    {
+      title: "Quick Logout",
+      description:
+        "🚪 Tap the red exit arrow when you're done shopping to securely log out of your account.",
+      icon: "log-out-outline",
+      iconColor: "#EF4444",
+      iconBg: "#FEE2E2",
     },
   ];
 

@@ -1,7 +1,7 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BasketLoader } from "@/components/BasketLoader";
 import { categoriesApi, productsApi } from "@/services/api";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -31,6 +31,29 @@ interface Category {
     name: string;
     image_url?: string;
 }
+
+const CATEGORY_ICONS: Record<string, string> = {
+    fruits: "fruit-watermelon",
+    vegetables: "fruit-watermelon",
+    dairy: "cheese",
+    bakery: "baguette",
+    meat: "food-steak",
+    beverages: "cup-water",
+    snacks: "cookie",
+    frozen: "snowflake",
+    pantry: "archive",
+    household: "spray-bottle",
+};
+
+const getCategoryIcon = (name: string): string | null => {
+    const lowerName = name?.toLowerCase() || "";
+    for (const [key, iconName] of Object.entries(CATEGORY_ICONS)) {
+        if (lowerName.includes(key)) {
+            return iconName;
+        }
+    }
+    return null;
+};
 
 const CATEGORY_COLORS: Record<string, string> = {
     fruits: "#D1FAE5",
@@ -72,8 +95,17 @@ export default function CategoryProductsScreen() {
     };
 
     const displayName = category?.name ?? name ?? "Category";
-    const accentColor =
-        CATEGORY_COLORS[displayName.toLowerCase()] ?? "#F3F4F6";
+    
+    // Better lookup to handle compound names like "Fruits & Vegetables"
+    const getAccentColor = (catName: string): string => {
+        const lower = catName.toLowerCase();
+        for (const [key, color] of Object.entries(CATEGORY_COLORS)) {
+            if (lower.includes(key)) return color;
+        }
+        return "#F3F4F6";
+    };
+    
+    const accentColor = getAccentColor(displayName);
 
     const renderItem = ({ item }: { item: Product }) => (
         <TouchableOpacity
@@ -134,7 +166,15 @@ export default function CategoryProductsScreen() {
                     <Ionicons name="arrow-back" size={24} color="#1F2937" />
                 </TouchableOpacity>
 
-                {category?.image_url ? (
+                {getCategoryIcon(displayName) ? (
+                    <View style={styles.categoryIconPlaceholder}>
+                        <MaterialCommunityIcons 
+                            name={getCategoryIcon(displayName) as any} 
+                            size={22} 
+                            color="#1F2937" 
+                        />
+                    </View>
+                ) : category?.image_url ? (
                     <Image
                         source={{ uri: category.image_url }}
                         style={styles.categoryIcon}
@@ -213,8 +253,8 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         justifyContent: "center",
     },
     headerText: { flex: 1 },
-    headerTitle: { fontSize: 18, fontWeight: "700", color: isDark ? "#F9FAFB" : "#111827" },
-    headerSub: { fontSize: 13, color: isDark ? "#D1D5DB" : "#4B5563", marginTop: 2 },
+    headerTitle: { fontSize: 18, fontWeight: "700", color: "#111827" },
+    headerSub: { fontSize: 13, color: "#4B5563", marginTop: 2 },
     list: { padding: 16, paddingBottom: 40 },
     card: {
         flexDirection: "row",
