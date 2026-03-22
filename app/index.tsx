@@ -5,4 +5,4 @@ export default function App() {
 }
 
 
-const getStyles = (isDark: boolean) => StyleSheet.create({});
+

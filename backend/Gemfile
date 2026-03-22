@@ -65,3 +65,6 @@ gem "lograge"
 
 # PayPal REST API integration
 gem "httparty"
+
+# Algolia Search
+gem "algoliasearch-rails"

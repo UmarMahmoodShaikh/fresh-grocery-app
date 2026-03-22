@@ -18,6 +18,21 @@ class Product < ApplicationRecord
     ["brand", "category", "order_items", "orders"]
   end
 
+  include AlgoliaSearch
+
+  algoliasearch index_name: "Product", disable_indexing: Rails.env.test? do
+    attributes :name, :description, :price, :stock, :image_url, :barcode
+    attribute :category_name do
+      category&.name
+    end
+    attribute :brand_name do
+      brand&.name
+    end
+
+    searchableAttributes ['name', 'description', 'category_name', 'brand_name']
+    customRanking ['desc(stock)']
+  end
+
   def stock_label
     return "out of stock" if stock.to_i <= 0
     return "low stock item" if stock.to_i < 50
