@@ -28,4 +28,12 @@
 #       enabled: "ON"
 
 en:
-  hello: "Hello world"
+  hello: "Bonjour"
+  number:
+    currency:
+      format:
+        unit: "€"
+        precision: 2
+        format: "%n %u"
+        separator: ","
+        delimiter: " "

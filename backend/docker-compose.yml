@@ -29,7 +29,22 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Rails Backend (API with Supabase)
+  # Redis for Caching and Sidekiq
+  redis:
+    image: redis:7-alpine
+    container_name: grocery-redis
+    restart: unless-stopped
+    networks:
+      - grocery-store-network
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Rails Backend (API)
   backend:
     build:
       context: .
@@ -38,41 +53,44 @@ services:
     restart: unless-stopped
     ports:
       - "5001:5000"
+    env_file: .env
     environment:
-      # Rails Configuration
       - RAILS_ENV=production
       - RAILS_LOG_TO_STDOUT=true
-      - RAILS_MASTER_KEY=${RAILS_MASTER_KEY}
-      
-      # Database (Supabase)
-      - DATABASE_URL=${DATABASE_URL}
-      
-      # JWT & Security
-      - JWT_SECRET=${JWT_SECRET}
-      
-      # Supabase Configuration
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-    
+      - REDIS_URL=redis://redis:6379/0
     volumes:
       - .:/rails
       - /rails/tmp
       - /rails/log
     networks:
       - grocery-store-network
+    depends_on:
+      - redis
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/v1/products"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
     command: bundle exec rails server -b 0.0.0.0 -p 5000
+
+  # Sidekiq for Background Jobs
+  sidekiq:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: grocery-sidekiq
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - RAILS_ENV=production
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - .:/rails
+    networks:
+      - grocery-store-network
+    depends_on:
+      - redis
+    command: bundle exec sidekiq
 
   # Vite Frontend (React)
   frontend:
@@ -93,21 +111,10 @@ services:
       - grocery-store-network
     depends_on:
       - backend
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
 
 networks:
   grocery-store-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
+
+volumes:
+  redis_data:

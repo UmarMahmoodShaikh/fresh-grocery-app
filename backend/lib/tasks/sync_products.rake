@@ -54,9 +54,18 @@ namespace :db do
         http.verify_mode = OpenSSL::SSL::VERIFY_NONE
         
         request = Net::HTTP::Get.new(uri)
-        response = http.request(request)
-        data = JSON.parse(response.body)
+        # Adding User-Agent to comply with Open Food Facts API terms
+        request["User-Agent"] = "FreshGroceryApp/1.0 (contact@grocerygo.com)"
         
+        response = http.request(request)
+        
+        if response.content_type != "application/json"
+          puts "   Failed (Rate limited or HTML error). Skipping..."
+          sleep 2
+          next
+        end
+
+        data = JSON.parse(response.body)
         products = data['products'] || []
         
         products.each do |p_data|
@@ -93,6 +102,26 @@ namespace :db do
           # Some products don't have barcodes but we still need a key
           next if barcode.blank?
           
+          # Weight/Quantity parsing logic
+          quantity_str = p_data['quantity'].to_s.downcase
+          weight = nil
+          weight_unit = nil
+          
+          if (match = quantity_str.match(/(\d+[\.,]?\d*)\s*(g|kg|ml|l|cl|pcs|pack)/))
+            weight = match[1].gsub(',', '.').to_f
+            unit_found = match[2]
+            
+            # Normalize to our consistent system
+            weight_unit = case unit_found
+                          when 'l' then 'L'
+                          when 'ml' then 'ml'
+                          when 'g' then 'g'
+                          when 'kg' then 'kg'
+                          when 'cl' then 'cl'
+                          else unit_found
+                          end
+          end
+
           product = Product.find_or_initialize_by(barcode: barcode)
           product.name = p_data['product_name'].split(' ').map(&:capitalize).join(' ')
           product.description = desc
@@ -100,6 +129,8 @@ namespace :db do
           product.category = categories[cat[:name]]
           product.brand = brand
           product.nutrition = nutrition_summary
+          product.weight = weight
+          product.weight_unit = weight_unit
           
           if product.new_record?
             product.price = rand(4.99..45.99).round(2)
@@ -112,6 +143,7 @@ namespace :db do
       rescue => e
         puts "\nError fetching #{cat[:name]}: #{e.message}"
       end
+      sleep 1 # Be kind to the free API
     end
 
     puts "\nDatabase sync complete!"

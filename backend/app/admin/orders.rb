@@ -1,9 +1,20 @@
 ActiveAdmin.register Order do
-  permit_params :user_id, :total, :status, :delivery_address, :delivery_fee
+  permit_params :user_id, :store_id, :total, :status, :delivery_address, :delivery_fee
+
+  includes :user, :store
+
+  controller do
+    def find_resource
+      scoped_collection.eager_load(:user, :store).find(params[:id])
+    end
+  end
+
+  scope_to :current_admin_user, association_method: :orders, unless: proc { current_admin_user.super_admin? && current_admin_user.store_id.nil? }
 
   index do
     selectable_column
     id_column
+    column :store, if: proc { current_admin_user.super_admin? }
     column :user
     column :total do |order|
       number_to_currency(order.total)
@@ -19,6 +30,7 @@ ActiveAdmin.register Order do
     actions
   end
 
+  filter :store, if: proc { current_admin_user.super_admin? && current_admin_user.store_id.nil? }
   filter :user
   filter :status, as: :select, collection: Order.statuses.keys
   filter :total
@@ -26,6 +38,9 @@ ActiveAdmin.register Order do
 
   form do |f|
     f.inputs do
+      f.input :store if current_admin_user.super_admin? && current_admin_user.store_id.nil?
+      f.input :store_id, as: :hidden, input_html: { value: current_admin_user.store_id } if current_admin_user.store_id.present?
+      
       f.input :user
       f.input :total
       f.input :status, as: :select, collection: Order.statuses.keys

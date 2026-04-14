@@ -14,6 +14,9 @@ gem "redis", ">= 4.0.1"
 # Use Kredis to get higher-level data types in Redis [https://github.com/rails/kredis]
 # gem "kredis"
 
+# Use Sidekiq for enterprise-grade background job caching and delivery
+gem "sidekiq"
+
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 gem "bcrypt", "~> 3.1.7"
@@ -68,3 +71,15 @@ gem "httparty"
 
 # Algolia Search
 gem "algoliasearch-rails"
+
+# Image Processing & Cloud Storage
+gem "cloudinary", "~> 2.4"
+gem "image_processing", "~> 1.2"
+gem "active_storage_validations"
+
+# Error Tracking
+gem "sentry-ruby"
+gem "sentry-rails"
+
+# Soft Deletes
+gem "discard", "~> 1.3"

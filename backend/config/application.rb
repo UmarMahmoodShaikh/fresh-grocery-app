@@ -24,6 +24,9 @@ module StoreBackend
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 7.2
 
+    # Set ActiveJob to use Sidekiq
+    config.active_job.queue_adapter = :sidekiq
+
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
@@ -37,10 +40,16 @@ module StoreBackend
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
 
+    # Use SQL instead of Ruby file for database schema dump
+    config.active_record.schema_format = :sql
+
     # Only loads a smaller set of middleware suitable for API only apps.
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = false
+
+    # Enable Rack::Attack for Rate Limiting / Spam protection
+    config.middleware.use Rack::Attack
 
     # Middleware for ActiveAdmin
     config.middleware.use ActionDispatch::Cookies

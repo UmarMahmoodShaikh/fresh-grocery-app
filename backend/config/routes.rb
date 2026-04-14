@@ -41,6 +41,16 @@ Rails.application.routes.draw do
       post 'paypal/create-order',  to: 'paypal#create_order'
       post 'paypal/capture-order', to: 'paypal#capture_order'
     end
+
+    # V2 Multi-Tenant Architecture
+    namespace :v2 do
+      resources :stores, param: :slug, only: [:index, :show] do
+        resources :products, only: [:index, :show]
+        resources :categories, only: [:index]
+        resources :promotions, only: [:index]
+        resources :banners, only: [:index]
+      end
+    end
   end
 
   # Health check

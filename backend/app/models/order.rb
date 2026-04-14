@@ -1,6 +1,7 @@
 class Order < ApplicationRecord
   belongs_to :user
   belongs_to :address
+  belongs_to :store
   has_many :order_items, dependent: :destroy
   has_one :invoice, dependent: :destroy
   has_many :products, through: :order_items
@@ -9,17 +10,18 @@ class Order < ApplicationRecord
 
   validates :total, :status, presence: true
   validates :total, numericality: { greater_than_or_equal_to: 0 }
+  validates :idempotency_key, uniqueness: true, allow_nil: true
 
   after_create_commit :send_order_created_email
   after_update_commit :send_status_emails, if: :saved_change_to_status?
 
   # Ransack configuration for ActiveAdmin search
   def self.ransackable_attributes(auth_object = nil)
-    ["created_at", "delivery_address", "delivery_fee", "id", "status", "total", "updated_at", "user_id", "score", "comments"]
+    ["created_at", "delivery_address", "delivery_fee", "id", "status", "total", "updated_at", "user_id", "store_id", "score", "comments"]
   end
 
   def self.ransackable_associations(auth_object = nil)
-    ["order_items", "products", "user"]
+    ["order_items", "products", "user", "store"]
   end
 
   private

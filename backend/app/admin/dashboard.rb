@@ -26,7 +26,7 @@ ActiveAdmin.register_page "Dashboard" do
         panel "Revenue Performance (Weekly)" do
           div style: "padding: 20px; background: #161b22; border-radius: 8px;" do
             column_chart Invoice.group_by_week(:created_at).sum(:total), 
-                         prefix: "$", 
+                         prefix: "€", 
                          colors: ["#10b981"],
                          library: {
                            plugins: {

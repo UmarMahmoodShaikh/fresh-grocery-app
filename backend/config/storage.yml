@@ -28,7 +28,11 @@ local:
 #   storage_access_key: <%= Rails.application.credentials.dig(:azure_storage, :storage_access_key) %>
 #   container: your_container_name-<%= Rails.env %>
 
-# mirror:
+# cloudinary:
 #   service: Mirror
 #   primary: local
 #   mirrors: [ amazon, google, microsoft ]
+
+cloudinary:
+  service: Cloudinary
+  folder: fresh_grocery_<%= Rails.env %>
