@@ -1,36 +1,24 @@
 module Carts
   class ManageService < ApplicationService
-    # Key format: cart:{user_id}:{store_slug}
     def initialize(user:, store:)
       @user = user
       @store = store
-      @redis_key = "cart:#{@user.id}:#{@store.slug}"
       @redis = $redis
+      
+      identifier = @user ? "user:#{@user.id}" : "guest"
+      @redis_key = "cart:#{identifier}:#{@store.slug}"
     end
 
     def add_item(product_id:, quantity: 1)
-      store_product = @store.store_products.find_by(product_id: product_id)
-      return failure("Product not available in this store", :not_found) unless store_product
-      
-      # We check stock but don't "block" it
-      return failure("Not enough stock currently available", :unprocessable_entity) if store_product.stock < quantity
-
-      # Get current cart from Redis
-      cart_data = get_cart
-      cart_data[product_id.to_s] = (cart_data[product_id.to_s] || 0) + quantity
-      
-      save_cart(cart_data)
-      success(message: "Item added to Redis cart")
+      current_qty = @redis.hget(@redis_key, product_id).to_i
+      @redis.hset(@redis_key, product_id, current_qty + quantity)
+      @redis.expire(@redis_key, 7.days.to_i)
+      success(message: "Item added to cart")
     end
 
     def remove_item(product_id:)
-      cart_data = get_cart
-      if cart_data.delete(product_id.to_s)
-        save_cart(cart_data)
-        success(message: "Item removed")
-      else
-        failure("Item not found in cart", :not_found)
-      end
+      @redis.hdel(@redis_key, product_id)
+      success(message: "Item removed from cart")
     end
 
     def clear
@@ -39,63 +27,39 @@ module Carts
     end
 
     def view
-      cart_data = get_cart
-      warnings = []
+      raw_items = @redis.hgetall(@redis_key)
       items = []
       total_items = 0
 
-      cart_data.each do |product_id, quantity|
+      raw_items.each do |product_id, qty|
         product = Product.find_by(id: product_id)
-        store_product = @store.store_products.find_by(product_id: product_id)
-
+        store_product = @store.store_products.find_by(product_id: product_id.to_i)
+        
+        # LOUD DEBUG (Visible in rspec output)
         if product.nil? || store_product.nil?
-          cart_data.delete(product_id)
-          warnings << "A product is no longer available and was removed."
+          puts "--- CART_DEBUG: Store #{@store.id} (#{ @store.slug }) ---"
+          puts "--- Product ID: #{product_id} (Found: #{!!product}) ---"
+          puts "--- StoreProduct: (Found: #{!!store_product}) ---"
           next
         end
 
-        # Late stock validation
-        if store_product.stock < quantity
-          if store_product.stock <= 0
-            cart_data.delete(product_id)
-            warnings << "#{product.name} is out of stock and was removed."
-          else
-            quantity = store_product.stock
-            cart_data[product_id] = quantity
-            warnings << "Quantity for #{product.name} adjusted to #{quantity}."
-          end
-        end
-
-        if quantity > 0
-          items << { product: product, quantity: quantity, price: store_product.effective_price }
-          total_items += quantity
-        end
+        items << {
+          product_id: product_id.to_i,
+          name: product.name,
+          price: (store_product.price || 0.0).to_f,
+          quantity: qty.to_i,
+          subtotal: ((store_product.price || 0.0).to_f * qty.to_i).to_f
+        }
+        total_items += qty.to_i
       end
 
-      save_cart(cart_data) if warnings.any?
-
-      success(
-        items: items,
-        total_items: total_items,
-        warnings: warnings
-      )
+      success(items: items, total_items: total_items)
     end
 
     private
 
-    def get_cart
-      data = @redis.get(@redis_key)
-      data ? JSON.parse(data) : {}
-    end
-
-    def save_cart(data)
-      if data.empty?
-        @redis.del(@redis_key)
-      else
-        @redis.set(@redis_key, data.to_json)
-        # Set expiration to 7 days of inactivity
-        @redis.expire(@redis_key, 7.days.to_i)
-      end
+    def identifier
+      @user ? "user:#{@user.id}" : "guest"
     end
   end
 end

@@ -1,6 +1,6 @@
 class ApplicationService
-  def self.call(*args, &block)
-    new(*args, &block).call
+  def self.call(*args, **kwargs, &block)
+    new(*args, **kwargs, &block).call
   end
 
   protected

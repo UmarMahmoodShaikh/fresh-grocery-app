@@ -1,4 +1,5 @@
 class Promotion < ApplicationRecord
+  include Discard::Model
   belongs_to :store
 
   validates :title, presence: true

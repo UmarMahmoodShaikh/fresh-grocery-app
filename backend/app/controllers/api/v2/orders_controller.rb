@@ -4,12 +4,15 @@ module Api
       before_action :authenticate_request # Adjust to your app's auth
       before_action :set_store
 
-      def create
+      # POST /api/v2/stores/:store_slug/orders/checkout
+      def checkout
         idempotency_key = request.headers['X-Idempotency-Key']
 
         # 1. Check if order already exists with this key (Idempotency check)
         if idempotency_key.present?
-          existing_order = current_user.orders.find_by(idempotency_key: idempotency_key)
+          # We check the database to see if we've already processed this specific request key
+          existing_order = current_user.orders.find_by(idempotency_key: idempotency_key) if current_user
+          
           if existing_order
             return render json: { 
               order: existing_order, 
@@ -19,16 +22,11 @@ module Api
           end
         end
 
-        cart = Cart.find_by(user: current_user, store: @store)
-        
-        unless cart
-          return render json: { error: "No active cart found for this store" }, status: :bad_request
-        end
-
+        # 2. Trigger the Checkout Service
+        # The service will automatically pull the cart items from Redis
         result = Orders::CheckoutService.call(
-          user: current_user,
+          user: current_user, # Can be nil for Guest Checkout if supported
           store: @store,
-          cart: cart,
           delivery_address: params[:delivery_address],
           idempotency_key: idempotency_key
         )

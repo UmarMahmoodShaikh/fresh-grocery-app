@@ -49,6 +49,19 @@ Rails.application.routes.draw do
         resources :categories, only: [:index]
         resources :promotions, only: [:index]
         resources :banners, only: [:index]
+        
+        # New Redis Cart Routes
+        resource :cart, only: [:show, :destroy] do
+          post :add_item, to: 'carts#update'
+          delete 'items/:product_id', to: 'carts#destroy'
+        end
+
+        # New Checkout Routes
+        resources :orders, only: [] do
+          collection do
+            post :checkout
+          end
+        end
       end
     end
   end

@@ -5,7 +5,7 @@ module Stores
     end
 
     def call
-      banners = @store.banners.order(created_at: :desc)
+      banners = @store.banners.kept.order(created_at: :desc)
       success(banners: banners)
     end
   end

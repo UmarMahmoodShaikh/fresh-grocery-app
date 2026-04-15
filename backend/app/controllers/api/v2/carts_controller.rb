@@ -1,7 +1,8 @@
 module Api
   module V2
     class CartsController < ApplicationController
-      before_action :authenticate_request
+      # Allow guests to have carts, but authenticate if a token is present
+      before_action :try_authenticate_user
       before_action :set_store
       before_action :set_cart_service
 
