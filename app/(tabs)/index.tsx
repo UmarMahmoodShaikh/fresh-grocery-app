@@ -2,12 +2,12 @@ import { PersonalizedRecommendations } from "@/components/PersonalizedRecommenda
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import {
-  addressesApi,
-  brandsApi,
-  categoriesApi,
-  getStoredUser,
-  ordersApi,
-  productsApi,
+    addressesApi,
+    brandsApi,
+    categoriesApi,
+    getStoredUser,
+    ordersApi,
+    productsApi,
 } from "@/services/api";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -16,16 +16,17 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Animated,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  useColorScheme,
+    ActivityIndicator,
+    Animated,
+    ImageBackground,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -454,6 +455,10 @@ export default function HomeScreen() {
     router.push("/(tabs)/search" as any);
   };
 
+  const handleScanProduct = () => {
+    router.push("/(tabs)/scanner" as any);
+  };
+
   const handleAddCart = (e: any, item: any) => {
     e.stopPropagation();
     addToCart(item);
@@ -626,7 +631,7 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      <LinearGradient colors={["#2D6A4F", "#52B788"]} style={styles.header}>
+      <LinearGradient colors={["#52A478", "#7BC97F"]} style={styles.header}>
         <TouchableOpacity
           style={styles.addressBar}
           onPress={() => router.push("/addresses")}
@@ -676,16 +681,33 @@ export default function HomeScreen() {
           </View>
         ) : (
           <View style={styles.content}>
-            <LinearGradient
-              colors={["#2D6A4F", "#4ADE80"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.promoBanner}
+            {/* Scan Button */}
+            <TouchableOpacity
+              style={styles.scanButtonContainer}
+              onPress={handleScanProduct}
             >
+              <View style={styles.scanButton}>
+                <MaterialCommunityIcons
+                  name="barcode-scan"
+                  size={22}
+                  color={isDark ? "#10B981" : "#047857"}
+                />
+                <Text style={styles.scanButtonText}>Scan Product</Text>
+              </View>
+            </TouchableOpacity>
+
+            <ImageBackground
+              source={{
+                uri: "https://images.unsplash.com/photo-1488459716781-31db52582fe9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
+              }}
+              style={styles.promoBanner}
+              imageStyle={{ opacity: 0.7, borderRadius: 20 }}
+            >
+              <View style={styles.promoOverlay}>
               <View style={styles.promoContentWrapper}>
                 <View style={styles.promoHeader}>
                   <View style={styles.promoIconLarge}>
-                    <Ionicons name="pricetag" size={22} color="#2D6A4F" />
+                    <Ionicons name="pricetag" size={22} color="#F59E0B" />
                   </View>
                   <View>
                     <Text style={styles.promoLabel}>🎉 Special Offer</Text>
@@ -703,10 +725,11 @@ export default function HomeScreen() {
                   onPress={handleShopNow}
                 >
                   <Text style={styles.shopButtonText}>Shop Now</Text>
-                  <Ionicons name="arrow-forward" size={16} color="#2D6A4F" />
+                  <Ionicons name="arrow-forward" size={16} color="#F59E0B" />
                 </TouchableOpacity>
               </View>
-            </LinearGradient>
+              </View>
+            </ImageBackground>
 
             <PersonalizedRecommendations />
             {categories.length > 0 && (
@@ -882,8 +905,8 @@ const getStyles = (isDark: boolean) =>
 
     header: {
       paddingHorizontal: 20,
-      paddingTop: 16,
-      paddingBottom: 20,
+      paddingTop: 12,
+      paddingBottom: 12,
       borderBottomLeftRadius: 24,
       borderBottomRightRadius: 24,
     },
@@ -891,36 +914,35 @@ const getStyles = (isDark: boolean) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
-      marginBottom: 12,
+      marginBottom: 10,
       paddingVertical: 4,
     },
     addressText: {
-      color: "#fff",
+      color: "rgba(255,255,255,0.95)",
       fontSize: 13,
-      fontWeight: "600",
+      fontWeight: "500",
       flex: 1,
-      opacity: 0.95,
     },
     headerTop: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "flex-start",
-      marginBottom: 16,
+      marginBottom: 12,
     },
     welcomeText: {
       fontSize: 14,
-      color: "rgba(255,255,255,0.85)",
+      color: "rgba(255,255,255,0.9)",
       fontWeight: "500",
     },
     userName: {
-      fontSize: 22,
+      fontSize: 20,
       color: "#fff",
-      fontWeight: "800",
+      fontWeight: "700",
     },
     notificationButton: {
       position: "relative",
       padding: 8,
-      backgroundColor: "rgba(255,255,255,0.2)",
+      backgroundColor: "rgba(255,255,255,0.12)",
       borderRadius: 12,
     },
     badge: {
@@ -945,7 +967,7 @@ const getStyles = (isDark: boolean) =>
       backgroundColor: isDark ? "#1F2937" : "#fff",
       borderRadius: 14,
       paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingVertical: 10,
       gap: 10,
     },
     searchPlaceholder: {
@@ -957,11 +979,38 @@ const getStyles = (isDark: boolean) =>
       paddingTop: 16,
     },
 
+    scanButtonContainer: {
+      marginHorizontal: 20,
+      marginBottom: 16,
+    },
+    scanButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 12,
+      backgroundColor: isDark ? "#1F2937" : "#F0FDF4",
+      borderWidth: 1.5,
+      borderColor: isDark ? "#10B981" : "#D1FAE5",
+      gap: 10,
+    },
+    scanButtonText: {
+      color: isDark ? "#10B981" : "#047857",
+      fontSize: 15,
+      fontWeight: "600",
+    },
+
     promoBanner: {
       marginHorizontal: 20,
       borderRadius: 20,
       padding: 20,
       overflow: "hidden",
+    },
+    promoOverlay: {
+      flex: 1,
+      justifyContent: "center",
+      padding: 20,
     },
     promoContentWrapper: {},
     promoHeader: {
@@ -980,22 +1029,22 @@ const getStyles = (isDark: boolean) =>
     },
     promoLabel: {
       color: "#fff",
-      fontSize: 13,
+      fontSize: 15,
       fontWeight: "700",
     },
     promoValidity: {
-      color: "rgba(255,255,255,0.75)",
-      fontSize: 11,
+      color: "rgba(255,255,255,0.8)",
+      fontSize: 13,
     },
     promoTitle: {
       color: "#fff",
-      fontSize: 20,
+      fontSize: 24,
       fontWeight: "800",
-      lineHeight: 26,
+      lineHeight: 30,
       marginBottom: 16,
     },
     promoHighlight: {
-      fontSize: 24,
+      fontSize: 28,
       color: "#FFEB3B",
     },
     shopButton: {
@@ -1009,9 +1058,9 @@ const getStyles = (isDark: boolean) =>
       gap: 6,
     },
     shopButtonText: {
-      color: "#2D6A4F",
+      color: "#F59E0B",
       fontWeight: "700",
-      fontSize: 14,
+      fontSize: 16,
     },
 
     section: {
