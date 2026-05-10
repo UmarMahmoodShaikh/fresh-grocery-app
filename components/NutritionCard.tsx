@@ -286,9 +286,25 @@ const NutritionCard: React.FC<{
       </View>
 
       {/* DRV Reference Information */}
-      <View style={[styles.drvInfo, { backgroundColor: isDark ? "#374151" : "#F0F9FF" }]}>
-        <MaterialCommunityIcons name="information-outline" size={20} color="#3B82F6" />
-        <Text style={[styles.drvText, { color: isDark ? "#D1D5DB" : "#1E40AF" }]}>
+      <View
+        style={[
+          styles.drvInfo,
+          { backgroundColor: isDark ? "#374151" : "#F0F9FF" },
+        ]}
+      >
+        <View style={styles.drvIconContainer}>
+          <MaterialCommunityIcons
+            name="information-outline"
+            size={20}
+            color="#3B82F6"
+          />
+        </View>
+        <Text
+          style={[
+            styles.drvText,
+            { color: isDark ? "#D1D5DB" : "#1E40AF" },
+          ]}
+        >
           Values based on a 2,000 Cal/day diet. Your needs may vary.
         </Text>
       </View>
@@ -413,6 +429,12 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     gap: 8,
+  },
+  drvIconContainer: {
+    width: 24,
+    height: 24,
+    justifyContent: "center",
+    alignItems: "center",
   },
   drvText: {
     fontSize: 12,
