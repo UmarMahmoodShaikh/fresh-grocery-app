@@ -2,12 +2,12 @@ import { PersonalizedRecommendations } from "@/components/PersonalizedRecommenda
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import {
-    addressesApi,
-    brandsApi,
-    categoriesApi,
-    getStoredUser,
-    ordersApi,
-    productsApi,
+  addressesApi,
+  brandsApi,
+  categoriesApi,
+  getStoredUser,
+  ordersApi,
+  productsApi,
 } from "@/services/api";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -16,17 +16,17 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Animated,
-    ImageBackground,
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-    useColorScheme,
+  ActivityIndicator,
+  Animated,
+  ImageBackground,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -701,19 +701,19 @@ export default function HomeScreen() {
                 uri: "https://images.unsplash.com/photo-1488459716781-31db52582fe9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
               }}
               style={styles.promoBanner}
-              imageStyle={{ opacity: 0.7, borderRadius: 20 }}
+              imageStyle={{ opacity: 1, borderRadius: 20 }}
             >
               <View style={styles.promoOverlay}>
               <View style={styles.promoContentWrapper}>
                 <View style={styles.promoHeader}>
-                  <View style={styles.promoIconLarge}>
+                  {/* <View style={styles.promoIconLarge}>
                     <Ionicons name="pricetag" size={22} color="#F59E0B" />
-                  </View>
+                  </View> */}
                   <View>
-                    <Text style={styles.promoLabel}>🎉 Special Offer</Text>
-                    <Text style={styles.promoValidity}>
+                    {/* <Text style={styles.promoLabel}>🎉 Special Offer</Text> */}
+                    {/* <Text style={styles.promoValidity}>
                       Valid until April 30, 2026
-                    </Text>
+                    </Text> */}
                   </View>
                 </View>
                 <Text style={styles.promoTitle}>
