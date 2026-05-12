@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
     index: "home-outline",
     cart: "bag-outline",
+    budget: "wallet-outline",
     account: "person-outline",
     scanner: "scan-outline",
 };
@@ -24,6 +25,7 @@ const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 const ICONS_ACTIVE: Record<string, keyof typeof Ionicons.glyphMap> = {
     index: "home",
     cart: "bag",
+    budget: "wallet",
     account: "person",
     scanner: "scan",
 };
