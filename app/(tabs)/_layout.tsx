@@ -8,10 +8,10 @@ export default function TabLayout() {
       screenOptions={{ headerShown: false }}
     >
       <Tabs.Screen name="index" options={{ title: "Home", tabBarLabel: "Home" }} />
+      <Tabs.Screen name="scanner" options={{ title: "Scanner", tabBarLabel: "Scanner" }} />
       <Tabs.Screen name="cart" options={{ title: "Cart", tabBarLabel: "Cart" }} />
       <Tabs.Screen name="budget" options={{ title: "Budget", tabBarLabel: "Budget" }} />
       <Tabs.Screen name="account" options={{ title: "Profile", tabBarLabel: "Profile" }} />
-      <Tabs.Screen name="scanner" options={{ title: "Scanner", tabBarLabel: "Scanner" }} />
 
       {/* Hidden from the tab bar but still accessible as screens */}
       <Tabs.Screen name="history" options={{ href: null }} />

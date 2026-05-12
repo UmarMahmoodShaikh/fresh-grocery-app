@@ -121,11 +121,6 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
                                             </View>
                                         )}
                                     </View>
-                                    {isFocused && (
-                                        <Text style={styles.tabLabelFocused} numberOfLines={1}>
-                                            {typeof label === "string" ? label : route.name}
-                                        </Text>
-                                    )}
                                 </Pressable>
                             </View>
                         );
@@ -166,25 +161,17 @@ const styles = StyleSheet.create({
         // Ensure the scroll view hugs the items properly but allows scrolling
     },
     tabItem: {
-        padding: 12,
+        width: 48,
+        height: 48,
         borderRadius: 30,
         alignItems: "center",
         justifyContent: "center",
-        flexDirection: "row",
     },
     tabItemFocused: {
         backgroundColor: "#63c276",
-        paddingHorizontal: 20,
-        // Add a max width so horizontal scroll doesn't break if label is very long
-        maxWidth: 120,
-    },
-    tabLabelFocused: {
-        color: "#fff",
-        fontSize: 14,
-        fontWeight: "700",
-        marginLeft: 8,
-        textTransform: "capitalize",
-        flexShrink: 1, // Let text shrink gracefully if needed
+        width: 56,
+        height: 56,
+        borderRadius: 28,
     },
     badge: {
         position: 'absolute',
