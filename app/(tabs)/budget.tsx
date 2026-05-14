@@ -5,14 +5,14 @@ import { categoriesApi } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-    useColorScheme,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -99,6 +99,12 @@ export default function BudgetScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Budget</Text>
+        <TouchableOpacity onPress={handleSaveBudgets}>
+          <Text style={styles.headerSave}>Save</Text>
+        </TouchableOpacity>
+      </View>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
@@ -106,10 +112,6 @@ export default function BudgetScreen() {
           { paddingBottom: 40 + insets.bottom + 120 },
         ]}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>Budget</Text>
-          <Text style={styles.subtitle}>Set a total budget and per-category limits. You will get an alert when adding items goes over budget.</Text>
-        </View>
 
         <View style={styles.summaryCard}>
           <View style={styles.summaryRow}>
@@ -137,10 +139,10 @@ export default function BudgetScreen() {
             <Ionicons name="refresh-outline" size={18} color="#DC2626" />
             <Text style={styles.clearButtonText}>Clear all budgets</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSaveBudgets}>
+          {/* <TouchableOpacity style={styles.saveButton} onPress={handleSaveBudgets}>
             <Ionicons name="save-outline" size={18} color="#fff" />
             <Text style={styles.saveButtonText}>Save budgets</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         <View style={styles.sectionHeader}>
@@ -171,46 +173,40 @@ const getStyles = (isDark: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? "#111827" : "#F9FAFB",
+      backgroundColor: isDark ? "#111827" : "#F8FAFC",
     },
     content: {
-      padding: 16,
-      gap: 12,
+      padding: 20,
+      gap: 16,
     },
     header: {
-      gap: 6,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: 16,
+      paddingVertical: 16,
       backgroundColor: isDark ? "#1F2937" : "#fff",
-      borderRadius: 12,
-      padding: 16,
-      borderWidth: 1,
-      borderColor: isDark ? "#374151" : "#E5E7EB",
-      shadowColor: isDark ? "#F9FAFB" : "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 5,
-      elevation: 2,
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? "#374151" : "#E5E7EB",
     },
-    title: {
+    headerTitle: {
       fontSize: 20,
       fontWeight: "700",
-      color: isDark ? "#F9FAFB" : "#111827",
+      color: isDark ? "#F9FAFB" : "#1F2937",
     },
-    subtitle: {
-      fontSize: 14,
-      lineHeight: 20,
-      color: isDark ? "#9CA3AF" : "#475569",
+    headerSave: {
+      color: "#22C55E",
+      fontWeight: "600",
+      fontSize: 16,
     },
     summaryCard: {
       backgroundColor: isDark ? "#1F2937" : "#fff",
-      borderRadius: 12,
+      borderRadius: 24,
       padding: 18,
-      borderWidth: 1,
-      borderColor: isDark ? "#374151" : "#E5E7EB",
-      shadowColor: isDark ? "#F9FAFB" : "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 5,
-      elevation: 2,
+      shadowColor: "#000",
+      shadowOpacity: 0.08,
+      shadowRadius: 16,
+      elevation: 4,
     },
     summaryRow: {
       flexDirection: "row",
@@ -268,7 +264,7 @@ const getStyles = (isDark: boolean) =>
       alignItems: "center",
       justifyContent: "center",
       gap: 8,
-      borderRadius: 12,
+      borderRadius: 14,
       paddingVertical: 12,
       backgroundColor: "#22C55E",
     },
@@ -296,15 +292,9 @@ const getStyles = (isDark: boolean) =>
       alignItems: "center",
       gap: 12,
       backgroundColor: isDark ? "#1F2937" : "#fff",
-      borderRadius: 12,
+      borderRadius: 20,
       borderWidth: 1,
       padding: 14,
-      borderColor: isDark ? "#374151" : "#E5E7EB",
-      shadowColor: isDark ? "#F9FAFB" : "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 5,
-      elevation: 2,
     },
     categoryBadge: {
       width: 44,
@@ -339,7 +329,7 @@ const getStyles = (isDark: boolean) =>
       minWidth: 96,
       borderWidth: 1,
       borderColor: isDark ? "#374151" : "#E2E8F0",
-      borderRadius: 12,
+      borderRadius: 14,
       paddingHorizontal: 12,
       paddingVertical: 10,
       fontSize: 16,
