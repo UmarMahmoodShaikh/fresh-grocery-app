@@ -271,7 +271,7 @@ const NutritionCard: React.FC<{
       </View>
 
       {/* DRV Reference Information */}
-      <View
+      {/* <View
         style={[
           styles.drvInfo,
           { backgroundColor: isDark ? "#374151" : "#F0F9FF" },
@@ -292,7 +292,7 @@ const NutritionCard: React.FC<{
         >
           Values based on a 2,000 Cal/day diet. Your needs may vary.
         </Text>
-      </View>
+      </View> */}
     </ScrollView>
   );
 };

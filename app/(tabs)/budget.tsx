@@ -14,7 +14,7 @@ import {
     View,
     useColorScheme,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface Category {
   id: number;
@@ -26,6 +26,7 @@ const CATEGORY_COLORS = ["#E8F5E9", "#E3F2FD", "#FFF8E1", "#FCE4EC", "#EDE7F6", 
 
 export default function BudgetScreen() {
   const isDark = useColorScheme() === "dark";
+  const insets = useSafeAreaInsets();
   const styles = getStyles(isDark);
   const { totalBudget, setTotalBudget, setCategoryBudget, clearBudgets, saveBudgets, getCategoryBudget } = useBudget();
   const { cartItems, cartTotal } = useCart();
@@ -98,7 +99,13 @@ export default function BudgetScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: 40 + insets.bottom + 120 },
+        ]}
+      >
         <View style={styles.header}>
           <Text style={styles.title}>Budget</Text>
           <Text style={styles.subtitle}>Set a total budget and per-category limits. You will get an alert when adding items goes over budget.</Text>
@@ -168,7 +175,6 @@ const getStyles = (isDark: boolean) =>
     },
     content: {
       padding: 20,
-      paddingBottom: 40,
       gap: 16,
     },
     header: {
