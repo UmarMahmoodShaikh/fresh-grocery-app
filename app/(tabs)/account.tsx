@@ -1,19 +1,19 @@
-import { SafeAreaView } from "react-native-safe-area-context";
 import { authApi, getStoredUser } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  Alert,
-  Appearance,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View
+    Alert,
+    Appearance,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 
 export default function Account() {
@@ -50,6 +50,10 @@ export default function Account() {
 
   const handlePersonalInfo = () => {
     router.push("/profile");
+  };
+
+  const handleFavorites = () => {
+    router.push("/(tabs)/favorites");
   };
 
   const handleSavedAddresses = () => {
@@ -151,6 +155,21 @@ export default function Account() {
               <Text style={[styles.menuSubtitle, isDarkMode && { color: "#9CA3AF" }]}>
                 Update your profile details
               </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={isDarkMode ? "#6B7280" : "#9CA3AF"} />
+          </TouchableOpacity>
+
+          {/* My Favorites */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleFavorites}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: isDarkMode ? "#7F1D1D" : "#FEE2E2" }]}>
+              <Ionicons name="heart-outline" size={22} color={isDarkMode ? "#F87171" : "#EF4444"} />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={[styles.menuTitle, isDarkMode && { color: "#F9FAFB" }]}>My Favorites</Text>
+              <Text style={[styles.menuSubtitle, isDarkMode && { color: "#9CA3AF" }]}>View saved products</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={isDarkMode ? "#6B7280" : "#9CA3AF"} />
           </TouchableOpacity>

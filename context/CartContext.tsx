@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { Alert } from 'react-native';
+import { useBudget } from './BudgetContext';
 
 export interface CartItem {
     id: number;
@@ -7,6 +9,8 @@ export interface CartItem {
     price: number;
     quantity: number;
     image_url: string;
+    category_id?: number | null;
+    category_name?: string;
 }
 
 interface CartContextType {
@@ -23,6 +27,86 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
+    const { totalBudget, getCategoryBudget } = useBudget();
+
+    const getCategoryKeyLabel = (categoryId: number | null | undefined, categoryName: string | null | undefined) => {
+        if (categoryName && categoryName.trim().length > 0) {
+            return categoryName;
+        }
+        if (categoryId !== null && categoryId !== undefined) {
+            return `Category ${categoryId}`;
+        }
+        return "Uncategorized";
+    };
+
+    const resolveCategoryKey = (categoryId: number | null | undefined, categoryName: string | null | undefined) => {
+        if (categoryId !== null && categoryId !== undefined) {
+            return `id:${categoryId}`;
+        }
+
+        if (categoryName && categoryName.trim().length > 0) {
+            return `name:${categoryName.trim().toLowerCase()}`;
+        }
+
+        return "";
+    };
+
+    const calculateCartTotal = (items: CartItem[]) => items.reduce(
+        (total, item) => total + item.price * item.quantity,
+        0
+    );
+
+    const getNextItems = (product: any, quantity: number) => {
+        const existingItem = cartItems.find(item => item.id === product.id);
+
+        if (existingItem) {
+            return cartItems.map(item =>
+                item.id === product.id
+                    ? { ...item, quantity: item.quantity + quantity }
+                    : item
+            );
+        }
+
+        return [
+            ...cartItems,
+            {
+                id: product.id,
+                name: product.name,
+                price: Number(product.price),
+                quantity,
+                image_url: product.image_url,
+                category_id: product.category?.id ?? null,
+                category_name: product.category?.name ?? "",
+            },
+        ];
+    };
+
+    const validateBudgets = (nextItems: CartItem[], product: any, quantity: number) => {
+        const nextTotal = calculateCartTotal(nextItems);
+        const issues: string[] = [];
+
+        if (totalBudget > 0 && nextTotal > totalBudget) {
+            issues.push(`Total budget exceeded: €${nextTotal.toFixed(2)} / €${totalBudget.toFixed(2)}`);
+        }
+
+        const categoryKey = resolveCategoryKey(product.category?.id, product.category?.name);
+        if (categoryKey) {
+            const categoryBudget = getCategoryBudget(product.category?.id, product.category?.name);
+            if (categoryBudget > 0) {
+                const nextCategoryTotal = nextItems
+                    .filter(item => resolveCategoryKey(item.category_id, item.category_name) === categoryKey)
+                    .reduce((total, item) => total + item.price * item.quantity, 0);
+
+                if (nextCategoryTotal > categoryBudget) {
+                    issues.push(
+                        `${getCategoryKeyLabel(product.category?.id, product.category?.name)} budget exceeded: €${nextCategoryTotal.toFixed(2)} / €${categoryBudget.toFixed(2)}`,
+                    );
+                }
+            }
+        }
+
+        return issues;
+    };
 
     // Load from AsyncStorage
     useEffect(() => {
@@ -52,26 +136,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [cartItems]);
 
     const addToCart = (product: any, quantity = 1) => {
-        setCartItems(prevItems => {
-            const existingItem = prevItems.find(item => item.id === product.id);
-            if (existingItem) {
-                return prevItems.map(item =>
-                    item.id === product.id
-                        ? { ...item, quantity: item.quantity + quantity }
-                        : item
-                );
-            }
-            return [
-                ...prevItems,
-                {
-                    id: product.id,
-                    name: product.name,
-                    price: Number(product.price),
-                    quantity,
-                    image_url: product.image_url,
-                },
-            ];
-        });
+        const nextItems = getNextItems(product, quantity);
+        const issues = validateBudgets(nextItems, product, quantity);
+
+        if (issues.length > 0) {
+            Alert.alert(
+                "Budget alert",
+                issues.join("\n\n"),
+                [{ text: "OK" }],
+            );
+            return false;
+        }
+
+        setCartItems(nextItems);
+        return true;
     };
 
     const removeFromCart = (id: number) => {
@@ -83,9 +161,29 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             removeFromCart(id);
             return;
         }
-        setCartItems(prevItems =>
-            prevItems.map(item => (item.id === id ? { ...item, quantity } : item))
-        );
+
+        const nextItems = cartItems.map(item => (item.id === id ? { ...item, quantity } : item));
+        const changedItem = nextItems.find(item => item.id === id);
+
+        if (changedItem) {
+            const issues = validateBudgets(nextItems, {
+                category: {
+                    id: changedItem.category_id,
+                    name: changedItem.category_name,
+                },
+            }, quantity);
+
+            if (issues.length > 0) {
+                Alert.alert(
+                    "Budget alert",
+                    issues.join("\n\n"),
+                    [{ text: "OK" }],
+                );
+                return;
+            }
+        }
+
+        setCartItems(nextItems);
     };
 
     const clearCart = () => setCartItems([]);

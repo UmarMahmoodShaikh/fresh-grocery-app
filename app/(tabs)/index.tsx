@@ -28,7 +28,7 @@ import {
   View,
   useColorScheme,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 const FloatingPlusOne = ({ x, y }: { x: number; y: number }) => {
   const translateY = useRef(new Animated.Value(0)).current;
@@ -164,6 +164,7 @@ const CATEGORY_COLORS = [
 
 export default function HomeScreen() {
   const isDark = useColorScheme() === "dark";
+  const insets = useSafeAreaInsets();
   const styles = getStyles(isDark);
 
   const { addToCart } = useCart();
@@ -674,6 +675,9 @@ export default function HomeScreen() {
       <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: 40 + insets.bottom + 80,
+        }}
       >
         {loading ? (
           <View style={styles.loadingWrap}>
@@ -747,17 +751,13 @@ export default function HomeScreen() {
                     <Text style={styles.seeAll}>See All</Text>
                   </TouchableOpacity>
                 </View>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.categoryScroll}
-                >
+                <View style={styles.categoryGrid}>
                   {categories.map((cat, i) => renderCategoryItem(cat, i))}
-                </ScrollView>
+                </View>
               </View>
             )}
 
-            {brands.length > 0 && (
+            {false && brands.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Featured Brands</Text>
@@ -782,7 +782,7 @@ export default function HomeScreen() {
               </View>
             )}
 
-            {products.length > 0 && (
+            {false && products.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Best Sellers</Text>
@@ -802,7 +802,7 @@ export default function HomeScreen() {
               </View>
             )}
 
-            {products.length > 0 && (
+            {false && products.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>All Products</Text>
@@ -1085,21 +1085,38 @@ const getStyles = (isDark: boolean) =>
     },
 
     categoryScroll: {
-      paddingLeft: 20,
-      paddingRight: 8,
+      paddingHorizontal: 20,
       gap: 16,
     },
+    categoryGrid: {
+      paddingHorizontal: 20,
+      flexDirection: "row",
+      flexWrap: "wrap",
+      rowGap: 16,
+    },
     categoryItem: {
+      width: "33.333%",
       alignItems: "center",
-      width: 72,
+      paddingHorizontal: 4,
+      backgroundColor: isDark ? "#1F2937" : "#fff",
+      borderRadius: 12,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: isDark ? "#374151" : "#E5E7EB",
+      shadowColor: isDark ? "#F9FAFB" : "#000",
+      shadowOffset: { width: 3, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 5,
+      elevation: 2,
     },
     categoryCircle: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
+      width: 50,
+      height: 50,
+      borderRadius: 20,
       alignItems: "center",
       justifyContent: "center",
-      marginBottom: 8,
+      marginBottom: 13,
+      marginRight: 5,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
@@ -1122,6 +1139,7 @@ const getStyles = (isDark: boolean) =>
       fontWeight: "600",
       color: isDark ? "#D1D5DB" : "#4B5563",
       textAlign: "center",
+      marginTop: 8,
     },
 
     brandScroll: {

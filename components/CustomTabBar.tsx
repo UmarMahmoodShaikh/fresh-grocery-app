@@ -1,18 +1,14 @@
 import { useCart } from "@/context/CartContext";
-import { useFavorites } from "@/context/FavoritesContext";
-import { authApi } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { useRouter } from "expo-router";
 import {
-    Alert,
     Platform,
     Pressable,
     ScrollView,
     StyleSheet,
     Text,
     useWindowDimensions,
-    View,
+    View
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -21,58 +17,36 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
     index: "home-outline",
     cart: "bag-outline",
+    budget: "wallet-outline",
     account: "person-outline",
     scanner: "scan-outline",
-    favorites: "heart-outline",
-    explore: "grid-outline",
 };
 
 const ICONS_ACTIVE: Record<string, keyof typeof Ionicons.glyphMap> = {
     index: "home",
     cart: "bag",
+    budget: "wallet",
     account: "person",
     scanner: "scan",
-    favorites: "heart",
-    explore: "grid",
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     const insets = useSafeAreaInsets();
-    const router = useRouter();
     const { width } = useWindowDimensions();
     const { cartItems } = useCart();
-    const { favorites } = useFavorites();
 
     const cartItemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
-    const hasFavorites = favorites.length > 0;
 
-    const handleLogout = () => {
-        Alert.alert("Logout", "Are you sure you want to log out?", [
-            { text: "Cancel", style: "cancel" },
-            {
-                text: "Logout",
-                style: "destructive",
-                onPress: async () => {
-                    await authApi.logout();
-                    router.replace("/(auth)/login" as any);
-                },
-            },
-        ]);
-    };
-
-    // We want to show items horizontally. 
+    // We want to show items horizontally.
     // Home, Cart, Account, Scanner are always there.
-    // Favorites is conditional.
-    // Logout is always there.
     const visibleRoutesCount = state.routes.filter(route => {
         const { options } = descriptors[route.key];
         const isHidden = route.name.startsWith("_") || (options as any).href === null;
-        if (isHidden && route.name !== 'favorites') return false; // Stay hidden
-        if (route.name === 'favorites' && !hasFavorites) return false;
+        if (isHidden) return false; // Keep hidden routes out of the bar
         return !!ICONS[route.name];
-    }).length + 1; // +1 for the custom Logout button
+    }).length;
 
     const innerWidth = width * 0.9 - 24;
     const ITEM_WIDTH = innerWidth / Math.min(visibleRoutesCount, 5); // Max 5 items visible before scrolling? 
@@ -92,12 +66,10 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
 
                         // Skip rendering if route has href: null (hidden) or starts with _
                         // OR if we don't have an icon defined for it
-                        // EXCEPT favorites which we handle specially
                         const isHidden = route.name.startsWith("_") || (options as any).href === null;
 
-                        if (isHidden && route.name !== 'favorites') return null;
+                        if (isHidden) return null;
                         if (!ICONS[route.name]) return null;
-                        if (route.name === 'favorites' && !hasFavorites) return null;
 
                         const label =
                             options.tabBarLabel !== undefined
@@ -149,26 +121,11 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
                                             </View>
                                         )}
                                     </View>
-                                    {isFocused && (
-                                        <Text style={styles.tabLabelFocused} numberOfLines={1}>
-                                            {typeof label === "string" ? label : route.name}
-                                        </Text>
-                                    )}
                                 </Pressable>
                             </View>
                         );
                     })}
 
-                    {/* ── Custom Logout Tab ────────────────────────────────────────── */}
-                    <View style={{ width: ITEM_WIDTH, alignItems: "center" }}>
-                        <Pressable
-                            style={styles.tabItem}
-                            onPress={handleLogout}
-                        >
-                            <Ionicons name="log-out-outline" size={22} color="#EF4444" />
-                            {/* Not showing text unless active, and logout is never 'active' */}
-                        </Pressable>
-                    </View>
                 </ScrollView>
             </View>
         </View>
@@ -204,25 +161,17 @@ const styles = StyleSheet.create({
         // Ensure the scroll view hugs the items properly but allows scrolling
     },
     tabItem: {
-        padding: 12,
+        width: 48,
+        height: 48,
         borderRadius: 30,
         alignItems: "center",
         justifyContent: "center",
-        flexDirection: "row",
     },
     tabItemFocused: {
         backgroundColor: "#63c276",
-        paddingHorizontal: 20,
-        // Add a max width so horizontal scroll doesn't break if label is very long
-        maxWidth: 120,
-    },
-    tabLabelFocused: {
-        color: "#fff",
-        fontSize: 14,
-        fontWeight: "700",
-        marginLeft: 8,
-        textTransform: "capitalize",
-        flexShrink: 1, // Let text shrink gracefully if needed
+        width: 56,
+        height: 56,
+        borderRadius: 28,
     },
     badge: {
         position: 'absolute',
