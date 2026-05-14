@@ -1,22 +1,27 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    useColorScheme,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useColorScheme,
+  View,
 } from "react-native";
 
 interface NutritionInfo {
   calories?: number;
   fat?: number;
   saturated_fat?: number;
+  trans_fat?: number;
   carbs?: number;
   sugars?: number;
+  starch?: number;
   protein?: number;
   sodium?: number;
+  salt?: number;
   fiber?: number;
+  calcium?: number;
+  iron?: number;
   [key: string]: number | undefined;
 }
 
@@ -25,11 +30,16 @@ const DRV = {
   calories: 2000,
   fat: 78,
   saturated_fat: 20,
+  trans_fat: 2,
   carbs: 275,
   sugars: 50,
+  starch: 150,
   protein: 50,
   sodium: 2300,
+  salt: 6,
   fiber: 28,
+  calcium: 1000,
+  iron: 18,
 };
 
 // Calculate percentage of Daily Reference Value
@@ -157,43 +167,13 @@ const NutrientCard: React.FC<NutrientCardProps> = ({
           <Text
             style={[
               styles.nutrientValue,
-              { color: isDark ? "#D1D5DB" : "#6B7280" },
+              { color: isBad ? "#EF4444" : isDark ? "#D1D5DB" : "#6B7280" },
             ]}
           >
-            {value.toFixed(1)} {unit}
+            {`${value.toFixed(1)} ${unit}`}
           </Text>
         </View>
       </View>
-      {percentage && (
-        <View style={styles.nutrientProgress}>
-          <View
-            style={[
-              styles.drvBar,
-              {
-                backgroundColor: isDark ? "#1F2937" : "#E5E7EB",
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.drvFill,
-                {
-                  width: `${Math.min(percentage, 100)}%`,
-                  backgroundColor: getPercentageColor(percentage),
-                },
-              ]}
-            />
-          </View>
-          <Text
-            style={[
-              styles.percentage,
-              { color: getPercentageColor(percentage) },
-            ]}
-          >
-            {percentage}%
-          </Text>
-        </View>
-      )}
     </View>
   );
 };
@@ -221,6 +201,11 @@ const NutritionCard: React.FC<{
     { key: "sodium", label: "Sodium", icon: "shaker", unit: "mg", isBad: nutrition.sodium ? nutrition.sodium > 500 : false },
     { key: "fiber", label: "Fiber", icon: "leaf", unit: "g", isBad: nutrition.fiber ? nutrition.fiber < 3 : false },
     { key: "saturated_fat", label: "Saturated Fat", icon: "water-alert", unit: "g", isBad: nutrition.saturated_fat ? nutrition.saturated_fat > 5 : false },
+    { key: "trans_fat", label: "Trans Fat", icon: "alert-circle", unit: "g", isBad: nutrition.trans_fat ? nutrition.trans_fat > 0.5 : false },
+    { key: "salt", label: "Salt", icon: "shaker-outline", unit: "g", isBad: nutrition.salt ? nutrition.salt > 2 : false },
+    { key: "calcium", label: "Calcium", icon: "bone", unit: "mg", isBad: nutrition.calcium ? nutrition.calcium < 100 : false },
+    { key: "iron", label: "Iron", icon: "water-opacity", unit: "mg", isBad: nutrition.iron ? nutrition.iron < 2 : false },
+    { key: "starch", label: "Starch", icon: "wheat", unit: "g", isBad: nutrition.starch ? nutrition.starch > 50 : false },
   ];
 
   const allNutrients = [...mainNutrients, ...secondaryNutrients];
@@ -375,8 +360,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   nutrientCard: {
-    flex: 1,
-    minWidth: "48%",
+    width: "100%",
     borderRadius: 10,
     padding: 12,
     borderWidth: 1,
