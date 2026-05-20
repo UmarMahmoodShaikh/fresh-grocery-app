@@ -289,7 +289,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         marginLeft: 8,
     },
     checkoutBtn: {
-        backgroundColor: "#2D6A4F",
+        backgroundColor: "#10B981",
         borderRadius: 12,
         paddingVertical: 16,
         alignItems: "center",
