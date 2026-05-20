@@ -1,16 +1,18 @@
 import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
+    DarkTheme,
+    DefaultTheme,
+    ThemeProvider,
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import { CustomSplashScreen } from "@/components/CustomSplashScreen";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { BudgetProvider } from '@/context/BudgetContext';
 import { CartProvider } from '@/context/CartContext';
 import { FavoritesProvider } from '@/context/FavoritesContext';
+import { NetworkProvider } from '@/context/NetworkContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import * as SplashScreen from "expo-splash-screen";
 import { useState } from "react";
@@ -28,11 +30,13 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <FavoritesProvider>
-        <BudgetProvider>
-          <CartProvider>
-            {!appIsReady && <CustomSplashScreen onComplete={() => setAppIsReady(true)} />}
-            <Stack>
+      <NetworkProvider>
+        <FavoritesProvider>
+          <BudgetProvider>
+            <CartProvider>
+              <OfflineIndicator />
+              {!appIsReady && <CustomSplashScreen onComplete={() => setAppIsReady(true)} />}
+              <Stack>
               <Stack.Screen name="(auth)" options={{ headerShown: false }} />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="(admin)" options={{ headerShown: false }} />
@@ -83,7 +87,8 @@ export default function RootLayout() {
             </Stack>
           </CartProvider>
         </BudgetProvider>
-      </FavoritesProvider>
+        </FavoritesProvider>
+      </NetworkProvider>
       <StatusBar style="auto" />
     </ThemeProvider>
   );
