@@ -4,23 +4,23 @@ import { RecommendedProducts } from "@/components/RecommendedProducts";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import {
-  trackAddToCart,
-  trackProductView
+    trackAddToCart,
+    trackProductView
 } from "@/services/algolia";
 import { getStoredUser, productsApi } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Animated,
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  useColorScheme,
+    Animated,
+    Image,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -481,13 +481,7 @@ export default function ProductDetails() {
 
           {/* Badges */}
           <View style={styles.badgesContainer}>
-            {off.nutriscore_grade && (
-              <View style={[styles.badge, { backgroundColor: "#10B981" }]}>
-                <Text style={styles.badgeText}>
-                  Nutriscore: {off.nutriscore_grade.toUpperCase()}
-                </Text>
-              </View>
-            )}
+            {/* Nutriscore hidden */}
             {off.nova_group && (
               <View style={[styles.badge, { backgroundColor: "#F59E0B" }]}>
                 <Text style={styles.badgeText}>NOVA: {off.nova_group}</Text>

@@ -1,11 +1,11 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
+    ScrollView,
+    StyleSheet,
+    Text,
+    useColorScheme,
+    View,
 } from "react-native";
 
 interface NutritionInfo {
@@ -56,48 +56,68 @@ const getPercentageColor = (percentage: number): string => {
   return "#10B981"; // Green - low
 };
 
-// Calculate health score
+// Calculate health score using stricter Nutriscore-like algorithm
 const calculateHealthScore = (nutrition: NutritionInfo): number => {
-  let score = 100;
+  let negativePoints = 0;
 
-  // Deduct points for unhealthy nutrients
-  if (nutrition.sugars && nutrition.sugars > 25) score -= 15;
-  else if (nutrition.sugars && nutrition.sugars > 12) score -= 8;
+  // Energy: 0-3500 kJ (0-840 kcal) per 100g, 0-10 points
+  // Assuming values are per 100g
+  if (nutrition.calories) {
+    negativePoints += Math.min(10, Math.round((nutrition.calories / 840) * 10));
+  }
 
-  if (nutrition.sodium && nutrition.sodium > 500) score -= 15;
-  else if (nutrition.sodium && nutrition.sodium > 300) score -= 8;
+  // Saturated Fat: 0-20g per 100g, 0-10 points
+  if (nutrition.saturated_fat) {
+    negativePoints += Math.min(10, Math.round((nutrition.saturated_fat / 20) * 10));
+  }
 
-  if (nutrition.fat && nutrition.fat > 20) score -= 10;
-  else if (nutrition.fat && nutrition.fat > 10) score -= 5;
+  // Sugars: 0-90g per 100g, 0-10 points
+  if (nutrition.sugars) {
+    negativePoints += Math.min(10, Math.round((nutrition.sugars / 90) * 10));
+  }
 
-  if (nutrition.saturated_fat && nutrition.saturated_fat > 5) score -= 8;
+  // Sodium: 0-2400mg per 100g (0-2.4g), 0-10 points
+  if (nutrition.sodium) {
+    negativePoints += Math.min(10, Math.round((nutrition.sodium / 2400) * 10));
+  }
 
-  if (nutrition.calories && nutrition.calories > 400) score -= 10;
-  else if (nutrition.calories && nutrition.calories > 250) score -= 5;
+  // Fiber: Bonus points (0 to -5)
+  let positivePoints = 0;
+  if (nutrition.fiber) {
+    positivePoints += Math.min(5, Math.round((nutrition.fiber / 8.5) * 5));
+  }
 
-  // Add points for healthy nutrients
-  if (nutrition.fiber && nutrition.fiber > 3) score += 10;
-  if (nutrition.protein && nutrition.protein > 8) score += 5;
+  // Protein: Bonus points (0 to -5)
+  if (nutrition.protein) {
+    positivePoints += Math.min(5, Math.round((nutrition.protein / 25) * 5));
+  }
 
-  return Math.max(0, Math.min(100, score));
+  // Final score: negative - positive (0-60 range typically)
+  const nutriscorePoints = Math.max(0, negativePoints - positivePoints);
+
+  // Convert to 0-100 scale
+  // 0 points = 100 (A), 40+ points = 0 (E)
+  const normalizedScore = Math.max(0, Math.min(100, 100 - (nutriscorePoints * 2)));
+
+  return Math.round(normalizedScore);
 };
 
-// Get health score label
+// Get health score label - stricter grading
 const getScoreLabel = (score: number): string => {
-  if (score >= 80) return "Excellent";
+  if (score >= 75) return "Excellent";
   if (score >= 60) return "Good";
-  if (score >= 40) return "Fair";
-  if (score >= 20) return "Poor";
+  if (score >= 45) return "Fair";
+  if (score >= 25) return "Poor";
   return "Bad";
 };
 
-// Get score color
+// Get score color - stricter grading
 const getScoreColor = (score: number): string => {
-  if (score >= 80) return "#10B981"; // Green
-  if (score >= 60) return "#84CC16"; // Light green
-  if (score >= 40) return "#FBBF24"; // Orange
-  if (score >= 20) return "#F97316"; // Dark orange
-  return "#EF4444"; // Red
+  if (score >= 75) return "#10B981"; // A - Green
+  if (score >= 60) return "#84CC16"; // B - Light green
+  if (score >= 45) return "#FBBF24"; // C - Yellow
+  if (score >= 25) return "#F97316"; // D - Orange
+  return "#EF4444"; // E - Red
 };
 
 // Nutrient card component props
