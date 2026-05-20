@@ -11,6 +11,7 @@ export interface CartItem {
     image_url: string;
     category_id?: number | null;
     category_name?: string;
+    calories?: number | null;
 }
 
 interface CartContextType {
@@ -21,6 +22,7 @@ interface CartContextType {
     clearCart: () => void;
     cartTotal: number;
     cartCount: number;
+    totalCalories: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -58,6 +60,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const getNextItems = (product: any, quantity: number) => {
         const existingItem = cartItems.find(item => item.id === product.id);
+// Extract calories from product nutrition data
+        const getCalories = (productData: any): number | null => {
+            if (productData.calories) return productData.calories;
+            if (productData.nutrition?.calories) return productData.nutrition.calories;
+            if (productData.nutrition?.energy) return productData.nutrition.energy;
+            return null;
+        };
 
         if (existingItem) {
             return cartItems.map(item =>
@@ -77,6 +86,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 image_url: product.image_url,
                 category_id: product.category?.id ?? null,
                 category_name: product.category?.name ?? "",
+                calories: getCalories(product),
             },
         ];
     };
@@ -198,6 +208,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         0
     );
 
+    const totalCalories = cartItems.reduce(
+        (total, item) => total + ((item.calories || 0) * item.quantity),
+        0
+    );
+
     return (
         <CartContext.Provider
             value={{
@@ -208,6 +223,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 clearCart,
                 cartTotal,
                 cartCount,
+                totalCalories,
             }}
         >
             {children}
