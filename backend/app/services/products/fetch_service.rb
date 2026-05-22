@@ -17,7 +17,10 @@ module Products
       else
         store_products = base_scope
         
-        # Optional: Add filters for brand_id and category_id if present in @params
+        # Filtering logic
+        store_products = store_products.where(products: { barcode: @params[:barcode] }) if @params[:barcode].present?
+        store_products = store_products.where(products: { category_id: @params[:category_id] }) if @params[:category_id].present?
+        store_products = store_products.where(products: { brand_id: @params[:brand_id] }) if @params[:brand_id].present?
         
         products_response = store_products.map do |sp|
           format_product_response(sp)

@@ -10,7 +10,7 @@ export default function CartScreen() {
   const isDark = useColorScheme() === 'dark';
   const styles = getStyles(isDark);
 
-    const { cartItems, cartTotal, updateQuantity, removeFromCart, clearCart } = useCart();
+    const { cartItems, cartTotal, updateQuantity, removeFromCart, clearCart, isLoadingCart } = useCart();
     const router = useRouter();
 
     const handleCheckout = () => {
@@ -37,17 +37,26 @@ export default function CartScreen() {
                 <Text style={styles.itemPrice}>€{Number(item.price * item.quantity).toFixed(2)}</Text>
 
                 <View style={styles.quantityContainer}>
-                    <TouchableOpacity onPress={() => updateQuantity(item.id, item.quantity - 1)} style={styles.qtyBtn}>
+                    <TouchableOpacity
+                        onPress={() => updateQuantity(item.product_id, item.quantity - 1)}
+                        style={styles.qtyBtn}
+                    >
                         <Ionicons name="remove" size={16} color="#374151" />
                     </TouchableOpacity>
                     <Text style={styles.qtyText}>{item.quantity}</Text>
-                    <TouchableOpacity onPress={() => updateQuantity(item.id, item.quantity + 1)} style={styles.qtyBtn}>
+                    <TouchableOpacity
+                        onPress={() => updateQuantity(item.product_id, item.quantity + 1)}
+                        style={styles.qtyBtn}
+                    >
                         <Ionicons name="add" size={16} color="#374151" />
                     </TouchableOpacity>
                 </View>
             </View>
 
-            <TouchableOpacity onPress={() => removeFromCart(item.id)} style={styles.deleteBtn}>
+            <TouchableOpacity
+                onPress={() => removeFromCart(item.product_id)}
+                style={styles.deleteBtn}
+            >
                 <Ionicons name="trash-outline" size={20} color="#EF4444" />
             </TouchableOpacity>
         </View>
@@ -75,7 +84,7 @@ export default function CartScreen() {
                     "Are you sure you want to remove all items?",
                     [
                         { text: "Cancel", style: "cancel" },
-                        { text: "Clear", onPress: clearCart, style: "destructive" }
+                        { text: "Clear", onPress: () => clearCart(), style: "destructive" }
                     ]
                 )}>
                     <Text style={styles.clearText}>Clear</Text>
@@ -84,7 +93,7 @@ export default function CartScreen() {
 
             <FlatList
                 data={cartItems}
-                keyExtractor={(item) => item.id.toString()}
+                keyExtractor={(item) => item.product_id.toString()}
                 renderItem={renderItem}
                 contentContainerStyle={styles.listContainer}
                 showsVerticalScrollIndicator={false}

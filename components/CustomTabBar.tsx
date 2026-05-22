@@ -7,7 +7,7 @@ import { useRouter } from "expo-router";
 import {
     Alert,
     Platform,
-    Pressable,
+    TouchableOpacity,
     ScrollView,
     StyleSheet,
     Text,
@@ -80,13 +80,9 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
 
 
     return (
-        <View style={[styles.wrapper, { paddingBottom: Platform.OS === "ios" ? insets.bottom + 6 : 16 }]}>
-            <View style={styles.tabBar}>
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.scrollContent}
-                >
+        <View style={[styles.wrapper, { paddingBottom: Platform.OS === "ios" ? insets.bottom + 6 : 16 }]} pointerEvents="box-none">
+            <View style={styles.tabBar} pointerEvents="auto">
+                <View style={styles.rowContent}>
                     {state.routes.map((route, index) => {
                         const { options } = descriptors[route.key];
 
@@ -127,8 +123,9 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
                         };
 
                         return (
-                            <View key={route.key} style={{ width: ITEM_WIDTH, alignItems: "center" }}>
-                                <Pressable
+                            <View key={route.key} style={styles.itemWrapper}>
+                                <TouchableOpacity
+                                    activeOpacity={0.7}
                                     accessibilityRole="button"
                                     accessibilityState={isFocused ? { selected: true } : {}}
                                     accessibilityLabel={options.tabBarAccessibilityLabel}
@@ -137,7 +134,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
                                     onLongPress={onLongPress}
                                     style={[styles.tabItem, isFocused && styles.tabItemFocused]}
                                 >
-                                    <View>
+                                    <View pointerEvents="none">
                                         <Ionicons
                                             name={iconName || "ellipse-outline"}
                                             size={22}
@@ -154,22 +151,22 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
                                             {typeof label === "string" ? label : route.name}
                                         </Text>
                                     )}
-                                </Pressable>
+                                </TouchableOpacity>
                             </View>
                         );
                     })}
 
                     {/* ── Custom Logout Tab ────────────────────────────────────────── */}
-                    <View style={{ width: ITEM_WIDTH, alignItems: "center" }}>
-                        <Pressable
+                    <View style={styles.itemWrapper}>
+                        <TouchableOpacity
+                            activeOpacity={0.7}
                             style={styles.tabItem}
                             onPress={handleLogout}
                         >
                             <Ionicons name="log-out-outline" size={22} color="#EF4444" />
-                            {/* Not showing text unless active, and logout is never 'active' */}
-                        </Pressable>
+                        </TouchableOpacity>
                     </View>
-                </ScrollView>
+                </View>
             </View>
         </View>
     );
@@ -185,6 +182,18 @@ const styles = StyleSheet.create({
         right: 0,
         alignItems: "center",
         backgroundColor: "transparent",
+        zIndex: 100,
+        elevation: 100,
+    },
+    rowContent: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        width: "100%",
+    },
+    itemWrapper: {
+        alignItems: "center",
+        justifyContent: "center",
     },
     tabBar: {
         backgroundColor: "#fff",
@@ -198,10 +207,6 @@ const styles = StyleSheet.create({
         elevation: 8,
         width: "90%",
         alignSelf: "center",
-    },
-    scrollContent: {
-        alignItems: "center",
-        // Ensure the scroll view hugs the items properly but allows scrolling
     },
     tabItem: {
         padding: 12,
