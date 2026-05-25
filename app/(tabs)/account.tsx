@@ -1,4 +1,3 @@
-import { SafeAreaView } from "react-native-safe-area-context";
 import { authApi, getStoredUser } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -14,6 +13,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 
 export default function Account() {
@@ -50,6 +50,10 @@ export default function Account() {
 
   const handlePersonalInfo = () => {
     router.push("/profile");
+  };
+
+  const handleFavorites = () => {
+    router.push("/(tabs)/favorites");
   };
 
   const handleSavedAddresses = () => {
@@ -100,17 +104,16 @@ export default function Account() {
 
   return (
     <SafeAreaView style={[styles.container, isDarkMode && { backgroundColor: "#111827" }]}>
+      {/* Header */}
+      <View style={[styles.header, isDarkMode && { backgroundColor: "#1F2937", borderBottomColor: "#374151" }]}>
+        <Text style={[styles.headerTitle, isDarkMode && { color: "#F9FAFB" }]}>Account</Text>
+      </View>
       <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Card */}
         <View style={[styles.profileCard, isDarkMode && { backgroundColor: "#1F2937", borderBottomColor: "#374151" }]}>
-          {/* Back Button - Inside Card */}
-          <TouchableOpacity onPress={handleBack} style={[styles.backButton, isDarkMode && { backgroundColor: "#374151" }]}>
-            <Ionicons name="arrow-back" size={24} color={isDarkMode ? "#F9FAFB" : "#374151"} />
-          </TouchableOpacity>
-
           <View style={styles.avatarContainer}>
             <View style={[styles.avatar, isDarkMode && { backgroundColor: "#0369A1", borderColor: "#0284C7" }]}>
               <Text style={[styles.avatarText, isDarkMode && { color: "#F0F9FF" }]}>
@@ -151,6 +154,21 @@ export default function Account() {
               <Text style={[styles.menuSubtitle, isDarkMode && { color: "#9CA3AF" }]}>
                 Update your profile details
               </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={isDarkMode ? "#6B7280" : "#9CA3AF"} />
+          </TouchableOpacity>
+
+          {/* My Favorites */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleFavorites}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: isDarkMode ? "#7F1D1D" : "#FEE2E2" }]}>
+              <Ionicons name="heart-outline" size={22} color={isDarkMode ? "#F87171" : "#EF4444"} />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={[styles.menuTitle, isDarkMode && { color: "#F9FAFB" }]}>My Favorites</Text>
+              <Text style={[styles.menuSubtitle, isDarkMode && { color: "#9CA3AF" }]}>View saved products</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={isDarkMode ? "#6B7280" : "#9CA3AF"} />
           </TouchableOpacity>
@@ -255,27 +273,30 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
   },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1F2937",
+  },
   profileCard: {
     backgroundColor: "#fff",
     padding: 24,
-    paddingTop: 48, // Extra padding for back button
+    paddingTop: 24,
     alignItems: "center",
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
     marginBottom: 16,
     position: "relative",
-  },
-  backButton: {
-    position: "absolute",
-    top: 24, // Positioned safely from the top
-    left: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#F3F4F6",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10, // Ensure it's above other elements
   },
   avatarContainer: {
     marginBottom: 16,

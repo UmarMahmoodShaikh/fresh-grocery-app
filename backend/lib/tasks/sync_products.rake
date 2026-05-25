@@ -81,14 +81,22 @@ namespace :db do
           brand.image_url = brand_logo
           brand.save!
           
-          # Nutrition Info (Extracting key fields)
+          # Nutrition Info (Extracting comprehensive fields)
           nutriments = p_data['nutriments'] || {}
           nutrition_summary = {
-            energy: nutriments['energy-kcal_100g'],
+            calories: nutriments['energy-kcal_100g'],
             fat: nutriments['fat_100g'],
+            saturated_fat: nutriments['saturated-fat_100g'],
+            trans_fat: nutriments['trans-fat_100g'],
             carbs: nutriments['carbohydrates_100g'],
             sugars: nutriments['sugars_100g'],
-            proteins: nutriments['proteins_100g']
+            starch: nutriments['starch_100g'],
+            protein: nutriments['proteins_100g'],
+            sodium: nutriments['sodium_100g'] ? (nutriments['sodium_100g'] * 1000) : nil,
+            salt: nutriments['salt_100g'],
+            fiber: nutriments['fiber_100g'],
+            calcium: nutriments['calcium_100g'] ? (nutriments['calcium_100g'] * 1000) : nil,
+            iron: nutriments['iron_100g']
           }
           
           # Description cleaning

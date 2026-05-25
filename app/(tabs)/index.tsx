@@ -19,6 +19,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  ImageBackground,
   Modal,
   Pressable,
   ScrollView,
@@ -28,7 +29,7 @@ import {
   View,
   useColorScheme,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 const FloatingPlusOne = ({ x, y }: { x: number; y: number }) => {
   const translateY = useRef(new Animated.Value(0)).current;
@@ -164,6 +165,7 @@ const CATEGORY_COLORS = [
 
 export default function HomeScreen() {
   const isDark = useColorScheme() === "dark";
+  const insets = useSafeAreaInsets();
   const styles = getStyles(isDark);
 
   const { addToCart } = useCart();
@@ -457,6 +459,10 @@ export default function HomeScreen() {
     router.push("/(tabs)/search" as any);
   };
 
+  const handleScanProduct = () => {
+    router.push("/(tabs)/scanner" as any);
+  };
+
   const handleAddCart = (e: any, item: any) => {
     e.stopPropagation();
     addToCart(item);
@@ -629,7 +635,7 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      <LinearGradient colors={["#2D6A4F", "#52B788"]} style={styles.header}>
+      <LinearGradient colors={["#52A478", "#7BC97F"]} style={styles.header}>
         <TouchableOpacity
           style={styles.addressBar}
           onPress={() => router.push("/addresses")}
@@ -676,6 +682,9 @@ export default function HomeScreen() {
       <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: 40 + insets.bottom + 80,
+        }}
       >
         {loading ? (
           <View style={styles.loadingWrap}>
@@ -683,22 +692,39 @@ export default function HomeScreen() {
           </View>
         ) : (
           <View style={styles.content}>
-            <LinearGradient
-              colors={["#2D6A4F", "#4ADE80"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.promoBanner}
+            {/* Scan Button */}
+            <TouchableOpacity
+              style={styles.scanButtonContainer}
+              onPress={handleScanProduct}
             >
+              <View style={styles.scanButton}>
+                <MaterialCommunityIcons
+                  name="barcode-scan"
+                  size={22}
+                  color={isDark ? "#10B981" : "#047857"}
+                />
+                <Text style={styles.scanButtonText}>Scan Product</Text>
+              </View>
+            </TouchableOpacity>
+
+            <ImageBackground
+              source={{
+                uri: "https://images.unsplash.com/photo-1488459716781-31db52582fe9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
+              }}
+              style={styles.promoBanner}
+              imageStyle={{ opacity: 1, borderRadius: 20 }}
+            >
+              <View style={styles.promoOverlay}>
               <View style={styles.promoContentWrapper}>
                 <View style={styles.promoHeader}>
-                  <View style={styles.promoIconLarge}>
-                    <Ionicons name="pricetag" size={22} color="#2D6A4F" />
-                  </View>
+                  {/* <View style={styles.promoIconLarge}>
+                    <Ionicons name="pricetag" size={22} color="#F59E0B" />
+                  </View> */}
                   <View>
-                    <Text style={styles.promoLabel}>🎉 Special Offer</Text>
-                    <Text style={styles.promoValidity}>
+                    {/* <Text style={styles.promoLabel}>🎉 Special Offer</Text> */}
+                    {/* <Text style={styles.promoValidity}>
                       Valid until April 30, 2026
-                    </Text>
+                    </Text> */}
                   </View>
                 </View>
                 <Text style={styles.promoTitle}>
@@ -710,10 +736,11 @@ export default function HomeScreen() {
                   onPress={handleShopNow}
                 >
                   <Text style={styles.shopButtonText}>Shop Now</Text>
-                  <Ionicons name="arrow-forward" size={16} color="#2D6A4F" />
+                  <Ionicons name="arrow-forward" size={16} color="#F59E0B" />
                 </TouchableOpacity>
               </View>
-            </LinearGradient>
+              </View>
+            </ImageBackground>
 
             <PersonalizedRecommendations />
             {categories.length > 0 && (
@@ -731,17 +758,13 @@ export default function HomeScreen() {
                     <Text style={styles.seeAll}>See All</Text>
                   </TouchableOpacity>
                 </View>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.categoryScroll}
-                >
+                <View style={styles.categoryGrid}>
                   {categories.map((cat, i) => renderCategoryItem(cat, i))}
-                </ScrollView>
+                </View>
               </View>
             )}
 
-            {brands.length > 0 && (
+            {false && brands.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Featured Brands</Text>
@@ -766,7 +789,7 @@ export default function HomeScreen() {
               </View>
             )}
 
-            {products.length > 0 && (
+            {false && products.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Best Sellers</Text>
@@ -786,7 +809,7 @@ export default function HomeScreen() {
               </View>
             )}
 
-            {products.length > 0 && (
+            {false && products.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>All Products</Text>
@@ -889,8 +912,8 @@ const getStyles = (isDark: boolean) =>
 
     header: {
       paddingHorizontal: 20,
-      paddingTop: 16,
-      paddingBottom: 20,
+      paddingTop: 12,
+      paddingBottom: 12,
       borderBottomLeftRadius: 24,
       borderBottomRightRadius: 24,
     },
@@ -898,36 +921,35 @@ const getStyles = (isDark: boolean) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
-      marginBottom: 12,
+      marginBottom: 10,
       paddingVertical: 4,
     },
     addressText: {
-      color: "#fff",
+      color: "rgba(255,255,255,0.95)",
       fontSize: 13,
-      fontWeight: "600",
+      fontWeight: "500",
       flex: 1,
-      opacity: 0.95,
     },
     headerTop: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "flex-start",
-      marginBottom: 16,
+      marginBottom: 12,
     },
     welcomeText: {
       fontSize: 14,
-      color: "rgba(255,255,255,0.85)",
+      color: "rgba(255,255,255,0.9)",
       fontWeight: "500",
     },
     userName: {
-      fontSize: 22,
+      fontSize: 20,
       color: "#fff",
-      fontWeight: "800",
+      fontWeight: "700",
     },
     notificationButton: {
       position: "relative",
       padding: 8,
-      backgroundColor: "rgba(255,255,255,0.2)",
+      backgroundColor: "rgba(255,255,255,0.12)",
       borderRadius: 12,
     },
     badge: {
@@ -952,7 +974,7 @@ const getStyles = (isDark: boolean) =>
       backgroundColor: isDark ? "#1F2937" : "#fff",
       borderRadius: 14,
       paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingVertical: 10,
       gap: 10,
     },
     searchPlaceholder: {
@@ -964,11 +986,38 @@ const getStyles = (isDark: boolean) =>
       paddingTop: 16,
     },
 
+    scanButtonContainer: {
+      marginHorizontal: 20,
+      marginBottom: 16,
+    },
+    scanButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 12,
+      backgroundColor: isDark ? "#1F2937" : "#F0FDF4",
+      borderWidth: 1.5,
+      borderColor: isDark ? "#10B981" : "#D1FAE5",
+      gap: 10,
+    },
+    scanButtonText: {
+      color: isDark ? "#10B981" : "#047857",
+      fontSize: 15,
+      fontWeight: "600",
+    },
+
     promoBanner: {
       marginHorizontal: 20,
       borderRadius: 20,
       padding: 20,
       overflow: "hidden",
+    },
+    promoOverlay: {
+      flex: 1,
+      justifyContent: "center",
+      padding: 20,
     },
     promoContentWrapper: {},
     promoHeader: {
@@ -987,22 +1036,22 @@ const getStyles = (isDark: boolean) =>
     },
     promoLabel: {
       color: "#fff",
-      fontSize: 13,
+      fontSize: 15,
       fontWeight: "700",
     },
     promoValidity: {
-      color: "rgba(255,255,255,0.75)",
-      fontSize: 11,
+      color: "rgba(255,255,255,0.8)",
+      fontSize: 13,
     },
     promoTitle: {
       color: "#fff",
-      fontSize: 20,
+      fontSize: 24,
       fontWeight: "800",
-      lineHeight: 26,
+      lineHeight: 30,
       marginBottom: 16,
     },
     promoHighlight: {
-      fontSize: 24,
+      fontSize: 28,
       color: "#FFEB3B",
     },
     shopButton: {
@@ -1016,9 +1065,9 @@ const getStyles = (isDark: boolean) =>
       gap: 6,
     },
     shopButtonText: {
-      color: "#2D6A4F",
+      color: "#F59E0B",
       fontWeight: "700",
-      fontSize: 14,
+      fontSize: 16,
     },
 
     section: {
@@ -1043,21 +1092,38 @@ const getStyles = (isDark: boolean) =>
     },
 
     categoryScroll: {
-      paddingLeft: 20,
-      paddingRight: 8,
+      paddingHorizontal: 20,
       gap: 16,
     },
+    categoryGrid: {
+      paddingHorizontal: 20,
+      flexDirection: "row",
+      flexWrap: "wrap",
+      rowGap: 16,
+    },
     categoryItem: {
+      width: "33.333%",
       alignItems: "center",
-      width: 72,
+      paddingHorizontal: 4,
+      backgroundColor: isDark ? "#1F2937" : "#fff",
+      borderRadius: 12,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: isDark ? "#374151" : "#E5E7EB",
+      shadowColor: isDark ? "#F9FAFB" : "#000",
+      shadowOffset: { width: 3, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 5,
+      elevation: 2,
     },
     categoryCircle: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
+      width: 50,
+      height: 50,
+      borderRadius: 20,
       alignItems: "center",
       justifyContent: "center",
-      marginBottom: 8,
+      marginBottom: 13,
+      marginRight: 5,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
@@ -1080,6 +1146,7 @@ const getStyles = (isDark: boolean) =>
       fontWeight: "600",
       color: isDark ? "#D1D5DB" : "#4B5563",
       textAlign: "center",
+      marginTop: 8,
     },
 
     brandScroll: {

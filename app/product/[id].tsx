@@ -1,27 +1,27 @@
 import { BasketLoader } from "@/components/BasketLoader";
+import NutritionCard from "@/components/NutritionCard";
 import { RecommendedProducts } from "@/components/RecommendedProducts";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import { useStore } from "@/context/StoreContext";
 import {
-  trackProductView,
-  trackProductClick,
-  trackAddToCart,
+    trackAddToCart,
+    trackProductView
 } from "@/services/algolia";
 import { getStoredUser, productsApiV2 } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Animated,
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  useColorScheme,
+    Animated,
+    Image,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -119,9 +119,17 @@ const FloatingHeart = ({ x, y }: { x: number; y: number }) => {
 interface NutritionData {
   energy?: number | string;
   fat?: number | string;
+  saturated_fat?: number | string;
+  trans_fat?: number | string;
   carbs?: number | string;
   sugars?: number | string;
+  starch?: number | string;
   proteins?: number | string;
+  sodium?: number | string;
+  salt?: number | string;
+  fiber?: number | string;
+  calcium?: number | string;
+  iron?: number | string;
   [key: string]: number | string | undefined;
 }
 
@@ -158,6 +166,26 @@ export default function ProductDetails() {
   const [plusAnimations, setPlusAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
   const [heartAnimations, setHeartAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
   const [userToken, setUserToken] = useState<string>("anonymous");
+
+  // Normalize nutrition data from database (handles both old and new formats)
+  const normalizeNutrition = (nutrition: any) => {
+    if (!nutrition) return null;
+    return {
+      calories: nutrition.calories ?? nutrition.energy,
+      fat: nutrition.fat,
+      saturated_fat: nutrition.saturated_fat,
+      trans_fat: nutrition.trans_fat,
+      carbs: nutrition.carbs,
+      sugars: nutrition.sugars,
+      starch: nutrition.starch,
+      protein: nutrition.protein ?? nutrition.proteins,
+      sodium: nutrition.sodium,
+      salt: nutrition.salt,
+      fiber: nutrition.fiber,
+      calcium: nutrition.calcium,
+      iron: nutrition.iron,
+    };
+  };
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -282,7 +310,7 @@ export default function ProductDetails() {
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          
+          {/* Product Image */}
           <View style={styles.imageContainer}>
             {product.image_url ? (
               <Image
@@ -297,7 +325,7 @@ export default function ProductDetails() {
             )}
           </View>
 
-          
+          {/* Product Info */}
           <View style={styles.infoSection}>
             <Text style={styles.productName}>{product.name}</Text>
 
@@ -305,7 +333,7 @@ export default function ProductDetails() {
               <Text style={styles.productBrand}>{product.brand.name}</Text>
             )}
 
-            
+            {/* Price and Status Badges */}
             <View style={styles.badgesContainer}>
               <View style={[styles.badge, { backgroundColor: "#2D6A4F" }]}>
                 <Text style={styles.badgeText}>
@@ -333,34 +361,16 @@ export default function ProductDetails() {
             </View>
           </View>
 
-          
-          {product.description ? (
-            <View style={styles.detailsSection}>
-              <Text style={styles.sectionTitle}>Description</Text>
-              <Text style={styles.paragraphText}>{product.description}</Text>
-            </View>
-          ) : null}
-
-          
+          {/* Nutrition Information */}
           {product.nutrition ? (
             <View style={styles.detailsSection}>
-              <Text style={styles.sectionTitle}>Nutrition</Text>
+              <Text style={styles.sectionTitle}>Nutrition Information</Text>
               {typeof product.nutrition === "object" &&
               product.nutrition !== null ? (
-                <View style={styles.nutritionGrid}>
-                  {Object.entries(product.nutrition as Record<string, any>).map(
-                    ([key, value]) => (
-                      <View key={key} style={styles.nutritionCell}>
-                        <Text style={styles.nutritionKey}>
-                          {key.charAt(0).toUpperCase() + key.slice(1)}
-                        </Text>
-                        <Text style={styles.nutritionValue}>
-                          {String(value ?? "—")}
-                        </Text>
-                      </View>
-                    ),
-                  )}
-                </View>
+                <NutritionCard 
+                  nutrition={normalizeNutrition(product.nutrition) as any}
+                  productName={product.name}
+                />
               ) : (
                 <Text style={styles.paragraphText}>
                   {String(product.nutrition)}
@@ -369,36 +379,19 @@ export default function ProductDetails() {
             </View>
           ) : null}
 
-          
-          <View style={styles.detailsSection}>
-            <Text style={styles.sectionTitle}>Details</Text>
-            {product.barcode ? (
-              <View style={styles.detailRow}>
-                <Ionicons name="barcode-outline" size={20} color="#6B7280" />
-                <Text style={styles.detailText}>
-                  Barcode: {product.barcode}
-                </Text>
-              </View>
-            ) : null}
-            <View style={styles.detailRow}>
-              <Ionicons name="cube-outline" size={20} color="#6B7280" />
-              <Text style={styles.detailText}>
-                Stock: {product.stock} unit{product.stock !== 1 ? "s" : ""}
-              </Text>
+          {/* Product Description */}
+          {product.description ? (
+            <View style={styles.detailsSection}>
+              <Text style={styles.sectionTitle}>Description</Text>
+              <Text style={styles.paragraphText}>{product.description}</Text>
             </View>
-            {product.brand && (
-              <View style={styles.detailRow}>
-                <Ionicons name="business-outline" size={20} color="#6B7280" />
-                <Text style={styles.detailText}>
-                  Brand: {product.brand.name}
-                </Text>
-              </View>
-            )}
-          </View>
+          ) : null}
+
+
           <RecommendedProducts objectID={product.id.toString()} userToken={userToken} />
         </ScrollView>
 
-        
+        {/* Footer with Add to Cart Button */}
         <View style={styles.footer}>
           <TouchableOpacity
             style={[
@@ -463,6 +456,7 @@ export default function ProductDetails() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Product Image */}
         <View style={styles.imageContainer}>
           {off.image_url ? (
             <Image
@@ -477,6 +471,7 @@ export default function ProductDetails() {
           )}
         </View>
 
+        {/* Product Info */}
         <View style={styles.infoSection}>
           <Text style={styles.productName}>
             {off.product_name || "Unknown Product"}
@@ -485,14 +480,9 @@ export default function ProductDetails() {
             {off.brands || "Unknown Brand"}
           </Text>
 
+          {/* Badges */}
           <View style={styles.badgesContainer}>
-            {off.nutriscore_grade && (
-              <View style={[styles.badge, { backgroundColor: "#10B981" }]}>
-                <Text style={styles.badgeText}>
-                  Nutriscore: {off.nutriscore_grade.toUpperCase()}
-                </Text>
-              </View>
-            )}
+            {/* Nutriscore hidden */}
             {off.nova_group && (
               <View style={[styles.badge, { backgroundColor: "#F59E0B" }]}>
                 <Text style={styles.badgeText}>NOVA: {off.nova_group}</Text>
@@ -508,26 +498,34 @@ export default function ProductDetails() {
           </View>
         </View>
 
-        <View style={styles.detailsSection}>
-          <Text style={styles.sectionTitle}>Details</Text>
-          <View style={styles.detailRow}>
-            <Ionicons name="barcode-outline" size={20} color="#6B7280" />
-            <Text style={styles.detailText}>Barcode: {id}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="scale-outline" size={20} color="#6B7280" />
-            <Text style={styles.detailText}>
-              Quantity: {off.quantity || "N/A"}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="business-outline" size={20} color="#6B7280" />
-            <Text style={styles.detailText}>
-              Packaging: {off.packaging || "N/A"}
-            </Text>
-          </View>
-        </View>
 
+
+        {/* Nutrition Information */}
+        {off.nutriments && (
+          <View style={styles.detailsSection}>
+            <Text style={styles.sectionTitle}>Nutrition Information</Text>
+            <NutritionCard 
+              nutrition={{
+                calories: off.nutriments.energy_kcal_100g,
+                fat: off.nutriments.fat_100g,
+                saturated_fat: off.nutriments.saturated_fat_100g,
+                trans_fat: off.nutriments.trans_fat_100g,
+                carbs: off.nutriments.carbohydrates_100g,
+                sugars: off.nutriments.sugars_100g,
+                starch: off.nutriments.starch_100g,
+                protein: off.nutriments.proteins_100g,
+                sodium: off.nutriments.sodium_100g ? off.nutriments.sodium_100g * 1000 : undefined,
+                salt: off.nutriments.salt_100g,
+                fiber: off.nutriments.fiber_100g,
+                calcium: off.nutriments.calcium_100g ? off.nutriments.calcium_100g * 1000 : undefined,
+                iron: off.nutriments.iron_100g,
+              }}
+              productName={off.product_name}
+            />
+          </View>
+        )}
+
+        {/* Ingredients */}
         {off.ingredients_text && (
           <View style={styles.detailsSection}>
             <Text style={styles.sectionTitle}>Ingredients</Text>

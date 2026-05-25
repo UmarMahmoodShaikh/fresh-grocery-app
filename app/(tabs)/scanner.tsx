@@ -2,9 +2,10 @@ import { useCart } from "@/context/CartContext";
 import { productsApiV2 } from "@/services/api";
 import { useStore } from "@/context/StoreContext";
 import { Ionicons } from "@expo/vector-icons";
+import { useIsFocused } from "@react-navigation/native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Modal,
   Platform,
@@ -20,6 +21,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function Scanner() {
   const isDark = useColorScheme() === "dark";
   const styles = getStyles(isDark);
+  const isFocused = useIsFocused();
 
   const router = useRouter();
   const { addToCart } = useCart();
@@ -34,6 +36,15 @@ export default function Scanner() {
     message: "",
     type: "success" as "success" | "error" | "warning",
   });
+
+  useEffect(() => {
+    if (!isFocused) {
+      setScanned(false);
+      setLoading(false);
+      setResultVisible(false);
+      setInternalProduct(null);
+    }
+  }, [isFocused]);
 
   const fetchProductData = async (barcode: string) => {
     try {
@@ -249,34 +260,41 @@ export default function Scanner() {
 
       {/* Camera View */}
       <View style={styles.cameraContainer}>
-        <CameraView
-          style={styles.camera}
-          facing="back"
-          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-          barcodeScannerSettings={{
-            barcodeTypes: [
-              "qr",
-              "ean13",
-              "ean8",
-              "upc_a",
-              "upc_e",
-              "code128",
-              "code39",
-            ],
-          }}
-        >
-          {/* Scanning Frame */}
-          <View style={styles.scanFrame}>
-            {/* Top-left corner */}
-            <View style={[styles.corner, styles.cornerTopLeft]} />
-            {/* Top-right corner */}
-            <View style={[styles.corner, styles.cornerTopRight]} />
-            {/* Bottom-left corner */}
-            <View style={[styles.corner, styles.cornerBottomLeft]} />
-            {/* Bottom-right corner */}
-            <View style={[styles.corner, styles.cornerBottomRight]} />
+        {isFocused ? (
+          <CameraView
+            style={styles.camera}
+            facing="back"
+            onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+            barcodeScannerSettings={{
+              barcodeTypes: [
+                "qr",
+                "ean13",
+                "ean8",
+                "upc_a",
+                "upc_e",
+                "code128",
+                "code39",
+              ],
+            }}
+          >
+            {/* Scanning Frame */}
+            <View style={styles.scanFrame}>
+              {/* Top-left corner */}
+              <View style={[styles.corner, styles.cornerTopLeft]} />
+              {/* Top-right corner */}
+              <View style={[styles.corner, styles.cornerTopRight]} />
+              {/* Bottom-left corner */}
+              <View style={[styles.corner, styles.cornerBottomLeft]} />
+              {/* Bottom-right corner */}
+              <View style={[styles.corner, styles.cornerBottomRight]} />
+            </View>
+          </CameraView>
+        ) : (
+          <View style={[styles.camera, styles.cameraPaused]}>
+            <Ionicons name="camera-off-outline" size={52} color="#6B7280" />
+            <Text style={styles.cameraPausedText}>Camera paused</Text>
           </View>
-        </CameraView>
+        )}
       </View>
 
       {/* Instruction Text */}
@@ -531,6 +549,17 @@ const getStyles = (isDark: boolean) =>
     },
     camera: {
       flex: 1,
+    },
+    cameraPaused: {
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: isDark ? "#0F172A" : "#E5E7EB",
+      gap: 12,
+    },
+    cameraPausedText: {
+      color: isDark ? "#D1D5DB" : "#6B7280",
+      fontSize: 16,
+      fontWeight: "600",
     },
     scanFrame: {
       flex: 1,

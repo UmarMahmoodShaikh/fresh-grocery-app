@@ -1,16 +1,17 @@
 import { useCart } from "@/context/CartContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Alert, FlatList, Image, StyleSheet, Text, TouchableOpacity, View,
+import {
+    Alert, FlatList, Image, StyleSheet, Text, TouchableOpacity, View,
     useColorScheme
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CartScreen() {
-  const isDark = useColorScheme() === 'dark';
-  const styles = getStyles(isDark);
+    const isDark = useColorScheme() === 'dark';
+    const styles = getStyles(isDark);
 
-    const { cartItems, cartTotal, updateQuantity, removeFromCart, clearCart, isLoadingCart } = useCart();
+    const { cartItems, cartTotal, updateQuantity, removeFromCart, clearCart, isLoadingCart, totalCalories } = useCart();
     const router = useRouter();
 
     const handleCheckout = () => {
@@ -35,6 +36,9 @@ export default function CartScreen() {
                     {item.name}
                 </Text>
                 <Text style={styles.itemPrice}>€{Number(item.price * item.quantity).toFixed(2)}</Text>
+                {item.calories && (
+                    <Text style={styles.itemCalories}>{(item.calories * item.quantity).toFixed(0)} kcal</Text>
+                )}
 
                 <View style={styles.quantityContainer}>
                     <TouchableOpacity
@@ -102,15 +106,20 @@ export default function CartScreen() {
             <View style={styles.footer}>
                 <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>Subtotal</Text>
-                    <Text style={[styles.totalValue, { fontSize: 18, color: isDark ? "#9CA3AF" : "#6B7280" }]}>€{cartTotal.toFixed(2)}</Text>
+                    <Text style={[styles.totalValue, { fontSize: 16, color: isDark ? "#9CA3AF" : "#6B7280" }]}>€{cartTotal.toFixed(2)}</Text>
                 </View>
                 <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>Special Offer (20%)</Text>
-                    <Text style={[styles.totalValue, { fontSize: 18, color: "#059669" }]}>-€{(cartTotal * 0.20).toFixed(2)}</Text>
+                    <Text style={[styles.totalValue, { fontSize: 16, color: "#059669" }]}>-€{(cartTotal * 0.20).toFixed(2)}</Text>
                 </View>
                 <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>Total</Text>
                     <Text style={styles.totalValue}>€{(cartTotal * 0.80).toFixed(2)}</Text>
+                </View>
+                <View style={styles.caloriesRow}>
+                    <Ionicons name="flame" size={16} color="#F59E0B" />
+                    <Text style={styles.caloriesLabel}>Total Calories:</Text>
+                    <Text style={styles.caloriesValue}>{totalCalories.toFixed(0)} kcal</Text>
                 </View>
                 <TouchableOpacity style={styles.checkoutBtn} onPress={handleCheckout}>
                     <Text style={styles.checkoutText}>Proceed to Checkout</Text>
@@ -215,9 +224,14 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         marginBottom: 4,
     },
     itemPrice: {
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: "bold",
         color: "#2D6A4F",
+        marginBottom: 4,
+    },
+    itemCalories: {
+        fontSize: 12,
+        color: isDark ? "#9CA3AF" : "#6B7280",
         marginBottom: 8,
     },
     quantityContainer: {
@@ -245,7 +259,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         padding: 16,
         borderTopWidth: 1,
         borderTopColor: "#E5E7EB",
-        marginBottom: 80, // Accommodate for bottom tab
+        marginBottom: 80,
     },
     totalRow: {
         flexDirection: "row",
@@ -254,17 +268,37 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         marginBottom: 16,
     },
     totalLabel: {
-        fontSize: 18,
+        fontSize: 14,
         fontWeight: "600",
         color: isDark ? "#D1D5DB" : "#4B5563",
     },
     totalValue: {
-        fontSize: 24,
+        fontSize: 16,
         fontWeight: "bold",
         color: isDark ? "#F9FAFB" : "#1F2937",
     },
+    caloriesRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 16,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: isDark ? "#374151" : "#E5E7EB",
+    },
+    caloriesLabel: {
+        fontSize: 13,
+        fontWeight: "600",
+        color: isDark ? "#D1D5DB" : "#4B5563",
+        marginLeft: 8,
+    },
+    caloriesValue: {
+        fontSize: 14,
+        fontWeight: "bold",
+        color: "#F59E0B",
+        marginLeft: 8,
+    },
     checkoutBtn: {
-        backgroundColor: "#2D6A4F",
+        backgroundColor: "#10B981",
         borderRadius: 12,
         paddingVertical: 16,
         alignItems: "center",

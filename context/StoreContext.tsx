@@ -48,15 +48,37 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const refreshStores = async () => {
         setIsLoadingStores(true);
         try {
-            const result = await storesApi.getAll();
-            if (result.data) {
-                const stores = result.data as Store[];
-                setAvailableStores(stores);
-                
-                // If we don't have a selection yet, or if current selection is no longer available/active
-                if (!selectedStore || !stores.find(s => s.slug === selectedStore.slug && s.active)) {
-                    await loadInitialStore(stores);
+            let stores: Store[] = [];
+            try {
+                const result = await storesApi.getAll();
+                if (result.data) {
+                    stores = result.data as Store[];
                 }
+            } catch (apiError) {
+                console.log('Backend API not reachable, using fallback store');
+            }
+            
+            // Inject an always-available test store
+            const testStore: Store = {
+                id: 9999,
+                name: "Test Fresh Grocery (Mock)",
+                slug: "test-store",
+                active: true,
+                delivery_fee: 1.99,
+                min_order_amount: 5.0,
+                latitude: 52.5200, // example coords (Berlin)
+                longitude: 13.4050
+            };
+            
+            if (!stores.find(s => s.slug === testStore.slug)) {
+                stores.push(testStore);
+            }
+
+            setAvailableStores(stores);
+            
+            // If we don't have a selection yet, or if current selection is no longer available/active
+            if (!selectedStore || !stores.find(s => s.slug === selectedStore.slug && s.active)) {
+                await loadInitialStore(stores);
             }
         } catch (error) {
             console.error('Failed to refresh stores', error);

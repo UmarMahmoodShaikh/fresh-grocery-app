@@ -1,16 +1,19 @@
 import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
+    DarkTheme,
+    DefaultTheme,
+    ThemeProvider,
 } from "@react-navigation/native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import { CustomSplashScreen } from "@/components/CustomSplashScreen";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { BudgetProvider } from '@/context/BudgetContext';
 import { CartProvider } from '@/context/CartContext';
 import { FavoritesProvider } from '@/context/FavoritesContext';
 import { StoreProvider, useStore } from '@/context/StoreContext';
+import { NetworkProvider } from '@/context/NetworkContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { isSessionValid, clearAuth } from '@/services/api';
 import * as SplashScreen from "expo-splash-screen";
@@ -73,7 +76,8 @@ function RootNavigation() {
       <Stack.Screen name="profile" options={{ headerShown: false }} />
       <Stack.Screen name="checkout" options={{ headerShown: false }} />
       <Stack.Screen name="order-confirmation" options={{ headerShown: false, gestureEnabled: false }} />
-      <Stack.Screen name="order/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="order/[id]/index" options={{ headerShown: false }} />
+      <Stack.Screen name="order/[id]/feedback" options={{ headerShown: false }} />
       <Stack.Screen name="payment-methods" options={{ headerShown: false }} />
       <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
     </Stack>
@@ -86,14 +90,19 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <StoreProvider>
-        <FavoritesProvider>
-          <CartProvider>
-            {!appIsReady && <CustomSplashScreen onComplete={() => setAppIsReady(true)} />}
-            <RootNavigation />
-          </CartProvider>
-        </FavoritesProvider>
-      </StoreProvider>
+      <NetworkProvider>
+        <StoreProvider>
+          <FavoritesProvider>
+            <BudgetProvider>
+              <CartProvider>
+                <OfflineIndicator />
+                {!appIsReady && <CustomSplashScreen onComplete={() => setAppIsReady(true)} />}
+                <RootNavigation />
+              </CartProvider>
+            </BudgetProvider>
+          </FavoritesProvider>
+        </StoreProvider>
+      </NetworkProvider>
       <StatusBar style="auto" />
     </ThemeProvider>
   );
