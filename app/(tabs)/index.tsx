@@ -1,13 +1,14 @@
 import { PersonalizedRecommendations } from "@/components/PersonalizedRecommendations";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
+import { useStore } from "@/context/StoreContext";
 import {
   addressesApi,
   brandsApi,
-  categoriesApi,
+  categoriesApiV2,
   getStoredUser,
   ordersApi,
-  productsApi,
+  productsApiV2,
 } from "@/services/api";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -169,6 +170,7 @@ export default function HomeScreen() {
 
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
+  const { selectedStore } = useStore();
   const [userName, setUserName] = useState("User");
   const [defaultAddress, setDefaultAddress] = useState<string | null>(null);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
@@ -196,7 +198,7 @@ export default function HomeScreen() {
 
     const interval = setInterval(loadActiveOrders, 30_000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedStore]); // Re-fetch when store changes
 
   const loadActiveOrders = async () => {
     try {
@@ -236,12 +238,13 @@ export default function HomeScreen() {
   };
 
   const loadData = async () => {
+    if (!selectedStore) return;
     setLoading(true);
     try {
       const [catRes, brandRes, prodRes] = await Promise.all([
-        categoriesApi.getAll(),
-        brandsApi.getAll(),
-        productsApi.getAll(),
+        categoriesApiV2.getAll(selectedStore.slug),
+        brandsApi.getAll(), // Brands still use V1 global catalog
+        productsApiV2.getAll(selectedStore.slug),
       ]);
       if (catRes.data) setCategories(catRes.data as any[]);
       if (brandRes.data) setBrands(brandRes.data as any[]);
@@ -650,8 +653,12 @@ export default function HomeScreen() {
 
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.welcomeText}>Bonjour,</Text>
-            <Text style={styles.userName}>{userName}</Text>
+            <Text style={styles.welcomeText}>Bonjour, {userName}</Text>
+            {selectedStore && (
+              <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '500', marginTop: 1 }}>
+                🏪 {selectedStore.name}
+              </Text>
+            )}
           </View>
           <TouchableOpacity
             style={styles.notificationButton}
@@ -874,7 +881,7 @@ export default function HomeScreen() {
               </View>
             )}
 
-            <View style={{ height: 30 }} />
+            <View style={{ height: 100 }} />
           </View>
         )}
       </ScrollView>

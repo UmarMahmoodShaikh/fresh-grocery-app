@@ -1,5 +1,6 @@
 import { useCart } from "@/context/CartContext";
-import { productsApi } from "@/services/api";
+import { productsApiV2 } from "@/services/api";
+import { useStore } from "@/context/StoreContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused } from "@react-navigation/native";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -24,6 +25,7 @@ export default function Scanner() {
 
   const router = useRouter();
   const { addToCart } = useCart();
+  const { selectedStore } = useStore();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -49,15 +51,23 @@ export default function Scanner() {
       setLoading(true);
 
       // 1. Check if the product exists in OUR database
-      const internalCheck = await productsApi.getByBarcode(barcode);
-      let internalProd = null;
-      if (
-        internalCheck.data &&
-        Array.isArray(internalCheck.data) &&
-        internalCheck.data.length > 0
-      ) {
-        internalProd = internalCheck.data[0];
+      if (!selectedStore) {
+        setResultData({
+          title: "⚠️ No Store Selected",
+          message:
+            "Please select a store from the Home screen before scanning products.",
+          type: "warning",
+        });
+        setResultVisible(true);
+        setLoading(false);
+        return;
       }
+
+      const internalCheck = await productsApiV2.getByBarcode(
+        selectedStore.slug,
+        barcode
+      );
+      const internalProd = internalCheck.data;
 
       // If it exists in our store, show options to add to cart!
       if (internalProd) {
@@ -349,8 +359,8 @@ export default function Scanner() {
                     },
                     pressed && styles.modalButtonPressed,
                   ]}
-                  onPress={() => {
-                    addToCart(internalProduct);
+                  onPress={async () => {
+                    await addToCart(internalProduct);
                     setResultVisible(false);
                     setScanned(false);
                     setLoading(false);

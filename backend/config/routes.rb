@@ -45,6 +45,10 @@ Rails.application.routes.draw do
     # V2 Multi-Tenant Architecture
     namespace :v2 do
       resources :stores, param: :slug, only: [:index, :show] do
+        collection do
+          get :detect
+        end
+        
         resources :products, only: [:index, :show]
         resources :categories, only: [:index]
         resources :promotions, only: [:index]

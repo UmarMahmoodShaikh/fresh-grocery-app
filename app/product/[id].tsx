@@ -3,11 +3,12 @@ import NutritionCard from "@/components/NutritionCard";
 import { RecommendedProducts } from "@/components/RecommendedProducts";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
+import { useStore } from "@/context/StoreContext";
 import {
     trackAddToCart,
     trackProductView
 } from "@/services/algolia";
-import { getStoredUser, productsApi } from "@/services/api";
+import { getStoredUser, productsApiV2 } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -157,6 +158,7 @@ export default function ProductDetails() {
 
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
+  const { selectedStore } = useStore();
   const [product, setProduct] = useState<DbProduct | null>(null);
   const [offProduct, setOffProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -195,7 +197,7 @@ export default function ProductDetails() {
     fetchUser();
   }, []);
 
-  const handleAddCart = (e: any, item: any) => {
+  const handleAddCart = async (e: any, item: any) => {
     e.stopPropagation();
     if (e.nativeEvent) {
       const { pageX, pageY } = e.nativeEvent;
@@ -206,7 +208,7 @@ export default function ProductDetails() {
       }, 800);
     }
     trackAddToCart(userToken, item.id.toString());
-    addToCart(item);
+    await addToCart(item);
   };
 
   const handleToggleFavorite = (e: any, item: any) => {
@@ -234,11 +236,10 @@ export default function ProductDetails() {
     setLoading(true);
     setError(null);
 
-    
-    
     const numericId = parseInt(rawId, 10);
-    if (!isNaN(numericId)) {
-      const result = await productsApi.getById(numericId);
+    if (!isNaN(numericId) && selectedStore) {
+      // V2: fetch with store-specific pricing
+      const result = await productsApiV2.getById(selectedStore.slug, numericId);
       if (result.data && !result.error) {
         setProduct(result.data as DbProduct);
         setLoading(false);

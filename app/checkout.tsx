@@ -1,5 +1,6 @@
 import { useCart } from "@/context/CartContext";
-import { addressesApi, ordersApi } from "@/services/api";
+import { useStore } from "@/context/StoreContext";
+import { addressesApi, ordersApiV2 } from "@/services/api";
 import {
     capturePayPalOrder,
     createPayPalOrder,
@@ -83,6 +84,7 @@ export default function CheckoutScreen() {
   const styles = getStyles(isDark);
 
   const { cartItems, cartTotal, clearCart } = useCart();
+  const { selectedStore } = useStore();
   const router = useRouter();
 
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -95,7 +97,8 @@ export default function CheckoutScreen() {
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCVC, setCardCVC] = useState("");
 
-  const DELIVERY_FEE = 2.99;
+  // Use store's delivery fee, fallback to 2.99
+  const DELIVERY_FEE = Number(selectedStore?.delivery_fee || 2.99);
   const discountAmount = cartTotal * 0.2;
   const orderTotal = cartTotal - discountAmount + DELIVERY_FEE;
 
@@ -200,13 +203,17 @@ export default function CheckoutScreen() {
 
   const handlePlaceOrder = async () => {
     if (!validate()) return;
+    if (!selectedStore) {
+      Alert.alert("No store selected", "Please select a store before checking out.");
+      return;
+    }
     setPlacing(true);
 
     try {
       if (paymentMethod === "paypal") {
         try {
           const dbOrderId = await handlePayPalPayment();
-          clearCart();
+          await clearCart();
           const deliveryStr = selectedAddress
             ? `${selectedAddress.street}, ${selectedAddress.city}, ${selectedAddress.zip_code}, ${selectedAddress.country}`
             : "";
@@ -221,38 +228,25 @@ export default function CheckoutScreen() {
             },
           } as any);
         } catch (paypalError: any) {
-          const msg =
-            paypalError?.message || "Could not process PayPal payment.";
+          const msg = paypalError?.message || "Could not process PayPal payment.";
           Alert.alert("PayPal Payment Failed", msg);
         }
         return;
       }
 
-      // ── Cash / Card ────────────────────────────────────────────────────
+      // ── Cash / Card via V2 Redis Checkout ─────────────────────────────────
       if (paymentMethod === "card") {
         await new Promise((resolve) => setTimeout(resolve, 1500));
       }
 
-      const deliveryStr = selectedAddress
-        ? `${selectedAddress.street}, ${selectedAddress.city}, ${selectedAddress.zip_code}, ${selectedAddress.country}`
-        : "";
+      // Generate a unique idempotency key to prevent duplicate orders
+      const idempotencyKey = `checkout-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-      const payload = {
-        order: {
-          total: orderTotal,
-          address_id: selectedAddress?.id,
-          delivery_address: deliveryStr,
-          delivery_fee: DELIVERY_FEE,
-          status: "pending",
-        },
-        items: cartItems.map((item) => ({
-          product_id: item.id,
-          quantity: item.quantity,
-          price: item.price,
-        })),
-      };
-
-      const result = await ordersApi.create(payload);
+      const result = await ordersApiV2.checkout(selectedStore.slug, {
+        address_id: selectedAddress!.id,
+        payment_method: paymentMethod,
+        idempotency_key: idempotencyKey,
+      });
 
       if (result.error || !result.data) {
         Alert.alert(
@@ -262,11 +256,15 @@ export default function CheckoutScreen() {
         return;
       }
 
-      clearCart();
+      const deliveryStr = selectedAddress
+        ? `${selectedAddress.street}, ${selectedAddress.city}, ${selectedAddress.zip_code}, ${selectedAddress.country}`
+        : "";
+
+      await clearCart();
       router.replace({
         pathname: "/order-confirmation",
         params: {
-          orderId: result.data.id,
+          orderId: result.data.order?.id ?? result.data.id,
           total: orderTotal.toFixed(2),
           paymentMethod,
           itemCount: cartItems.length,

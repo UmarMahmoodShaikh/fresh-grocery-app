@@ -61,9 +61,9 @@ export default function FavoritesScreen() {
     const { addToCart } = useCart();
     const [plusAnimations, setPlusAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
 
-    const handleAddCart = (e: any, item: any) => {
+    const handleAddCart = async (e: any, item: any) => {
         e.stopPropagation();
-        addToCart(item);
+        await addToCart(item);
 
         const { pageX, pageY } = e.nativeEvent;
         const id = Math.random().toString(36).substring(7);
