@@ -27,6 +27,12 @@ Rails.application.routes.draw do
       end
       resources :invoices
       get 'reports', to: 'reports#index'
+
+      resources :budget_profiles do
+        member do
+          patch :activate
+        end
+      end
       
       post 'auth/login', to: 'auth#login'
       post 'auth/signup', to: 'auth#signup'
