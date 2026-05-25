@@ -415,3 +415,43 @@ export const addressesApi = {
     },
 };
 
+// --- Budget Profiles API (V1) ---
+
+export const budgetProfilesApi = {
+    getAll: async () => {
+        return apiRequest("/budget_profiles");
+    },
+
+    getById: async (id: number) => {
+        return apiRequest(`/budget_profiles/${id}`);
+    },
+
+    create: async (profileData: {
+        name: string;
+        total_budget: number;
+        category_budgets_attributes?: Array<{ category_id: number; amount: number }>;
+    }) => {
+        return apiRequest("/budget_profiles", "POST", { budget_profile: profileData });
+    },
+
+    update: async (id: number, profileData: {
+        name?: string;
+        total_budget?: number;
+        category_budgets_attributes?: Array<{
+            id?: number;
+            category_id: number;
+            amount: number;
+            _destroy?: boolean;
+        }>;
+    }) => {
+        return apiRequest(`/budget_profiles/${id}`, "PATCH", { budget_profile: profileData });
+    },
+
+    delete: async (id: number) => {
+        return apiRequest(`/budget_profiles/${id}`, "DELETE");
+    },
+
+    activate: async (id: number) => {
+        return apiRequest(`/budget_profiles/${id}/activate`, "PATCH");
+    },
+};

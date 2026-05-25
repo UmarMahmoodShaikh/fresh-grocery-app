@@ -6,6 +6,7 @@ class User < ApplicationRecord
 
   has_many :orders
   has_many :addresses, dependent: :destroy
+  has_many :budget_profiles, dependent: :destroy
 
   enum :role, { customer: 0, admin: 1 }
 

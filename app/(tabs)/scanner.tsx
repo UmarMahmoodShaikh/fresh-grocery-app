@@ -50,12 +50,10 @@ export default function Scanner() {
     try {
       setLoading(true);
 
-      // 1. Check if the product exists in OUR database
       if (!selectedStore) {
         setResultData({
           title: "⚠️ No Store Selected",
-          message:
-            "Please select a store from the Home screen before scanning products.",
+          message: "Please select a store from the Home screen before scanning products.",
           type: "warning",
         });
         setResultVisible(true);
@@ -63,29 +61,32 @@ export default function Scanner() {
         return;
       }
 
-      const internalCheck = await productsApiV2.getByBarcode(
-        selectedStore.slug,
-        barcode
-      );
-      const internalProd = internalCheck.data;
+      // 1. Check local cache FIRST (for instant offline scanning)
+      const { productCacheService } = await import("@/services/productCache");
+      let internalProd = await productCacheService.getCachedProductByBarcode(selectedStore.slug, barcode);
 
-      // If it exists in our store, show options to add to cart!
+      // 2. If not in cache, try fetching from internal API
+      if (!internalProd) {
+        try {
+          const internalCheck = await productsApiV2.getByBarcode(selectedStore.slug, barcode);
+          internalProd = internalCheck.data;
+        } catch (e) {
+          console.warn("Failed to fetch from internal API", e);
+        }
+      }
+
+      // If it exists in our store (from cache or API), show options to add to cart!
       if (internalProd) {
         setInternalProduct(internalProd);
 
         let nutDetails = "";
         try {
           if (internalProd.nutrition) {
-            const nut =
-              typeof internalProd.nutrition === "string"
-                ? JSON.parse(internalProd.nutrition)
-                : internalProd.nutrition;
+            const nut = typeof internalProd.nutrition === "string"
+              ? JSON.parse(internalProd.nutrition)
+              : internalProd.nutrition;
             if (nut.calories || nut.protein || nut.fat || nut.carbohydrates) {
-              nutDetails = `\n\n🥗 Nutrition Facts:\nCalories: ${
-                nut.calories || 0
-              } kcal\nProtein: ${nut.protein || 0}g\nFat: ${
-                nut.fat || 0
-              }g\nCarbs: ${nut.carbohydrates || 0}g`;
+              nutDetails = `\n\n🥗 Nutrition Facts:\nCalories: ${nut.calories || 0} kcal\nProtein: ${nut.protein || 0}g\nFat: ${nut.fat || 0}g\nCarbs: ${nut.carbohydrates || 0}g`;
             }
           }
         } catch (e) {}
@@ -93,20 +94,13 @@ export default function Scanner() {
         const description = internalProd.description
           ? `\n\n📝 Details:\n${internalProd.description}`
           : "";
+          
+        const price = Number(internalProd.discount_price || internalProd.price).toFixed(2);
 
         setResultData({
-          title:
-            internalProd.stock > 0
-              ? "✅ Product Found in Store!"
-              : "⚠️ Product Out of Stock",
-          message: `${internalProd.name}\n\n🏷️ Brand: ${
-            internalProd.brand?.name || "N/A"
-          }\n📦 Category: ${
-            internalProd.category?.name || "N/A"
-          }\n💰 Price: €${Number(internalProd.price).toFixed(2)}\n📊 Stock: ${
-            internalProd.stock
-          }${nutDetails}${description}`,
-          type: internalProd.stock > 0 ? "success" : "warning",
+          title: "✅ Product Found in Store!",
+          message: `${internalProd.name}\n\n🏷️ Brand: ${internalProd.brand?.name || "N/A"}\n📦 Category: ${internalProd.category?.name || "N/A"}\n💰 Price: €${price}${nutDetails}${description}`,
+          type: "success",
         });
 
         setResultVisible(true);
@@ -114,7 +108,7 @@ export default function Scanner() {
         return;
       }
 
-      // 2. If not in our store, get its external details from Open Food Facts to show what they missed
+      // 3. If not in our store, try external fallback (Open Food Facts)
       const response = await fetch(
         `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`,
       );
