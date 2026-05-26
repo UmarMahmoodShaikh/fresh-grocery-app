@@ -4,14 +4,14 @@ import { liteClient as algoliasearch } from "algoliasearch/lite";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
-  FlatList,
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  useColorScheme,
+    FlatList,
+    Image,
+    Pressable,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -83,11 +83,7 @@ export default function SearchScreen() {
         <Text style={styles.productBrand} numberOfLines={1}>
           {item.brand || "Unknown Brand"}
         </Text>
-        {item.nutriscore && (
-          <Text style={styles.productNutriscore}>
-            Nutriscore: {item.nutriscore.toUpperCase()}
-          </Text>
-        )}
+        {/* Nutriscore hidden */}
       </View>
       <Pressable style={styles.addButton}>
         <Ionicons name="add" size={20} color="white" />

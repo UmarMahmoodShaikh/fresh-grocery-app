@@ -1,16 +1,19 @@
 import { useCart } from "@/context/CartContext";
+import { useBudget } from "@/context/BudgetContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Alert, FlatList, Image, StyleSheet, Text, TouchableOpacity, View,
+import {
+    Alert, FlatList, Image, StyleSheet, Text, TouchableOpacity, View,
     useColorScheme
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CartScreen() {
-  const isDark = useColorScheme() === 'dark';
-  const styles = getStyles(isDark);
+    const isDark = useColorScheme() === 'dark';
+    const styles = getStyles(isDark);
 
-    const { cartItems, cartTotal, updateQuantity, removeFromCart, clearCart } = useCart();
+    const { cartItems, cartTotal, updateQuantity, removeFromCart, clearCart, isLoadingCart, totalCalories } = useCart();
+    const { getCategoryBudget } = useBudget();
     const router = useRouter();
 
     const handleCheckout = () => {
@@ -20,6 +23,34 @@ export default function CartScreen() {
         }
         router.push("/checkout" as any);
     };
+
+    // Group cart items by category
+    const groupedItems = cartItems.reduce((groups: Record<string, {
+        categoryId?: number | null;
+        categoryName: string;
+        items: typeof cartItems;
+        totalPrice: number;
+        budgetLimit: number;
+    }>, item) => {
+        const catName = item.category_name || "Uncategorized";
+        const catId = item.category_id;
+        
+        if (!groups[catName]) {
+            groups[catName] = {
+                categoryId: catId,
+                categoryName: catName,
+                items: [],
+                totalPrice: 0,
+                budgetLimit: getCategoryBudget(catId, catName),
+            };
+        }
+        
+        groups[catName].items.push(item);
+        groups[catName].totalPrice += item.price * item.quantity;
+        return groups;
+    }, {});
+
+    const groupedArray = Object.values(groupedItems);
 
     const renderItem = ({ item }: { item: any }) => (
         <View style={styles.cartItem}>
@@ -35,23 +66,87 @@ export default function CartScreen() {
                     {item.name}
                 </Text>
                 <Text style={styles.itemPrice}>€{Number(item.price * item.quantity).toFixed(2)}</Text>
+                {item.calories && (
+                    <Text style={styles.itemCalories}>{(item.calories * item.quantity).toFixed(0)} kcal</Text>
+                )}
 
                 <View style={styles.quantityContainer}>
-                    <TouchableOpacity onPress={() => updateQuantity(item.id, item.quantity - 1)} style={styles.qtyBtn}>
-                        <Ionicons name="remove" size={16} color="#374151" />
+                    <TouchableOpacity
+                        onPress={() => updateQuantity(item.product_id, item.quantity - 1)}
+                        style={styles.qtyBtn}
+                    >
+                        <Ionicons name="remove" size={16} color={isDark ? "#9CA3AF" : "#374151"} />
                     </TouchableOpacity>
                     <Text style={styles.qtyText}>{item.quantity}</Text>
-                    <TouchableOpacity onPress={() => updateQuantity(item.id, item.quantity + 1)} style={styles.qtyBtn}>
-                        <Ionicons name="add" size={16} color="#374151" />
+                    <TouchableOpacity
+                        onPress={() => updateQuantity(item.product_id, item.quantity + 1)}
+                        style={styles.qtyBtn}
+                    >
+                        <Ionicons name="add" size={16} color={isDark ? "#9CA3AF" : "#374151"} />
                     </TouchableOpacity>
                 </View>
             </View>
 
-            <TouchableOpacity onPress={() => removeFromCart(item.id)} style={styles.deleteBtn}>
+            <TouchableOpacity
+                onPress={() => removeFromCart(item.product_id)}
+                style={styles.deleteBtn}
+            >
                 <Ionicons name="trash-outline" size={20} color="#EF4444" />
             </TouchableOpacity>
         </View>
     );
+
+    const renderGroup = ({ item: group }: { item: any }) => {
+        const isExceeded = group.budgetLimit > 0 && group.totalPrice > group.budgetLimit;
+        const remaining = group.budgetLimit - group.totalPrice;
+        
+        return (
+            <View style={styles.categoryCard}>
+                <View style={styles.categoryHeader}>
+                    <View style={styles.categoryTitleRow}>
+                        <Ionicons name="folder-open" size={18} color="#2D6A4F" />
+                        <Text style={styles.categoryTitle}>{group.categoryName}</Text>
+                    </View>
+                    <View style={styles.categoryBudgetInfo}>
+                        <Text style={styles.categoryTotalSpent}>
+                            Spent: <Text style={{ fontWeight: "700" }}>€{group.totalPrice.toFixed(2)}</Text>
+                        </Text>
+                        {group.budgetLimit > 0 ? (
+                            <Text style={[styles.categoryLimit, { color: isExceeded ? "#EF4444" : "#10B981" }]}>
+                                Limit: €{group.budgetLimit.toFixed(2)}
+                            </Text>
+                        ) : (
+                            <Text style={[styles.categoryLimit, { color: isDark ? "#9CA3AF" : "#6B7280" }]}>
+                                No Limit
+                            </Text>
+                        )}
+                    </View>
+                </View>
+                
+                {group.budgetLimit > 0 && (
+                    <View style={isExceeded ? styles.exceededBanner : styles.normalBanner}>
+                        <Ionicons 
+                            name={isExceeded ? "alert-circle" : "checkmark-circle"} 
+                            size={16} 
+                            color={isExceeded ? "#EF4444" : "#10B981"} 
+                        />
+                        <Text style={isExceeded ? styles.exceededText : styles.normalText}>
+                            {isExceeded 
+                                ? `Exceeding category budget by €${Math.abs(remaining).toFixed(2)}!` 
+                                : `€${remaining.toFixed(2)} remaining under limit`
+                            }
+                        </Text>
+                    </View>
+                )}
+
+                {group.items.map((cartItem: any) => (
+                    <View key={cartItem.product_id.toString()}>
+                        {renderItem({ item: cartItem })}
+                    </View>
+                ))}
+            </View>
+        );
+    };
 
     if (cartItems.length === 0) {
         return (
@@ -75,7 +170,7 @@ export default function CartScreen() {
                     "Are you sure you want to remove all items?",
                     [
                         { text: "Cancel", style: "cancel" },
-                        { text: "Clear", onPress: clearCart, style: "destructive" }
+                        { text: "Clear", onPress: () => clearCart(), style: "destructive" }
                     ]
                 )}>
                     <Text style={styles.clearText}>Clear</Text>
@@ -83,9 +178,9 @@ export default function CartScreen() {
             </View>
 
             <FlatList
-                data={cartItems}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={renderItem}
+                data={groupedArray}
+                keyExtractor={(group) => group.categoryName}
+                renderItem={renderGroup}
                 contentContainerStyle={styles.listContainer}
                 showsVerticalScrollIndicator={false}
             />
@@ -93,15 +188,20 @@ export default function CartScreen() {
             <View style={styles.footer}>
                 <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>Subtotal</Text>
-                    <Text style={[styles.totalValue, { fontSize: 18, color: isDark ? "#9CA3AF" : "#6B7280" }]}>€{cartTotal.toFixed(2)}</Text>
+                    <Text style={[styles.totalValue, { fontSize: 16, color: isDark ? "#9CA3AF" : "#6B7280" }]}>€{cartTotal.toFixed(2)}</Text>
                 </View>
                 <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>Special Offer (20%)</Text>
-                    <Text style={[styles.totalValue, { fontSize: 18, color: "#059669" }]}>-€{(cartTotal * 0.20).toFixed(2)}</Text>
+                    <Text style={[styles.totalValue, { fontSize: 16, color: "#059669" }]}>-€{(cartTotal * 0.20).toFixed(2)}</Text>
                 </View>
                 <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>Total</Text>
                     <Text style={styles.totalValue}>€{(cartTotal * 0.80).toFixed(2)}</Text>
+                </View>
+                <View style={styles.caloriesRow}>
+                    <Ionicons name="flame" size={16} color="#F59E0B" />
+                    <Text style={styles.caloriesLabel}>Total Calories:</Text>
+                    <Text style={styles.caloriesValue}>{totalCalories.toFixed(0)} kcal</Text>
                 </View>
                 <TouchableOpacity style={styles.checkoutBtn} onPress={handleCheckout}>
                     <Text style={styles.checkoutText}>Proceed to Checkout</Text>
@@ -171,21 +271,18 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     },
     cartItem: {
         flexDirection: "row",
-        backgroundColor: isDark ? "#1F2937" : "#fff",
+        backgroundColor: isDark ? "#111827" : "#F9FAFB",
         padding: 12,
         borderRadius: 12,
-        marginBottom: 12,
+        marginBottom: 8,
         alignItems: "center",
-        shadowColor: isDark ? "#F9FAFB" : "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
-        elevation: 2,
+        borderWidth: 1,
+        borderColor: isDark ? "#374151" : "#E5E7EB",
     },
     imageContainer: {
         width: 70,
         height: 70,
-        backgroundColor: isDark ? "#111827" : "#f3f4f6",
+        backgroundColor: isDark ? "#1F2937" : "#e5e7eb",
         borderRadius: 8,
         alignItems: "center",
         justifyContent: "center",
@@ -206,15 +303,20 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         marginBottom: 4,
     },
     itemPrice: {
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: "bold",
         color: "#2D6A4F",
+        marginBottom: 4,
+    },
+    itemCalories: {
+        fontSize: 12,
+        color: isDark ? "#9CA3AF" : "#6B7280",
         marginBottom: 8,
     },
     quantityContainer: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: isDark ? "#111827" : "#f3f4f6",
+        backgroundColor: isDark ? "#1F2937" : "#e5e7eb",
         borderRadius: 8,
         alignSelf: "flex-start",
     },
@@ -231,12 +333,87 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         marginLeft: 8,
     },
 
+    categoryCard: {
+        backgroundColor: isDark ? "#1F2937" : "#fff",
+        borderRadius: 16,
+        padding: 12,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: isDark ? "#374151" : "#E5E7EB",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+        elevation: 2,
+    },
+    categoryHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingBottom: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: isDark ? "#374151" : "#F3F4F6",
+        marginBottom: 8,
+    },
+    categoryTitleRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+    },
+    categoryTitle: {
+        fontSize: 16,
+        fontWeight: "bold",
+        color: isDark ? "#F9FAFB" : "#1F2937",
+    },
+    categoryBudgetInfo: {
+        alignItems: "flex-end",
+    },
+    categoryTotalSpent: {
+        fontSize: 13,
+        color: isDark ? "#D1D5DB" : "#374151",
+    },
+    categoryLimit: {
+        fontSize: 11,
+        fontWeight: "600",
+        marginTop: 2,
+    },
+    exceededBanner: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: isDark ? "rgba(239, 68, 68, 0.15)" : "#FEE2E2",
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        gap: 6,
+        marginBottom: 12,
+    },
+    exceededText: {
+        color: "#EF4444",
+        fontSize: 12,
+        fontWeight: "600",
+    },
+    normalBanner: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: isDark ? "rgba(16, 185, 129, 0.15)" : "#D1FAE5",
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        gap: 6,
+        marginBottom: 12,
+    },
+    normalText: {
+        color: "#10B981",
+        fontSize: 12,
+        fontWeight: "600",
+    },
+
     footer: {
         backgroundColor: isDark ? "#1F2937" : "#fff",
         padding: 16,
         borderTopWidth: 1,
         borderTopColor: "#E5E7EB",
-        marginBottom: 80, // Accommodate for bottom tab
+        marginBottom: 80,
     },
     totalRow: {
         flexDirection: "row",
@@ -245,17 +422,37 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         marginBottom: 16,
     },
     totalLabel: {
-        fontSize: 18,
+        fontSize: 14,
         fontWeight: "600",
         color: isDark ? "#D1D5DB" : "#4B5563",
     },
     totalValue: {
-        fontSize: 24,
+        fontSize: 16,
         fontWeight: "bold",
         color: isDark ? "#F9FAFB" : "#1F2937",
     },
+    caloriesRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 16,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: isDark ? "#374151" : "#E5E7EB",
+    },
+    caloriesLabel: {
+        fontSize: 13,
+        fontWeight: "600",
+        color: isDark ? "#D1D5DB" : "#4B5563",
+        marginLeft: 8,
+    },
+    caloriesValue: {
+        fontSize: 14,
+        fontWeight: "bold",
+        color: "#F59E0B",
+        marginLeft: 8,
+    },
     checkoutBtn: {
-        backgroundColor: "#2D6A4F",
+        backgroundColor: "#10B981",
         borderRadius: 12,
         paddingVertical: 16,
         alignItems: "center",

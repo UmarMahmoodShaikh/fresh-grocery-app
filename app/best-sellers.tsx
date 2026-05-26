@@ -1,6 +1,7 @@
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
-import { productsApi } from "@/services/api";
+import { useStore } from "@/context/StoreContext";
+import { productsApiV2 } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
@@ -61,21 +62,21 @@ export default function BestSellersScreen() {
     const router = useRouter();
     const { addToCart } = useCart();
     const { isFavorite, toggleFavorite } = useFavorites();
+    const { selectedStore } = useStore();
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [plusAnimations, setPlusAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
 
     useEffect(() => {
-        fetchBestSellers();
-    }, []);
+        if (selectedStore) fetchBestSellers();
+    }, [selectedStore]);
 
     const fetchBestSellers = async () => {
+        if (!selectedStore) return;
         setLoading(true);
         try {
-            const result = await productsApi.getAll();
+            const result = await productsApiV2.getAll(selectedStore.slug);
             if (result.data) {
-                // For now, take first 20 as "best sellers" or filter if there's a flag
-                // Assuming Best Sellers are just the top items for this demo
                 setProducts(result.data.slice(0, 20));
             }
         } catch (error) {
@@ -85,9 +86,9 @@ export default function BestSellersScreen() {
         }
     };
 
-    const handleAddCart = (e: any, item: any) => {
+    const handleAddCart = async (e: any, item: any) => {
         e.stopPropagation();
-        addToCart(item);
+        await addToCart(item);
 
         const { pageX, pageY } = e.nativeEvent;
         const id = Math.random().toString(36).substring(7);

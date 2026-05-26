@@ -5,14 +5,16 @@ import { categoriesApi } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-    useColorScheme,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -28,11 +30,60 @@ export default function BudgetScreen() {
   const isDark = useColorScheme() === "dark";
   const insets = useSafeAreaInsets();
   const styles = getStyles(isDark);
-  const { totalBudget, setTotalBudget, setCategoryBudget, clearBudgets, saveBudgets, getCategoryBudget } = useBudget();
+  
+  const { 
+    profiles, 
+    activeProfile, 
+    totalBudget, 
+    setTotalBudget, 
+    setCategoryBudget, 
+    clearBudgets, 
+    saveBudgets, 
+    getCategoryBudget,
+    createProfile,
+    activateProfile,
+    deleteProfile
+  } = useBudget();
+  
   const { cartItems, cartTotal } = useCart();
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [addCustomVisible, setAddCustomVisible] = useState(false);
+  const [customCategoryName, setCustomCategoryName] = useState("");
+  const [addingCategory, setAddingCategory] = useState(false);
+
+  const handleAddCategory = async () => {
+    if (!customCategoryName.trim()) {
+      Alert.alert("Error", "Please enter a valid category name.");
+      return;
+    }
+
+    setAddingCategory(true);
+    try {
+      const res = await categoriesApi.create({ name: customCategoryName.trim() });
+      if (res.data && !res.error) {
+        Alert.alert("Success", `Category "${customCategoryName}" added successfully!`);
+        setCustomCategoryName("");
+        setAddCustomVisible(false);
+        // Refresh category list
+        const refreshedRes = await categoriesApi.getAll();
+        const data = Array.isArray(refreshedRes.data)
+          ? refreshedRes.data
+          : Array.isArray((refreshedRes.data as any)?.categories)
+            ? (refreshedRes.data as any).categories
+            : [];
+        setCategories(data);
+      } else {
+        Alert.alert("Error", res.error || "Failed to add category.");
+      }
+    } catch {
+      Alert.alert("Error", "Network error. Please try again.");
+    } finally {
+      setAddingCategory(false);
+    }
+  };
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -64,6 +115,36 @@ export default function BudgetScreen() {
   const handleSaveBudgets = async () => {
     await saveBudgets();
     Alert.alert("Saved", "Your budget settings have been saved.");
+  };
+
+  const handleCreateProfile = () => {
+    Alert.prompt(
+      "New Budget Profile",
+      "Enter a name for your new budget profile:",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Create", 
+          onPress: (name) => {
+            if (name && name.trim().length > 0) {
+              createProfile(name.trim(), totalBudget);
+            }
+          }
+        }
+      ],
+      "plain-text"
+    );
+  };
+
+  const handleDeleteProfile = (id: number, name: string) => {
+    Alert.alert(
+      "Delete Profile",
+      `Are you sure you want to delete the profile "${name}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: () => deleteProfile(id) }
+      ]
+    );
   };
 
   const renderCategory = ({ item, index }: { item: Category; index: number }) => {
@@ -99,6 +180,46 @@ export default function BudgetScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Budget</Text>
+        <TouchableOpacity onPress={handleSaveBudgets}>
+          <Text style={styles.headerSave}>Save</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Profile Selector */}
+      {profiles.length > 0 && (
+        <View style={styles.profileSection}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.profileScroll}>
+            {profiles.map(p => (
+              <TouchableOpacity 
+                key={p.id} 
+                style={[styles.profileChip, p.is_active && styles.profileChipActive]}
+                onPress={() => activateProfile(p.id)}
+                onLongPress={() => handleDeleteProfile(p.id, p.name)}
+              >
+                <Text style={[styles.profileChipText, p.is_active && styles.profileChipTextActive]}>
+                  {p.name}
+                </Text>
+                {p.is_active && <Ionicons name="checkmark-circle" size={16} color="#22C55E" style={{marginLeft: 4}} />}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.profileChipNew} onPress={handleCreateProfile}>
+              <Ionicons name="add" size={16} color={isDark ? "#9CA3AF" : "#64748B"} />
+              <Text style={styles.profileChipNewText}>New</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      )}
+      {profiles.length === 0 && (
+        <View style={styles.profileSection}>
+          <TouchableOpacity style={styles.profileChipNew} onPress={handleCreateProfile}>
+            <Ionicons name="add" size={16} color={isDark ? "#9CA3AF" : "#64748B"} />
+            <Text style={styles.profileChipNewText}>Create Profile</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
@@ -106,11 +227,6 @@ export default function BudgetScreen() {
           { paddingBottom: 40 + insets.bottom + 120 },
         ]}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>Budget</Text>
-          <Text style={styles.subtitle}>Set a total budget and per-category limits. You will get an alert when adding items goes over budget.</Text>
-        </View>
-
         <View style={styles.summaryCard}>
           <View style={styles.summaryRow}>
             <View>
@@ -137,16 +253,64 @@ export default function BudgetScreen() {
             <Ionicons name="refresh-outline" size={18} color="#DC2626" />
             <Text style={styles.clearButtonText}>Clear all budgets</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSaveBudgets}>
-            <Ionicons name="save-outline" size={18} color="#fff" />
-            <Text style={styles.saveButtonText}>Save budgets</Text>
-          </TouchableOpacity>
+        </View>
+        <View style={styles.sectionHeader}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <Text style={styles.sectionTitle}>Category budgets</Text>
+            <TouchableOpacity 
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: isDark ? "#374151" : "#E8F5E9", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}
+              onPress={() => setAddCustomVisible(true)}
+            >
+              <Ionicons name="add-circle-outline" size={16} color="#2D6A4F" />
+              <Text style={{ fontSize: 13, fontWeight: '700', color: "#2D6A4F" }}>Add Custom</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.sectionHint}>Based on your existing or custom product categories</Text>
         </View>
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Category budgets</Text>
-          <Text style={styles.sectionHint}>Based on your existing product categories</Text>
-        </View>
+        {/* Custom Category Modal */}
+        <Modal
+          visible={addCustomVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setAddCustomVisible(false)}
+        >
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+            <View style={{ width: '100%', maxWidth: 340, backgroundColor: isDark ? "#1F2937" : "#FFFFFF", borderRadius: 24, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 5 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <Text style={{ fontSize: 18, fontWeight: '800', color: isDark ? "#F9FAFB" : "#111827" }}>New Category</Text>
+                <TouchableOpacity onPress={() => setAddCustomVisible(false)}>
+                  <Ionicons name="close" size={24} color={isDark ? "#9CA3AF" : "#6B7280"} />
+                </TouchableOpacity>
+              </View>
+              <Text style={{ fontSize: 13, color: isDark ? "#9CA3AF" : "#6B7280", marginBottom: 12 }}>
+                Create a custom category limit (e.g. Snacks, Drinks, Party).
+              </Text>
+              <TextInput
+                value={customCategoryName}
+                onChangeText={setCustomCategoryName}
+                placeholder="Category Name"
+                placeholderTextColor={isDark ? "#6B7280" : "#9CA3AF"}
+                style={{ borderWidth: 1, borderColor: isDark ? "#374151" : "#E2E8F0", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, color: isDark ? "#F9FAFB" : "#111827", backgroundColor: isDark ? "#111827" : "#F8FAFC", marginBottom: 20 }}
+                autoFocus
+              />
+              <TouchableOpacity 
+                style={{ backgroundColor: '#2D6A4F', borderRadius: 14, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}
+                onPress={handleAddCategory}
+                disabled={addingCategory}
+              >
+                {addingCategory ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+                    <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Create Category</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         {loading ? (
           <View style={{ paddingVertical: 30 }}>
@@ -171,46 +335,89 @@ const getStyles = (isDark: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? "#111827" : "#F9FAFB",
+      backgroundColor: isDark ? "#111827" : "#F8FAFC",
     },
     content: {
-      padding: 16,
-      gap: 12,
+      padding: 20,
+      gap: 16,
     },
     header: {
-      gap: 6,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: 16,
+      paddingVertical: 16,
       backgroundColor: isDark ? "#1F2937" : "#fff",
-      borderRadius: 12,
-      padding: 16,
-      borderWidth: 1,
-      borderColor: isDark ? "#374151" : "#E5E7EB",
-      shadowColor: isDark ? "#F9FAFB" : "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 5,
-      elevation: 2,
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? "#374151" : "#E5E7EB",
     },
-    title: {
+    headerTitle: {
       fontSize: 20,
       fontWeight: "700",
-      color: isDark ? "#F9FAFB" : "#111827",
+      color: isDark ? "#F9FAFB" : "#1F2937",
     },
-    subtitle: {
+    headerSave: {
+      color: "#22C55E",
+      fontWeight: "600",
+      fontSize: 16,
+    },
+    profileSection: {
+      paddingVertical: 12,
+      backgroundColor: isDark ? "#1F2937" : "#fff",
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? "#374151" : "#E5E7EB",
+    },
+    profileScroll: {
+      paddingHorizontal: 16,
+      gap: 8,
+    },
+    profileChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      backgroundColor: isDark ? "#374151" : "#F1F5F9",
+      borderWidth: 1,
+      borderColor: 'transparent',
+    },
+    profileChipActive: {
+      backgroundColor: isDark ? "rgba(34, 197, 94, 0.1)" : "#DCFCE7",
+      borderColor: "#22C55E",
+    },
+    profileChipText: {
       fontSize: 14,
-      lineHeight: 20,
-      color: isDark ? "#9CA3AF" : "#475569",
+      fontWeight: "600",
+      color: isDark ? "#D1D5DB" : "#475569",
+    },
+    profileChipTextActive: {
+      color: "#16A34A",
+    },
+    profileChipNew: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: isDark ? "#4B5563" : "#CBD5E1",
+      backgroundColor: 'transparent',
+    },
+    profileChipNewText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: isDark ? "#9CA3AF" : "#64748B",
+      marginLeft: 4,
     },
     summaryCard: {
       backgroundColor: isDark ? "#1F2937" : "#fff",
-      borderRadius: 12,
+      borderRadius: 24,
       padding: 18,
-      borderWidth: 1,
-      borderColor: isDark ? "#374151" : "#E5E7EB",
-      shadowColor: isDark ? "#F9FAFB" : "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 5,
-      elevation: 2,
+      shadowColor: "#000",
+      shadowOpacity: 0.08,
+      shadowRadius: 16,
+      elevation: 4,
     },
     summaryRow: {
       flexDirection: "row",
@@ -262,20 +469,6 @@ const getStyles = (isDark: boolean) =>
       color: "#DC2626",
       fontWeight: "700",
     },
-    saveButton: {
-      marginTop: 12,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-      borderRadius: 12,
-      paddingVertical: 12,
-      backgroundColor: "#22C55E",
-    },
-    saveButtonText: {
-      color: "#fff",
-      fontWeight: "800",
-    },
     sectionHeader: {
       gap: 4,
     },
@@ -296,15 +489,9 @@ const getStyles = (isDark: boolean) =>
       alignItems: "center",
       gap: 12,
       backgroundColor: isDark ? "#1F2937" : "#fff",
-      borderRadius: 12,
+      borderRadius: 20,
       borderWidth: 1,
       padding: 14,
-      borderColor: isDark ? "#374151" : "#E5E7EB",
-      shadowColor: isDark ? "#F9FAFB" : "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 5,
-      elevation: 2,
     },
     categoryBadge: {
       width: 44,
@@ -339,7 +526,7 @@ const getStyles = (isDark: boolean) =>
       minWidth: 96,
       borderWidth: 1,
       borderColor: isDark ? "#374151" : "#E2E8F0",
-      borderRadius: 12,
+      borderRadius: 14,
       paddingHorizontal: 12,
       paddingVertical: 10,
       fontSize: 16,

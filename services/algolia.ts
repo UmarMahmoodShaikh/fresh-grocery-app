@@ -4,18 +4,31 @@ import aa from 'search-insights';
 const appId = process.env.EXPO_PUBLIC_ALGOLIA_APP_ID || '';
 const apiKey = process.env.EXPO_PUBLIC_ALGOLIA_SEARCH_KEY || '';
 
-export const searchClient = algoliasearch(appId, apiKey);
-export const recommendClient = searchClient.initRecommend();
+const isConfigured = appId && apiKey && appId !== 'PLACEHOLDER_APP_ID';
 
-aa('init', {
-  appId,
-  apiKey,
-  useCookie: true,
-});
+export const searchClient = isConfigured 
+  ? algoliasearch(appId, apiKey) 
+  : { 
+      initRecommend: () => ({}),
+      searchSingleIndex: async () => ({ hits: [] }),
+    } as any;
+
+export const recommendClient = isConfigured 
+  ? searchClient.initRecommend() 
+  : {};
+
+if (isConfigured) {
+  aa('init', {
+    appId,
+    apiKey,
+    useCookie: true,
+  });
+}
 
 export const insights = aa;
 
 export const trackProductView = (userToken: string, objectID: string) => {
+  if (!isConfigured) return;
   aa('viewedObjectIDs', {
     userToken,
     index: 'Product',
@@ -25,6 +38,7 @@ export const trackProductView = (userToken: string, objectID: string) => {
 };
 
 export const trackProductClick = (userToken: string, objectID: string) => {
+  if (!isConfigured) return;
   aa('clickedObjectIDs', {
     userToken,
     index: 'Product',
@@ -34,6 +48,7 @@ export const trackProductClick = (userToken: string, objectID: string) => {
 };
 
 export const trackAddToCart = (userToken: string, objectID: string) => {
+  if (!isConfigured) return;
   aa('convertedObjectIDs', {
     userToken,
     index: 'Product',
