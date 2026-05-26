@@ -1,0 +1,68 @@
+name: Sync from Personal Repo
+
+# Runs every 15 minutes and can also be triggered manually
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout org repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Save workflow files
+        run: cp -r .github /tmp/saved-github
+
+      - name: Fetch all branches from personal repo
+        run: |
+          git remote add personal https://github.com/UmarMahmoodShaikh/fresh-grocery-app.git
+          git fetch personal
+
+      - name: Sync all branches
+        run: |
+          # Get all branch names from personal repo (exclude HEAD pointer)
+          BRANCHES=$(git branch -r | grep 'personal/' | grep -v 'HEAD' | sed 's|personal/||' | xargs)
+
+          echo "Branches to sync: $BRANCHES"
+
+          for branch in $BRANCHES; do
+            echo ""
+            echo "========================================="
+            echo "Syncing branch: $branch"
+            echo "========================================="
+
+            # Reset local branch to match personal repo exactly
+            git checkout -B "$branch" "personal/$branch"
+
+            # On the default branch (main), restore the workflow file
+            # so the pipeline doesn't delete itself
+            if [ "$branch" = "main" ]; then
+              mkdir -p .github/workflows
+              cp /tmp/saved-github/workflows/sync-from-personal.yml .github/workflows/sync-from-personal.yml
+              git add .github/workflows/sync-from-personal.yml
+              if ! git diff --cached --quiet; then
+                git commit -m "chore: maintain sync workflow [skip ci]"
+              fi
+            fi
+
+            # Force push to ensure org branch exactly matches personal branch
+            git push origin "$branch" --force
+          done
+
+          echo ""
+          echo "========================================="
+          echo "Sync complete!"
+          echo "========================================="
