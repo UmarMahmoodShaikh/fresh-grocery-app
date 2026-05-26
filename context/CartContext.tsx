@@ -33,10 +33,16 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+import { useNetwork } from './NetworkContext';
+
+// ... (keep CartItem interface and CartContextType as is)
+
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({children}) => {
     const {selectedStore} = useStore();
+    const {isOnline} = useNetwork();
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
     const [isLoadingCart, setIsLoadingCart] = useState(false);
+    const [hasOfflineChanges, setHasOfflineChanges] = useState(false);
     const {totalBudget, getCategoryBudget} = useBudget();
 
     // ─── Helper functions ────────────────────────────────────────────────
@@ -69,7 +75,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({children}
     const getNextItems = (product: any, quantity: number) => {
         const existingItem = cartItems.find(item => item.id === product.id);
 
-        // Extract calories from product nutrition data
         const getCalories = (productData: any): number | null => {
             if (productData.calories) return productData.calories;
             if (productData.nutrition?.calories) return productData.nutrition.calories;
@@ -132,7 +137,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({children}
     // ─── Refresh cart from Redis backend ──────────────────────────────────
 
     const refreshCart = async () => {
-        if (!selectedStore) return;
+        if (!selectedStore || !isOnline) return;
 
         setIsLoadingCart(true);
         try {
@@ -167,9 +172,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({children}
         const loadCart = async () => {
             try {
                 const stored = await AsyncStorage.getItem('shopping_cart');
-                if (stored) {
-                    setCartItems(JSON.parse(stored));
-                }
+                const offlineFlags = await AsyncStorage.getItem('cart_offline_changes');
+                if (stored) setCartItems(JSON.parse(stored));
+                if (offlineFlags === 'true') setHasOfflineChanges(true);
             } catch (e) {
                 console.error('Failed to load cart from storage', e);
             }
@@ -182,24 +187,42 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({children}
         const saveCart = async () => {
             try {
                 await AsyncStorage.setItem('shopping_cart', JSON.stringify(cartItems));
+                await AsyncStorage.setItem('cart_offline_changes', hasOfflineChanges ? 'true' : 'false');
             } catch (error) {
                 console.error('Failed to save cart data', error);
             }
         };
         saveCart();
-    }, [cartItems]);
+    }, [cartItems, hasOfflineChanges]);
 
     // Load from Redis whenever store changes
     useEffect(() => {
         refreshCart();
     }, [selectedStore]);
 
+    // Sync offline changes when back online
+    useEffect(() => {
+        const syncOffline = async () => {
+            if (isOnline && hasOfflineChanges && selectedStore) {
+                try {
+                    await cartApi.clear(selectedStore.slug);
+                    for (const item of cartItems) {
+                        await cartApi.addItem(selectedStore.slug, item.product_id, item.quantity);
+                    }
+                    setHasOfflineChanges(false);
+                } catch (e) {
+                    console.error("Failed to sync offline cart", e);
+                }
+            }
+        };
+        syncOffline();
+    }, [isOnline, hasOfflineChanges, selectedStore]);
+
     // ─── Cart operations ─────────────────────────────────────────────────
 
     const addToCart = async (product: any, quantity = 1) => {
         if (!selectedStore) return;
 
-        // Budget validation
         const nextItems = getNextItems(product, quantity);
         const issues = validateBudgets(nextItems, product, quantity);
 
@@ -211,10 +234,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({children}
         // Optimistic update
         setCartItems(nextItems);
 
+        if (!isOnline) {
+            setHasOfflineChanges(true);
+            return;
+        }
+
         // Sync with backend
-        const result = await cartApi.addItem(selectedStore.slug, product.id, quantity);
-        if (!result.data) {
-            refreshCart(); // Revert on failure
+        try {
+            const result = await cartApi.addItem(selectedStore.slug, product.id, quantity);
+            if (!result.data) {
+                setHasOfflineChanges(true); // Mark to retry later
+            }
+        } catch {
+            setHasOfflineChanges(true);
         }
     };
 
@@ -222,8 +254,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({children}
         if (!selectedStore) return;
 
         setCartItems(prev => prev.filter(item => item.product_id !== id));
-        const result = await cartApi.removeItem(selectedStore.slug, id);
-        if (!result.data) refreshCart();
+        
+        if (!isOnline) {
+            setHasOfflineChanges(true);
+            return;
+        }
+
+        try {
+            const result = await cartApi.removeItem(selectedStore.slug, id);
+            if (!result.data) setHasOfflineChanges(true);
+        } catch {
+            setHasOfflineChanges(true);
+        }
     };
 
     const updateQuantity = async (id: number, quantity: number) => {
@@ -237,7 +279,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({children}
         const currentItem = cartItems.find(item => item.product_id === id);
         if (!currentItem) return;
 
-        // Budget validation
         const nextItems = cartItems.map(item =>
             item.product_id === id ? {...item, quantity} : item
         );
@@ -245,10 +286,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({children}
 
         if (changedItem) {
             const issues = validateBudgets(nextItems, {
-                category: {
-                    id: changedItem.category_id,
-                    name: changedItem.category_name,
-                },
+                category: { id: changedItem.category_id, name: changedItem.category_name },
             }, quantity);
 
             if (issues.length > 0) {
@@ -257,19 +295,36 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({children}
             }
         }
 
-        // Optimistic update
         const diff = quantity - currentItem.quantity;
         setCartItems(nextItems);
 
-        // Sync with backend
-        const result = await cartApi.addItem(selectedStore.slug, id, diff);
-        if (!result.data) refreshCart();
+        if (!isOnline) {
+            setHasOfflineChanges(true);
+            return;
+        }
+
+        try {
+            const result = await cartApi.addItem(selectedStore.slug, id, diff);
+            if (!result.data) setHasOfflineChanges(true);
+        } catch {
+            setHasOfflineChanges(true);
+        }
     };
 
     const clearCart = async () => {
         if (!selectedStore) return;
         setCartItems([]);
-        await cartApi.clear(selectedStore.slug);
+        
+        if (!isOnline) {
+            setHasOfflineChanges(true);
+            return;
+        }
+        
+        try {
+            await cartApi.clear(selectedStore.slug);
+        } catch {
+            setHasOfflineChanges(true);
+        }
     };
 
     // ─── Computed values ─────────────────────────────────────────────────

@@ -30,7 +30,21 @@ export default function BudgetScreen() {
   const isDark = useColorScheme() === "dark";
   const insets = useSafeAreaInsets();
   const styles = getStyles(isDark);
-  const { totalBudget, setTotalBudget, setCategoryBudget, clearBudgets, saveBudgets, getCategoryBudget } = useBudget();
+  
+  const { 
+    profiles, 
+    activeProfile, 
+    totalBudget, 
+    setTotalBudget, 
+    setCategoryBudget, 
+    clearBudgets, 
+    saveBudgets, 
+    getCategoryBudget,
+    createProfile,
+    activateProfile,
+    deleteProfile
+  } = useBudget();
+  
   const { cartItems, cartTotal } = useCart();
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -103,6 +117,36 @@ export default function BudgetScreen() {
     Alert.alert("Saved", "Your budget settings have been saved.");
   };
 
+  const handleCreateProfile = () => {
+    Alert.prompt(
+      "New Budget Profile",
+      "Enter a name for your new budget profile:",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Create", 
+          onPress: (name) => {
+            if (name && name.trim().length > 0) {
+              createProfile(name.trim(), totalBudget);
+            }
+          }
+        }
+      ],
+      "plain-text"
+    );
+  };
+
+  const handleDeleteProfile = (id: number, name: string) => {
+    Alert.alert(
+      "Delete Profile",
+      `Are you sure you want to delete the profile "${name}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: () => deleteProfile(id) }
+      ]
+    );
+  };
+
   const renderCategory = ({ item, index }: { item: Category; index: number }) => {
     const budget = getCategoryBudget(item.id, item.name);
     const spent = spentByCategory(item.id);
@@ -142,6 +186,40 @@ export default function BudgetScreen() {
           <Text style={styles.headerSave}>Save</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Profile Selector */}
+      {profiles.length > 0 && (
+        <View style={styles.profileSection}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.profileScroll}>
+            {profiles.map(p => (
+              <TouchableOpacity 
+                key={p.id} 
+                style={[styles.profileChip, p.is_active && styles.profileChipActive]}
+                onPress={() => activateProfile(p.id)}
+                onLongPress={() => handleDeleteProfile(p.id, p.name)}
+              >
+                <Text style={[styles.profileChipText, p.is_active && styles.profileChipTextActive]}>
+                  {p.name}
+                </Text>
+                {p.is_active && <Ionicons name="checkmark-circle" size={16} color="#22C55E" style={{marginLeft: 4}} />}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.profileChipNew} onPress={handleCreateProfile}>
+              <Ionicons name="add" size={16} color={isDark ? "#9CA3AF" : "#64748B"} />
+              <Text style={styles.profileChipNewText}>New</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      )}
+      {profiles.length === 0 && (
+        <View style={styles.profileSection}>
+          <TouchableOpacity style={styles.profileChipNew} onPress={handleCreateProfile}>
+            <Ionicons name="add" size={16} color={isDark ? "#9CA3AF" : "#64748B"} />
+            <Text style={styles.profileChipNewText}>Create Profile</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
@@ -149,7 +227,6 @@ export default function BudgetScreen() {
           { paddingBottom: 40 + insets.bottom + 120 },
         ]}
       >
-
         <View style={styles.summaryCard}>
           <View style={styles.summaryRow}>
             <View>
@@ -176,10 +253,6 @@ export default function BudgetScreen() {
             <Ionicons name="refresh-outline" size={18} color="#DC2626" />
             <Text style={styles.clearButtonText}>Clear all budgets</Text>
           </TouchableOpacity>
-          {/* <TouchableOpacity style={styles.saveButton} onPress={handleSaveBudgets}>
-            <Ionicons name="save-outline" size={18} color="#fff" />
-            <Text style={styles.saveButtonText}>Save budgets</Text>
-          </TouchableOpacity> */}
         </View>
         <View style={styles.sectionHeader}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
@@ -288,6 +361,55 @@ const getStyles = (isDark: boolean) =>
       fontWeight: "600",
       fontSize: 16,
     },
+    profileSection: {
+      paddingVertical: 12,
+      backgroundColor: isDark ? "#1F2937" : "#fff",
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? "#374151" : "#E5E7EB",
+    },
+    profileScroll: {
+      paddingHorizontal: 16,
+      gap: 8,
+    },
+    profileChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      backgroundColor: isDark ? "#374151" : "#F1F5F9",
+      borderWidth: 1,
+      borderColor: 'transparent',
+    },
+    profileChipActive: {
+      backgroundColor: isDark ? "rgba(34, 197, 94, 0.1)" : "#DCFCE7",
+      borderColor: "#22C55E",
+    },
+    profileChipText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: isDark ? "#D1D5DB" : "#475569",
+    },
+    profileChipTextActive: {
+      color: "#16A34A",
+    },
+    profileChipNew: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: isDark ? "#4B5563" : "#CBD5E1",
+      backgroundColor: 'transparent',
+    },
+    profileChipNewText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: isDark ? "#9CA3AF" : "#64748B",
+      marginLeft: 4,
+    },
     summaryCard: {
       backgroundColor: isDark ? "#1F2937" : "#fff",
       borderRadius: 24,
@@ -346,20 +468,6 @@ const getStyles = (isDark: boolean) =>
     clearButtonText: {
       color: "#DC2626",
       fontWeight: "700",
-    },
-    saveButton: {
-      marginTop: 12,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-      borderRadius: 14,
-      paddingVertical: 12,
-      backgroundColor: "#22C55E",
-    },
-    saveButtonText: {
-      color: "#fff",
-      fontWeight: "800",
     },
     sectionHeader: {
       gap: 4,

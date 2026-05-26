@@ -250,6 +250,10 @@ export default function HomeScreen() {
       if (catRes.data) setCategories(catRes.data as any[]);
       if (brandRes.data) setBrands(brandRes.data as any[]);
       if (prodRes.data) setProducts(prodRes.data as any[]);
+
+      // Trigger offline product cache prefetch in background
+      const { productCacheService } = await import("@/services/productCache");
+      productCacheService.prefetchStoreProducts(selectedStore.slug).catch(console.warn);
     } catch {
     } finally {
       setLoading(false);

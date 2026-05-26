@@ -107,15 +107,46 @@ export default function Scanner() {
         return;
       }
 
-      const internalCheck = await productsApiV2.getByBarcode(selectedStore.slug, barcode);
-      const internalProd = internalCheck.data;
+      // 1. Check local cache FIRST (for instant offline scanning)
+      const { productCacheService } = await import("@/services/productCache");
+      let internalProd = await productCacheService.getCachedProductByBarcode(selectedStore.slug, barcode);
 
+      // 2. If not in cache, try fetching from internal API
+      if (!internalProd) {
+        try {
+          const internalCheck = await productsApiV2.getByBarcode(selectedStore.slug, barcode);
+          internalProd = internalCheck.data;
+        } catch (e) {
+          console.warn("Failed to fetch from internal API", e);
+        }
+      }
+
+      // If it exists in our store (from cache or API), show options to add to cart!
       if (internalProd) {
         setInternalProduct(internalProd);
+
+        let nutDetails = "";
+        try {
+          if (internalProd.nutrition) {
+            const nut = typeof internalProd.nutrition === "string"
+              ? JSON.parse(internalProd.nutrition)
+              : internalProd.nutrition;
+            if (nut.calories || nut.protein || nut.fat || nut.carbohydrates) {
+              nutDetails = `\n\n🥗 Nutrition Facts:\nCalories: ${nut.calories || 0} kcal\nProtein: ${nut.protein || 0}g\nFat: ${nut.fat || 0}g\nCarbs: ${nut.carbohydrates || 0}g`;
+            }
+          }
+        } catch (e) {}
+
+        const description = internalProd.description
+          ? `\n\n📝 Details:\n${internalProd.description}`
+          : "";
+          
+        const price = Number(internalProd.discount_price || internalProd.price).toFixed(2);
+
         setResultData({
-          title: internalProd.stock > 0 ? "✅ Found in Store!" : "⚠️ Out of Stock",
-          message: "",
-          type: internalProd.stock > 0 ? "success" : "warning",
+          title: "✅ Product Found in Store!",
+          message: `${internalProd.name}\n\n🏷️ Brand: ${internalProd.brand?.name || "N/A"}\n📦 Category: ${internalProd.category?.name || "N/A"}\n💰 Price: €${price}${nutDetails}${description}`,
+          type: "success",
         });
         setResultVisible(true);
         setLoading(false);
@@ -123,7 +154,7 @@ export default function Scanner() {
         return;
       }
 
-      // External fallback — Open Food Facts
+      // 3. If not in our store, try external fallback (Open Food Facts)
       const response = await fetch(
         `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`
       );

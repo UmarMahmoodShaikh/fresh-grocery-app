@@ -128,7 +128,6 @@ module Api
         # 2. Bulk upsert in one query
         CategoryBudget.upsert_all(to_upsert, unique_by: [:budget_profile_id, :category_id]) if to_upsert.any?
       end
-
       def serialize_profile(profile)
         {
           id: profile.id,

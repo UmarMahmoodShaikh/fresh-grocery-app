@@ -1,7 +1,23 @@
-import { getStoredUser, budgetApi } from "@/services/api";
+import { getStoredUser, budgetApi, budgetProfilesApi } from "@/services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { AppState } from "react-native";
+import { useNetwork } from "./NetworkContext";
+
+export interface CategoryBudget {
+  id?: number;
+  category_id: number;
+  category_name?: string;
+  amount: number;
+}
+
+export interface BudgetProfile {
+  id: number;
+  name: string;
+  total_budget: number;
+  is_active: boolean;
+  category_budgets: CategoryBudget[];
+}
 
 export interface BudgetSettings {
   totalBudget: number;
@@ -9,8 +25,11 @@ export interface BudgetSettings {
 }
 
 interface BudgetContextType {
+  profiles: BudgetProfile[];
+  activeProfile: BudgetProfile | null;
   totalBudget: number;
   categoryBudgets: Record<string, number>;
+  
   setTotalBudget: (amount: number) => void;
   setCategoryBudget: (categoryId: number | null | undefined, categoryName: string | null | undefined, amount: number) => void;
   clearCategoryBudget: (categoryId: number | null | undefined, categoryName: string | null | undefined) => void;
@@ -18,60 +37,58 @@ interface BudgetContextType {
   saveBudgets: () => Promise<void>;
   getCategoryBudget: (categoryId: number | null | undefined, categoryName: string | null | undefined) => number;
   refreshBudgets: () => Promise<void>;
+  createProfile: (name: string, totalBudget?: number) => Promise<void>;
+  activateProfile: (id: number) => Promise<void>;
+  deleteProfile: (id: number) => Promise<void>;
+  refreshProfiles: () => Promise<void>;
+  isLoading: boolean;
 }
 
-const STORAGE_KEY = "budget_settings";
+const STORAGE_KEY = "budget_settings_v2";
 const GUEST_KEY = "guest";
 
 const getCategoryKey = (categoryId: number | null | undefined, categoryName: string | null | undefined) => {
   if (categoryId !== null && categoryId !== undefined) {
     return `id:${categoryId}`;
   }
-
   if (categoryName && categoryName.trim().length > 0) {
     return `name:${categoryName.trim().toLowerCase()}`;
   }
-
   return "";
 };
 
 const BudgetContext = createContext<BudgetContextType | undefined>(undefined);
 
 export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isOnline } = useNetwork();
+  const [profiles, setProfiles] = useState<BudgetProfile[]>([]);
+  const [activeProfile, setActiveProfile] = useState<BudgetProfile | null>(null);
+  
+  // Local state for the active budget to allow instant UI updates
   const [totalBudget, setTotalBudgetState] = useState(0);
   const [categoryBudgets, setCategoryBudgets] = useState<Record<string, number>>({});
+  
   const [userStorageKey, setUserStorageKey] = useState(GUEST_KEY);
   const [activeProfileId, setActiveProfileId] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGuest, setIsGuest] = useState(true);
 
   const resolveUserStorageKey = (user: any | null) => {
-    if (!user) {
-      return GUEST_KEY;
-    }
-
-    const userId = user.id !== undefined && user.id !== null ? String(user.id) : "";
-    const userEmail = typeof user.email === "string" ? user.email.trim().toLowerCase() : "";
-
-    if (userId) {
-      return `user:${userId}`;
-    }
-
-    if (userEmail) {
-      return `email:${userEmail}`;
-    }
-
-    return GUEST_KEY;
+    if (!user || !user.id) return GUEST_KEY;
+    return `user:${user.id}`;
   };
 
   const getBudgetStorageKey = (storageKey: string) => `${STORAGE_KEY}:${storageKey}`;
 
-  const persistBudgets = async (storageKey: string, nextTotalBudget: number, nextCategoryBudgets: Record<string, number>) => {
+  // Persist locally for offline access
+  const persistLocally = async (storageKey: string, p: BudgetProfile[], active: BudgetProfile | null, t: number, c: Record<string, number>) => {
     await AsyncStorage.setItem(
       getBudgetStorageKey(storageKey),
-      JSON.stringify({ totalBudget: nextTotalBudget, categoryBudgets: nextCategoryBudgets }),
+      JSON.stringify({ profiles: p, activeProfile: active, totalBudget: t, categoryBudgets: c })
     );
   };
 
-  const loadBudgetsForUser = async (storageKey: string) => {
+  const loadLocally = async (storageKey: string) => {
     try {
       // 1. Try to load from Rails database API if logged in
       if (storageKey !== GUEST_KEY) {
@@ -103,83 +120,93 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // 2. Fallback to AsyncStorage
       const stored = await AsyncStorage.getItem(getBudgetStorageKey(storageKey));
       if (!stored) {
+        setProfiles([]);
+        setActiveProfile(null);
         setTotalBudgetState(0);
         setCategoryBudgets({});
         return;
       }
-
-      const parsed = JSON.parse(stored) as Partial<BudgetSettings>;
-      setTotalBudgetState(Number(parsed.totalBudget) || 0);
+      const parsed = JSON.parse(stored);
+      setProfiles(parsed.profiles || []);
+      setActiveProfile(parsed.activeProfile || null);
+      setTotalBudgetState(parsed.totalBudget || 0);
       setCategoryBudgets(parsed.categoryBudgets || {});
     } catch (error) {
-      console.error("Failed to load budget data", error);
+      console.error("Failed to load local budget data", error);
     }
   };
 
-  const syncUserBudget = async () => {
+  // Sync from backend
+  const refreshProfiles = async () => {
     const user = await getStoredUser();
-    const nextUserStorageKey = resolveUserStorageKey(user);
+    const key = resolveUserStorageKey(user);
+    setIsGuest(key === GUEST_KEY);
+    
+    if (key !== userStorageKey) {
+      setUserStorageKey(key);
+      await loadLocally(key);
+    }
 
-    setUserStorageKey((currentKey) => {
-      if (currentKey !== nextUserStorageKey) {
-        loadBudgetsForUser(nextUserStorageKey);
+    if (key === GUEST_KEY || !isOnline) return;
+
+    setIsLoading(true);
+    try {
+      const res = await budgetProfilesApi.getAll();
+      if (res.data) {
+        setProfiles(res.data);
+        const active = res.data.find((p: BudgetProfile) => p.is_active) || null;
+        setActiveProfile(active);
+        
+        if (active) {
+          setTotalBudgetState(active.total_budget);
+          const catBudgets: Record<string, number> = {};
+          active.category_budgets.forEach((cb: CategoryBudget) => {
+            catBudgets[`id:${cb.category_id}`] = cb.amount;
+          });
+          setCategoryBudgets(catBudgets);
+        } else {
+          setTotalBudgetState(0);
+          setCategoryBudgets({});
+        }
+        
+        await persistLocally(key, res.data, active, active ? active.total_budget : 0, active ? categoryBudgets : {});
       }
-      return nextUserStorageKey;
-    });
+    } catch (error) {
+      console.error("Failed to fetch budget profiles from API", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
-    syncUserBudget();
-  }, []);
-
-  useEffect(() => {
-    const saveBudgets = async () => {
-      try {
-        await persistBudgets(userStorageKey, totalBudget, categoryBudgets);
-      } catch (error) {
-        console.error("Failed to save budget data", error);
-      }
-    };
-
-    saveBudgets();
-  }, [totalBudget, categoryBudgets, userStorageKey]);
+    refreshProfiles();
+  }, [isOnline]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextAppState) => {
-      if (nextAppState === "active") {
-        syncUserBudget();
-      }
+      if (nextAppState === "active") refreshProfiles();
     });
-
     return () => subscription.remove();
   }, []);
+
+  // Sync to local storage whenever totalBudget or categoryBudgets change
+  useEffect(() => {
+    persistLocally(userStorageKey, profiles, activeProfile, totalBudget, categoryBudgets);
+  }, [totalBudget, categoryBudgets, activeProfile, profiles, userStorageKey]);
 
   const setTotalBudget = (amount: number) => {
     setTotalBudgetState(Number(amount) || 0);
   };
 
-  const setCategoryBudget = (
-    categoryId: number | null | undefined,
-    categoryName: string | null | undefined,
-    amount: number,
-  ) => {
+  const setCategoryBudget = (categoryId: number | null | undefined, categoryName: string | null | undefined, amount: number) => {
     const key = getCategoryKey(categoryId, categoryName);
     if (!key) return;
-
-    const value = Number(amount) || 0;
-    setCategoryBudgets((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+    setCategoryBudgets((prev) => ({ ...prev, [key]: Number(amount) || 0 }));
   };
 
-  const clearCategoryBudget = (
-    categoryId: number | null | undefined,
-    categoryName: string | null | undefined,
-  ) => {
+  const clearCategoryBudget = (categoryId: number | null | undefined, categoryName: string | null | undefined) => {
     const key = getCategoryKey(categoryId, categoryName);
     if (!key) return;
-
     setCategoryBudgets((prev) => {
       const next = { ...prev };
       delete next[key];
@@ -193,66 +220,85 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setActiveProfileId(null);
   };
 
+  // Push local changes to the active profile on the backend
   const saveBudgets = async () => {
+    if (isGuest) {
+      await persistLocally(userStorageKey, profiles, activeProfile, totalBudget, categoryBudgets);
+      return;
+    }
+
+    if (!activeProfile && isOnline) {
+      // Create a default profile if none exists
+      await createProfile("Default Budget", totalBudget);
+      return;
+    }
+
+    if (!activeProfile || !isOnline) return;
+
+    // Transform record into array of category budgets
+    const category_budgets_attributes = Object.keys(categoryBudgets).map(key => {
+      const category_id = parseInt(key.replace("id:", ""), 10);
+      return { category_id, amount: categoryBudgets[key] };
+    }).filter(cb => !isNaN(cb.category_id));
+
     try {
-      // 1. Save locally to AsyncStorage
-      await persistBudgets(userStorageKey, totalBudget, categoryBudgets);
-
-      // 2. Save to Rails backend API if logged in
-      if (userStorageKey !== GUEST_KEY) {
-        const categoryBudgetsAttributes = Object.entries(categoryBudgets).map(([key, amount]) => {
-          const parts = key.split(":");
-          const categoryId = parseInt(parts[1], 10);
-          return {
-            category_id: categoryId,
-            amount: amount,
-          };
-        }).filter(item => !isNaN(item.category_id));
-
-        const payload = {
-          name: "Default Budget",
-          total_budget: totalBudget,
-          category_budgets_attributes: categoryBudgetsAttributes,
-        };
-
-        if (activeProfileId !== null) {
-          try {
-            await budgetApi.update(activeProfileId, payload);
-          } catch (updateErr) {
-            console.error("Failed to update budget profile via API", updateErr);
-          }
-        } else {
-          try {
-            const createRes = await budgetApi.create(payload);
-            if (createRes.data && createRes.data.id) {
-              setActiveProfileId(createRes.data.id);
-            }
-          } catch (createErr) {
-            console.error("Failed to create budget profile via API", createErr);
-          }
-        }
+      const res = await budgetProfilesApi.update(activeProfile.id, {
+        total_budget: totalBudget,
+        category_budgets_attributes
+      });
+      if (res.data) {
+        await refreshProfiles();
       }
-    } catch (error) {
-      console.error("Failed to save budget data", error);
+    } catch (e) {
+      console.error("Failed to save budget", e);
     }
   };
 
-  const getCategoryBudget = (
-    categoryId: number | null | undefined,
-    categoryName: string | null | undefined,
-  ) => {
+  const createProfile = async (name: string, tb = 0) => {
+    if (!isOnline || isGuest) return;
+    try {
+      const res = await budgetProfilesApi.create({ name, total_budget: tb });
+      if (res.data) await refreshProfiles();
+    } catch (e) {
+      console.error("Failed to create profile", e);
+    }
+  };
+
+  const activateProfile = async (id: number) => {
+    if (!isOnline || isGuest) return;
+    try {
+      const res = await budgetProfilesApi.activate(id);
+      if (res.data) await refreshProfiles();
+    } catch (e) {
+      console.error("Failed to activate profile", e);
+    }
+  };
+
+  const deleteProfile = async (id: number) => {
+    if (!isOnline || isGuest) return;
+    try {
+      await budgetProfilesApi.delete(id);
+      await refreshProfiles();
+    } catch (e) {
+      console.error("Failed to delete profile", e);
+    }
+  };
+
+  const getCategoryBudget = (categoryId: number | null | undefined, categoryName: string | null | undefined) => {
     const key = getCategoryKey(categoryId, categoryName);
     if (!key) return 0;
     return Number(categoryBudgets[key]) || 0;
   };
 
   const refreshBudgets = async () => {
-    await loadBudgetsForUser(userStorageKey);
+    await loadLocally(userStorageKey);
   };
 
   return (
     <BudgetContext.Provider
       value={{
+        profiles,
+        activeProfile,
         totalBudget,
         categoryBudgets,
         setTotalBudget,
@@ -262,6 +308,11 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         saveBudgets,
         getCategoryBudget,
         refreshBudgets,
+        createProfile,
+        activateProfile,
+        deleteProfile,
+        refreshProfiles,
+        isLoading
       }}
     >
       {children}
