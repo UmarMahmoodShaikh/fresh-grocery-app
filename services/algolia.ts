@@ -8,7 +8,10 @@ const isConfigured = appId && apiKey && appId !== 'PLACEHOLDER_APP_ID';
 
 export const searchClient = isConfigured 
   ? algoliasearch(appId, apiKey) 
-  : { initRecommend: () => ({}) } as any;
+  : { 
+      initRecommend: () => ({}),
+      searchSingleIndex: async () => ({ hits: [] }),
+    } as any;
 
 export const recommendClient = isConfigured 
   ? searchClient.initRecommend() 
@@ -25,6 +28,7 @@ if (isConfigured) {
 export const insights = aa;
 
 export const trackProductView = (userToken: string, objectID: string) => {
+  if (!isConfigured) return;
   aa('viewedObjectIDs', {
     userToken,
     index: 'Product',
@@ -34,6 +38,7 @@ export const trackProductView = (userToken: string, objectID: string) => {
 };
 
 export const trackProductClick = (userToken: string, objectID: string) => {
+  if (!isConfigured) return;
   aa('clickedObjectIDs', {
     userToken,
     index: 'Product',
@@ -43,6 +48,7 @@ export const trackProductClick = (userToken: string, objectID: string) => {
 };
 
 export const trackAddToCart = (userToken: string, objectID: string) => {
+  if (!isConfigured) return;
   aa('convertedObjectIDs', {
     userToken,
     index: 'Product',

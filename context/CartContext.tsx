@@ -146,6 +146,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({children}
                     quantity: item.quantity,
                     image_url: item.image_url,
                     subtotal: item.subtotal,
+                    category_id: item.category_id ?? null,
+                    category_name: item.category_name ?? "",
+                    calories: item.calories ?? null,
                 })));
             } else if (result.status === 404 || !result.data?.items) {
                 setCartItems([]);

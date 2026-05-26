@@ -4,9 +4,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // Android emulator uses 10.0.2.2, Genymotion uses 10.0.3.2, and physical devices need the LAN IP.
 // Extracting it dynamically from Expo Constants fixes networking for all Android targets.
 const getBaseUrl = () => {
-    // Use local network IP for both emulator and physical device testing
-    // return "http://10.68.249.30:3000";
-    return "http://127.0.0.1:3000";
+    // Use the ENV variable if set, otherwise fallback to local IP
+    return process.env.EXPO_PUBLIC_API_URL || "http://10.68.252.50:3000";
 };
 
 export const API_BASE_URL = getBaseUrl();
@@ -278,6 +277,9 @@ export const categoriesApi = {
     getById: async (id: number) => {
         return apiRequest(`/categories/${id}`);
     },
+    create: async (categoryData: { name: string; image_url?: string }) => {
+        return apiRequest("/categories", "POST", { category: categoryData });
+    }
 };
 
 // --- Categories API (V2) ---
@@ -413,5 +415,35 @@ export const addressesApi = {
     setDefault: async (id: number) => {
         return apiRequest(`/addresses/${id}/set_default`, "PATCH");
     },
+};
+
+// --- Budget API ---
+export const budgetApi = {
+    getAll: async () => {
+        return apiRequest("/budget_profiles");
+    },
+    getById: async (id: number) => {
+        return apiRequest(`/budget_profiles/${id}`);
+    },
+    create: async (budgetData: {
+        name: string;
+        total_budget: number;
+        category_budgets_attributes?: Array<{ category_id: number; amount: number; id?: number; _destroy?: boolean }>;
+    }) => {
+        return apiRequest("/budget_profiles", "POST", { budget_profile: budgetData });
+    },
+    update: async (id: number, budgetData: {
+        name?: string;
+        total_budget?: number;
+        category_budgets_attributes?: Array<{ category_id: number; amount: number; id?: number; _destroy?: boolean }>;
+    }) => {
+        return apiRequest(`/budget_profiles/${id}`, "PATCH", { budget_profile: budgetData });
+    },
+    delete: async (id: number) => {
+        return apiRequest(`/budget_profiles/${id}`, "DELETE");
+    },
+    activate: async (id: number) => {
+        return apiRequest(`/budget_profiles/${id}/activate`, "PATCH");
+    }
 };
 

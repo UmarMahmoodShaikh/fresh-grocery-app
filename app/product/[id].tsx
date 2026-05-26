@@ -167,11 +167,11 @@ export default function ProductDetails() {
   const [heartAnimations, setHeartAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
   const [userToken, setUserToken] = useState<string>("anonymous");
 
-  // Normalize nutrition data from database (handles both old and new formats)
   const normalizeNutrition = (nutrition: any) => {
     if (!nutrition) return null;
     return {
       calories: nutrition.calories ?? nutrition.energy,
+      energy_kj: nutrition.energy_kj,
       fat: nutrition.fat,
       saturated_fat: nutrition.saturated_fat,
       trans_fat: nutrition.trans_fat,
@@ -184,6 +184,13 @@ export default function ProductDetails() {
       fiber: nutrition.fiber,
       calcium: nutrition.calcium,
       iron: nutrition.iron,
+      nutriscore: nutrition.nutriscore,
+      novascore: nutrition.novascore,
+      ecoscore: nutrition.ecoscore,
+      ingredients_text: nutrition.ingredients_text,
+      packaging: nutrition.packaging,
+      environment: nutrition.environment,
+      origins: nutrition.origins,
     };
   };
 
@@ -235,12 +242,22 @@ export default function ProductDetails() {
   const fetchProduct = async (rawId: string) => {
     setLoading(true);
     setError(null);
+    const startTime = Date.now();
+
+    const ensureMinDelay = async () => {
+      const elapsed = Date.now() - startTime;
+      const remaining = 1200 - elapsed;
+      if (remaining > 0) {
+        await new Promise((resolve) => setTimeout(resolve, remaining));
+      }
+    };
 
     const numericId = parseInt(rawId, 10);
     if (!isNaN(numericId) && selectedStore) {
       // V2: fetch with store-specific pricing
       const result = await productsApiV2.getById(selectedStore.slug, numericId);
       if (result.data && !result.error) {
+        await ensureMinDelay();
         setProduct(result.data as DbProduct);
         setLoading(false);
         trackProductView(userToken, numericId.toString());
@@ -248,7 +265,6 @@ export default function ProductDetails() {
       }
     }
 
-    
     try {
       const response = await fetch(
         `https://world.openfoodfacts.org/api/v0/product/${rawId}.json`,
@@ -262,6 +278,7 @@ export default function ProductDetails() {
     } catch {
       setError("Failed to load product. Please check your connection.");
     } finally {
+      await ensureMinDelay();
       setLoading(false);
     }
   };
@@ -388,7 +405,7 @@ export default function ProductDetails() {
           ) : null}
 
 
-          <RecommendedProducts objectID={product.id.toString()} userToken={userToken} />
+          <RecommendedProducts product={product} />
         </ScrollView>
 
         {/* Footer with Add to Cart Button */}
