@@ -1,6 +1,7 @@
 import { useCart } from "@/context/CartContext";
 import { useStore } from "@/context/StoreContext";
-import { addressesApi, ordersApiV2 } from "@/services/api";
+import { useBudget } from "@/context/BudgetContext";
+import { addressesApi, categoriesApi, ordersApi, ordersApiV2 } from "@/services/api";
 import {
     capturePayPalOrder,
     createPayPalOrder,
@@ -84,8 +85,23 @@ export default function CheckoutScreen() {
   const styles = getStyles(isDark);
 
   const { cartItems, cartTotal, clearCart } = useCart();
+  const { totalBudget, getCategoryBudget } = useBudget();
   const { selectedStore } = useStore();
   const router = useRouter();
+
+  const [customMappings, setCustomMappings] = useState<Record<number, { id: number; name: string }>>({});
+  const [allCategories, setAllCategories] = useState<any[]>([]);
+
+  const spentByCategory = (categoryId: number | null | undefined, categoryName: string | null | undefined) => {
+    return cartItems.reduce((sum, item) => {
+      const mappedCat = customMappings[item.id];
+      const itemCatId = mappedCat ? mappedCat.id : (item.category_id || item.category?.id);
+      if (itemCatId === categoryId) {
+        return sum + item.price * item.quantity;
+      }
+      return sum;
+    }, 0);
+  };
 
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
@@ -104,6 +120,7 @@ export default function CheckoutScreen() {
 
   useEffect(() => {
     loadAddresses();
+    loadCategories();
   }, []);
 
   const loadAddresses = async () => {
@@ -113,6 +130,20 @@ export default function CheckoutScreen() {
       setAddresses(list);
       const def = list.find((a) => a.is_default) ?? list[0] ?? null;
       setSelectedAddress(def);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const res = await categoriesApi.getAll();
+      const data = Array.isArray(res.data) 
+        ? res.data 
+        : Array.isArray((res.data as any)?.categories) 
+          ? (res.data as any).categories 
+          : [];
+      setAllCategories(data);
+    } catch (err) {
+      console.warn("Failed to load categories", err);
     }
   };
 
@@ -364,33 +395,153 @@ export default function CheckoutScreen() {
           )}
         </View>
 
+        {/* ── Budget Check Card ────────────────────────────────────────── */}
+        {totalBudget > 0 && (
+          <View style={[
+            styles.section, 
+            { 
+              borderColor: orderTotal > totalBudget ? "#FCA5A5" : "#A7F3D0",
+              borderWidth: 1.5,
+              backgroundColor: orderTotal > totalBudget ? (isDark ? "#7F1D1D" : "#FEF2F2") : (isDark ? "#064E3B" : "#F0FDF4")
+            }
+          ]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 }}>
+              <Ionicons 
+                name={orderTotal > totalBudget ? "alert-circle" : "checkmark-circle"} 
+                size={22} 
+                color={orderTotal > totalBudget ? "#EF4444" : "#10B981"} 
+              />
+              <Text style={{ 
+                fontSize: 16, 
+                fontWeight: '700', 
+                color: orderTotal > totalBudget ? "#EF4444" : "#10B981" 
+              }}>
+                {orderTotal > totalBudget ? "Budget Exceeded!" : "Within Budget Limit"}
+              </Text>
+            </View>
+            <Text style={{ 
+              fontSize: 13, 
+              lineHeight: 18, 
+              color: orderTotal > totalBudget ? (isDark ? "#FCA5A5" : "#991B1B") : (isDark ? "#A7F3D0" : "#065F46"),
+              fontWeight: '500'
+            }}>
+              {orderTotal > totalBudget 
+                ? `Your order total of €${orderTotal.toFixed(2)} exceeds your set total budget of €${totalBudget.toFixed(2)} by €${(orderTotal - totalBudget).toFixed(2)}.`
+                : `Awesome! Your order total of €${orderTotal.toFixed(2)} is within your set budget of €${totalBudget.toFixed(2)}. You are under budget by €${(totalBudget - orderTotal).toFixed(2)}!`
+              }
+            </Text>
+          </View>
+        )}
+
         {/* ── Order Summary ────────────────────────────────────────────── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
             <Ionicons name="receipt-outline" size={16} color="#2D6A4F" /> Order
             Summary
           </Text>
-          {cartItems.map((item) => (
-            <View key={item.id} style={styles.orderItemRow}>
-              {item.image_url ? (
-                <Image
-                  source={{ uri: item.image_url }}
-                  style={styles.itemThumb}
-                />
-              ) : (
-                <View style={[styles.itemThumb, styles.itemThumbPlaceholder]}>
-                  <Ionicons name="cube-outline" size={18} color="#D1D5DB" />
+          {cartItems.map((item) => {
+            const mappedCat = customMappings[item.id];
+            const activeCatId = mappedCat ? mappedCat.id : (item.category_id || item.category?.id);
+            const activeCatName = mappedCat ? mappedCat.name : item.category?.name;
+            const catBudget = getCategoryBudget(activeCatId, activeCatName);
+            const catSpent = spentByCategory(activeCatId, activeCatName);
+            const isOverCatBudget = catBudget > 0 && catSpent > catBudget;
+
+            return (
+              <View key={item.id} style={{ marginBottom: 16, borderBottomWidth: 1, borderBottomColor: isDark ? "#374151" : "#F3F4F6", paddingBottom: 12 }}>
+                <View style={styles.orderItemRow}>
+                  {item.image_url ? (
+                    <Image
+                      source={{ uri: item.image_url }}
+                      style={styles.itemThumb}
+                    />
+                  ) : (
+                    <View style={[styles.itemThumb, styles.itemThumbPlaceholder]}>
+                      <Ionicons name="cube-outline" size={18} color="#D1D5DB" />
+                    </View>
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.itemName} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    {catBudget > 0 && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                        <Ionicons 
+                          name={isOverCatBudget ? "alert-circle" : "checkmark-circle"} 
+                          size={12} 
+                          color={isOverCatBudget ? "#EF4444" : "#10B981"} 
+                        />
+                        <Text style={{ 
+                          fontSize: 10, 
+                          fontWeight: '600', 
+                          color: isOverCatBudget ? "#EF4444" : "#10B981",
+                          marginLeft: 4
+                        }}>
+                          {isOverCatBudget 
+                            ? `Exceeds ${activeCatName || 'Category'} Budget by €${(catSpent - catBudget).toFixed(2)}` 
+                            : `Within ${activeCatName || 'Category'} Budget`
+                          }
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.itemQty}>×{item.quantity}</Text>
+                  <Text style={styles.itemPrice}>
+                    €{(item.price * item.quantity).toFixed(2)}
+                  </Text>
                 </View>
-              )}
-              <Text style={styles.itemName} numberOfLines={1}>
-                {item.name}
-              </Text>
-              <Text style={styles.itemQty}>×{item.quantity}</Text>
-              <Text style={styles.itemPrice}>
-                €{(item.price * item.quantity).toFixed(2)}
-              </Text>
-            </View>
-          ))}
+
+                {/* ── Interactive Category Re-assignment Badges ── */}
+                <View style={{ marginTop: 8 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: isDark ? "#9CA3AF" : "#6B7280", marginBottom: 6 }}>
+                    Slide product into budget category:
+                  </Text>
+                  <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false} 
+                    contentContainerStyle={{ gap: 6, paddingVertical: 2 }}
+                  >
+                    {allCategories.map((cat) => {
+                      const isSelected = activeCatId === cat.id;
+                      return (
+                        <TouchableOpacity
+                          key={cat.id}
+                          style={{
+                            paddingHorizontal: 10,
+                            paddingVertical: 5,
+                            borderRadius: 20,
+                            backgroundColor: isSelected 
+                              ? (isDark ? "#064E3B" : "#D1FAE5") 
+                              : (isDark ? "#374151" : "#F3F4F6"),
+                            borderWidth: 1,
+                            borderColor: isSelected 
+                              ? "#10B981" 
+                              : "transparent"
+                          }}
+                          onPress={() => {
+                            setCustomMappings(prev => ({
+                              ...prev,
+                              [item.id]: { id: cat.id, name: cat.name }
+                            }));
+                          }}
+                        >
+                          <Text style={{
+                            fontSize: 11,
+                            fontWeight: '600',
+                            color: isSelected 
+                              ? (isDark ? "#10B981" : "#065F46") 
+                              : (isDark ? "#D1D5DB" : "#4B5563")
+                          }}>
+                            {cat.name}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              </View>
+            );
+          })}
           <View style={styles.divider} />
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Subtotal</Text>

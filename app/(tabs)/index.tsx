@@ -18,6 +18,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   ImageBackground,
   Modal,
@@ -711,6 +712,21 @@ export default function HomeScreen() {
               </View>
             </TouchableOpacity>
 
+            {/* Show Map Button */}
+            <TouchableOpacity
+              style={styles.mapButtonContainer}
+              onPress={() => Alert.alert("Coming Soon", "Stay tuned! 🗺️")}
+            >
+              <View style={styles.mapButton}>
+                <Ionicons
+                  name="map-outline"
+                  size={22}
+                  color={isDark ? "#3B82F6" : "#2563EB"}
+                />
+                <Text style={styles.mapButtonText}>Show Map</Text>
+              </View>
+            </TouchableOpacity>
+
             <ImageBackground
               source={{
                 uri: "https://images.unsplash.com/photo-1488459716781-31db52582fe9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
@@ -747,26 +763,6 @@ export default function HomeScreen() {
             </ImageBackground>
 
             <PersonalizedRecommendations />
-            {categories.length > 0 && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Categories</Text>
-                  <TouchableOpacity
-                    onPress={() =>
-                      router.push({
-                        pathname: "/explore",
-                        params: { tab: "categories" },
-                      } as any)
-                    }
-                  >
-                    <Text style={styles.seeAll}>See All</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.categoryGrid}>
-                  {categories.map((cat, i) => renderCategoryItem(cat, i))}
-                </View>
-              </View>
-            )}
 
             {false && brands.length > 0 && (
               <View style={styles.section}>
@@ -1008,6 +1004,27 @@ const getStyles = (isDark: boolean) =>
     },
     scanButtonText: {
       color: isDark ? "#10B981" : "#047857",
+      fontSize: 15,
+      fontWeight: "600",
+    },
+    mapButtonContainer: {
+      marginHorizontal: 20,
+      marginBottom: 16,
+    },
+    mapButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 12,
+      backgroundColor: isDark ? "#1F2937" : "#EFF6FF",
+      borderWidth: 1.5,
+      borderColor: isDark ? "#3B82F6" : "#BFDBFE",
+      gap: 10,
+    },
+    mapButtonText: {
+      color: isDark ? "#3B82F6" : "#2563EB",
       fontSize: 15,
       fontWeight: "600",
     },

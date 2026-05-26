@@ -1,4 +1,4 @@
-import { getStoredUser, budgetProfilesApi } from "@/services/api";
+import { getStoredUser, budgetApi, budgetProfilesApi } from "@/services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { AppState } from "react-native";
@@ -36,7 +36,7 @@ interface BudgetContextType {
   clearBudgets: () => void;
   saveBudgets: () => Promise<void>;
   getCategoryBudget: (categoryId: number | null | undefined, categoryName: string | null | undefined) => number;
-
+  refreshBudgets: () => Promise<void>;
   createProfile: (name: string, totalBudget?: number) => Promise<void>;
   activateProfile: (id: number) => Promise<void>;
   deleteProfile: (id: number) => Promise<void>;
@@ -69,6 +69,7 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [categoryBudgets, setCategoryBudgets] = useState<Record<string, number>>({});
   
   const [userStorageKey, setUserStorageKey] = useState(GUEST_KEY);
+  const [activeProfileId, setActiveProfileId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGuest, setIsGuest] = useState(true);
 
@@ -89,6 +90,34 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const loadLocally = async (storageKey: string) => {
     try {
+      // 1. Try to load from Rails database API if logged in
+      if (storageKey !== GUEST_KEY) {
+        try {
+          const apiRes = await budgetApi.getAll();
+          if (apiRes.data && Array.isArray(apiRes.data) && apiRes.data.length > 0) {
+            const activeProfile = apiRes.data.find((p: any) => p.is_active) || apiRes.data[0];
+            if (activeProfile) {
+              setActiveProfileId(activeProfile.id);
+              setTotalBudgetState(activeProfile.total_budget || 0);
+              
+              const catBudgets: Record<string, number> = {};
+              if (Array.isArray(activeProfile.category_budgets)) {
+                activeProfile.category_budgets.forEach((cb: any) => {
+                  if (cb.category_id) {
+                    catBudgets[`id:${cb.category_id}`] = cb.amount || 0;
+                  }
+                });
+              }
+              setCategoryBudgets(catBudgets);
+              return;
+            }
+          }
+        } catch (apiErr) {
+          console.warn("Failed to load budgets from API, falling back to AsyncStorage:", apiErr);
+        }
+      }
+
+      // 2. Fallback to AsyncStorage
       const stored = await AsyncStorage.getItem(getBudgetStorageKey(storageKey));
       if (!stored) {
         setProfiles([]);
@@ -188,6 +217,7 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const clearBudgets = () => {
     setTotalBudgetState(0);
     setCategoryBudgets({});
+    setActiveProfileId(null);
   };
 
   // Push local changes to the active profile on the backend
@@ -260,6 +290,10 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return Number(categoryBudgets[key]) || 0;
   };
 
+  const refreshBudgets = async () => {
+    await loadLocally(userStorageKey);
+  };
+
   return (
     <BudgetContext.Provider
       value={{
@@ -273,6 +307,7 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         clearBudgets,
         saveBudgets,
         getCategoryBudget,
+        refreshBudgets,
         createProfile,
         activateProfile,
         deleteProfile,

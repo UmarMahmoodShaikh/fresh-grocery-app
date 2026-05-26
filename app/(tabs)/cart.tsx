@@ -1,4 +1,5 @@
 import { useCart } from "@/context/CartContext";
+import { useBudget } from "@/context/BudgetContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
@@ -12,6 +13,7 @@ export default function CartScreen() {
     const styles = getStyles(isDark);
 
     const { cartItems, cartTotal, updateQuantity, removeFromCart, clearCart, isLoadingCart, totalCalories } = useCart();
+    const { getCategoryBudget } = useBudget();
     const router = useRouter();
 
     const handleCheckout = () => {
@@ -21,6 +23,34 @@ export default function CartScreen() {
         }
         router.push("/checkout" as any);
     };
+
+    // Group cart items by category
+    const groupedItems = cartItems.reduce((groups: Record<string, {
+        categoryId?: number | null;
+        categoryName: string;
+        items: typeof cartItems;
+        totalPrice: number;
+        budgetLimit: number;
+    }>, item) => {
+        const catName = item.category_name || "Uncategorized";
+        const catId = item.category_id;
+        
+        if (!groups[catName]) {
+            groups[catName] = {
+                categoryId: catId,
+                categoryName: catName,
+                items: [],
+                totalPrice: 0,
+                budgetLimit: getCategoryBudget(catId, catName),
+            };
+        }
+        
+        groups[catName].items.push(item);
+        groups[catName].totalPrice += item.price * item.quantity;
+        return groups;
+    }, {});
+
+    const groupedArray = Object.values(groupedItems);
 
     const renderItem = ({ item }: { item: any }) => (
         <View style={styles.cartItem}>
@@ -45,14 +75,14 @@ export default function CartScreen() {
                         onPress={() => updateQuantity(item.product_id, item.quantity - 1)}
                         style={styles.qtyBtn}
                     >
-                        <Ionicons name="remove" size={16} color="#374151" />
+                        <Ionicons name="remove" size={16} color={isDark ? "#9CA3AF" : "#374151"} />
                     </TouchableOpacity>
                     <Text style={styles.qtyText}>{item.quantity}</Text>
                     <TouchableOpacity
                         onPress={() => updateQuantity(item.product_id, item.quantity + 1)}
                         style={styles.qtyBtn}
                     >
-                        <Ionicons name="add" size={16} color="#374151" />
+                        <Ionicons name="add" size={16} color={isDark ? "#9CA3AF" : "#374151"} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -65,6 +95,58 @@ export default function CartScreen() {
             </TouchableOpacity>
         </View>
     );
+
+    const renderGroup = ({ item: group }: { item: any }) => {
+        const isExceeded = group.budgetLimit > 0 && group.totalPrice > group.budgetLimit;
+        const remaining = group.budgetLimit - group.totalPrice;
+        
+        return (
+            <View style={styles.categoryCard}>
+                <View style={styles.categoryHeader}>
+                    <View style={styles.categoryTitleRow}>
+                        <Ionicons name="folder-open" size={18} color="#2D6A4F" />
+                        <Text style={styles.categoryTitle}>{group.categoryName}</Text>
+                    </View>
+                    <View style={styles.categoryBudgetInfo}>
+                        <Text style={styles.categoryTotalSpent}>
+                            Spent: <Text style={{ fontWeight: "700" }}>€{group.totalPrice.toFixed(2)}</Text>
+                        </Text>
+                        {group.budgetLimit > 0 ? (
+                            <Text style={[styles.categoryLimit, { color: isExceeded ? "#EF4444" : "#10B981" }]}>
+                                Limit: €{group.budgetLimit.toFixed(2)}
+                            </Text>
+                        ) : (
+                            <Text style={[styles.categoryLimit, { color: isDark ? "#9CA3AF" : "#6B7280" }]}>
+                                No Limit
+                            </Text>
+                        )}
+                    </View>
+                </View>
+                
+                {group.budgetLimit > 0 && (
+                    <View style={isExceeded ? styles.exceededBanner : styles.normalBanner}>
+                        <Ionicons 
+                            name={isExceeded ? "alert-circle" : "checkmark-circle"} 
+                            size={16} 
+                            color={isExceeded ? "#EF4444" : "#10B981"} 
+                        />
+                        <Text style={isExceeded ? styles.exceededText : styles.normalText}>
+                            {isExceeded 
+                                ? `Exceeding category budget by €${Math.abs(remaining).toFixed(2)}!` 
+                                : `€${remaining.toFixed(2)} remaining under limit`
+                            }
+                        </Text>
+                    </View>
+                )}
+
+                {group.items.map((cartItem: any) => (
+                    <View key={cartItem.product_id.toString()}>
+                        {renderItem({ item: cartItem })}
+                    </View>
+                ))}
+            </View>
+        );
+    };
 
     if (cartItems.length === 0) {
         return (
@@ -96,9 +178,9 @@ export default function CartScreen() {
             </View>
 
             <FlatList
-                data={cartItems}
-                keyExtractor={(item) => item.product_id.toString()}
-                renderItem={renderItem}
+                data={groupedArray}
+                keyExtractor={(group) => group.categoryName}
+                renderItem={renderGroup}
                 contentContainerStyle={styles.listContainer}
                 showsVerticalScrollIndicator={false}
             />
@@ -189,21 +271,18 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     },
     cartItem: {
         flexDirection: "row",
-        backgroundColor: isDark ? "#1F2937" : "#fff",
+        backgroundColor: isDark ? "#111827" : "#F9FAFB",
         padding: 12,
         borderRadius: 12,
-        marginBottom: 12,
+        marginBottom: 8,
         alignItems: "center",
-        shadowColor: isDark ? "#F9FAFB" : "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
-        elevation: 2,
+        borderWidth: 1,
+        borderColor: isDark ? "#374151" : "#E5E7EB",
     },
     imageContainer: {
         width: 70,
         height: 70,
-        backgroundColor: isDark ? "#111827" : "#f3f4f6",
+        backgroundColor: isDark ? "#1F2937" : "#e5e7eb",
         borderRadius: 8,
         alignItems: "center",
         justifyContent: "center",
@@ -237,7 +316,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     quantityContainer: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: isDark ? "#111827" : "#f3f4f6",
+        backgroundColor: isDark ? "#1F2937" : "#e5e7eb",
         borderRadius: 8,
         alignSelf: "flex-start",
     },
@@ -252,6 +331,81 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     deleteBtn: {
         padding: 8,
         marginLeft: 8,
+    },
+
+    categoryCard: {
+        backgroundColor: isDark ? "#1F2937" : "#fff",
+        borderRadius: 16,
+        padding: 12,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: isDark ? "#374151" : "#E5E7EB",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+        elevation: 2,
+    },
+    categoryHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingBottom: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: isDark ? "#374151" : "#F3F4F6",
+        marginBottom: 8,
+    },
+    categoryTitleRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+    },
+    categoryTitle: {
+        fontSize: 16,
+        fontWeight: "bold",
+        color: isDark ? "#F9FAFB" : "#1F2937",
+    },
+    categoryBudgetInfo: {
+        alignItems: "flex-end",
+    },
+    categoryTotalSpent: {
+        fontSize: 13,
+        color: isDark ? "#D1D5DB" : "#374151",
+    },
+    categoryLimit: {
+        fontSize: 11,
+        fontWeight: "600",
+        marginTop: 2,
+    },
+    exceededBanner: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: isDark ? "rgba(239, 68, 68, 0.15)" : "#FEE2E2",
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        gap: 6,
+        marginBottom: 12,
+    },
+    exceededText: {
+        color: "#EF4444",
+        fontSize: 12,
+        fontWeight: "600",
+    },
+    normalBanner: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: isDark ? "rgba(16, 185, 129, 0.15)" : "#D1FAE5",
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        gap: 6,
+        marginBottom: 12,
+    },
+    normalText: {
+        color: "#10B981",
+        fontSize: 12,
+        fontWeight: "600",
     },
 
     footer: {

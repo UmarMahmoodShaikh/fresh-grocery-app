@@ -16,6 +16,23 @@ module Api
         end
         render json: category_json
       end
+
+      # POST /api/v1/categories
+      def create
+        category = Category.new(category_params)
+        if category.save
+          Rails.cache.delete("api/v1/categories") # Clear cache so it reloads
+          render json: category, status: :created
+        else
+          render json: { errors: category.errors.full_messages }, status: :unprocessable_entity
+        end
+      end
+
+      private
+
+      def category_params
+        params.require(:category).permit(:name, :image_url, :parent_id)
+      end
     end
   end
 end

@@ -5,7 +5,9 @@ import { categoriesApi } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -47,6 +49,41 @@ export default function BudgetScreen() {
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [addCustomVisible, setAddCustomVisible] = useState(false);
+  const [customCategoryName, setCustomCategoryName] = useState("");
+  const [addingCategory, setAddingCategory] = useState(false);
+
+  const handleAddCategory = async () => {
+    if (!customCategoryName.trim()) {
+      Alert.alert("Error", "Please enter a valid category name.");
+      return;
+    }
+
+    setAddingCategory(true);
+    try {
+      const res = await categoriesApi.create({ name: customCategoryName.trim() });
+      if (res.data && !res.error) {
+        Alert.alert("Success", `Category "${customCategoryName}" added successfully!`);
+        setCustomCategoryName("");
+        setAddCustomVisible(false);
+        // Refresh category list
+        const refreshedRes = await categoriesApi.getAll();
+        const data = Array.isArray(refreshedRes.data)
+          ? refreshedRes.data
+          : Array.isArray((refreshedRes.data as any)?.categories)
+            ? (refreshedRes.data as any).categories
+            : [];
+        setCategories(data);
+      } else {
+        Alert.alert("Error", res.error || "Failed to add category.");
+      }
+    } catch {
+      Alert.alert("Error", "Network error. Please try again.");
+    } finally {
+      setAddingCategory(false);
+    }
+  };
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -217,11 +254,63 @@ export default function BudgetScreen() {
             <Text style={styles.clearButtonText}>Clear all budgets</Text>
           </TouchableOpacity>
         </View>
-
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Category budgets</Text>
-          <Text style={styles.sectionHint}>Based on your existing product categories</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <Text style={styles.sectionTitle}>Category budgets</Text>
+            <TouchableOpacity 
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: isDark ? "#374151" : "#E8F5E9", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}
+              onPress={() => setAddCustomVisible(true)}
+            >
+              <Ionicons name="add-circle-outline" size={16} color="#2D6A4F" />
+              <Text style={{ fontSize: 13, fontWeight: '700', color: "#2D6A4F" }}>Add Custom</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.sectionHint}>Based on your existing or custom product categories</Text>
         </View>
+
+        {/* Custom Category Modal */}
+        <Modal
+          visible={addCustomVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setAddCustomVisible(false)}
+        >
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+            <View style={{ width: '100%', maxWidth: 340, backgroundColor: isDark ? "#1F2937" : "#FFFFFF", borderRadius: 24, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 5 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <Text style={{ fontSize: 18, fontWeight: '800', color: isDark ? "#F9FAFB" : "#111827" }}>New Category</Text>
+                <TouchableOpacity onPress={() => setAddCustomVisible(false)}>
+                  <Ionicons name="close" size={24} color={isDark ? "#9CA3AF" : "#6B7280"} />
+                </TouchableOpacity>
+              </View>
+              <Text style={{ fontSize: 13, color: isDark ? "#9CA3AF" : "#6B7280", marginBottom: 12 }}>
+                Create a custom category limit (e.g. Snacks, Drinks, Party).
+              </Text>
+              <TextInput
+                value={customCategoryName}
+                onChangeText={setCustomCategoryName}
+                placeholder="Category Name"
+                placeholderTextColor={isDark ? "#6B7280" : "#9CA3AF"}
+                style={{ borderWidth: 1, borderColor: isDark ? "#374151" : "#E2E8F0", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, color: isDark ? "#F9FAFB" : "#111827", backgroundColor: isDark ? "#111827" : "#F8FAFC", marginBottom: 20 }}
+                autoFocus
+              />
+              <TouchableOpacity 
+                style={{ backgroundColor: '#2D6A4F', borderRadius: 14, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}
+                onPress={handleAddCategory}
+                disabled={addingCategory}
+              >
+                {addingCategory ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+                    <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Create Category</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         {loading ? (
           <View style={{ paddingVertical: 30 }}>
