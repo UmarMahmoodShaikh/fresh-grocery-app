@@ -26,6 +26,7 @@ jobs:
           # Add the personal repo as a remote with the token embedded in the URL
           git remote add personal "https://UmarMahmoodShaikh:${PAT}@github.com/UmarMahmoodShaikh/fresh-grocery-app.git"
           
-          # Force mirror everything (branches, tags, etc.)
-          git push --force --mirror personal
+          # Force push all branches and tags safely without deleting destination default branch
+          git push --force personal "+refs/heads/*:refs/heads/*"
+          git push --force personal --tags
 
