@@ -4,14 +4,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // Android emulator uses 10.0.2.2, Genymotion uses 10.0.3.2, and physical devices need the LAN IP.
 // Extracting it dynamically from Expo Constants fixes networking for all Android targets.
 const getBaseUrl = () => {
-    // Force Heroku URL for production/remote testing
-    return "https://fresh-grocery-store-74f6cf859e50.herokuapp.com";
+    // Use the ENV variable if set, otherwise fallback to local IP
+    return process.env.EXPO_PUBLIC_API_URL || "http://10.68.252.50:3000";
 };
 
 export const API_BASE_URL = getBaseUrl();
 
 const TOKEN_KEY = "auth_token";
 const USER_KEY = "auth_user";
+const AUTH_TIMESTAMP_KEY = "auth_timestamp";
 
 // --- Token Management ---
 
@@ -21,6 +22,7 @@ export const getToken = async (): Promise<string | null> => {
 
 export const setToken = async (token: string): Promise<void> => {
     await AsyncStorage.setItem(TOKEN_KEY, token);
+    await AsyncStorage.setItem(AUTH_TIMESTAMP_KEY, Date.now().toString());
 };
 
 export const removeToken = async (): Promise<void> => {
@@ -36,8 +38,18 @@ export const setStoredUser = async (user: any): Promise<void> => {
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
 };
 
+export const isSessionValid = async (): Promise<boolean> => {
+    const timestamp = await AsyncStorage.getItem(AUTH_TIMESTAMP_KEY);
+    const token = await getToken();
+    if (!timestamp || !token) return false;
+
+    const oneDay = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    return (now - parseInt(timestamp, 10)) < oneDay;
+};
+
 export const clearAuth = async (): Promise<void> => {
-    await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
+    await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY, AUTH_TIMESTAMP_KEY]);
 };
 
 // --- API Client ---
@@ -50,10 +62,38 @@ interface ApiResponse<T = any> {
     status: number;
 }
 
+/**
+ * 📋 DOMAIN VERSION MAP
+ *
+ * Single source of truth for which API version each domain uses.
+ * New joiners: change the version HERE — not scattered across API calls.
+ *
+ * V1 = user-scoped (auth, addresses, invoices, brands — global, not store-specific)
+ * V2 = store-scoped (products, cart, orders, categories — multi-tenant, Redis-backed)
+ */
+export const DOMAIN_VERSIONS = {
+    // ── V1 Domains (User-scoped, always stable) ───────────────────────────
+    auth:       "v1" as const,  // Login, signup, JWT — never store-scoped
+    addresses:  "v1" as const,  // User delivery addresses
+    invoices:   "v1" as const,  // Billing history
+    orders:     "v1" as const,  // Order history (read). Checkout uses V2 below.
+    brands:     "v1" as const,  // Global brand catalog
+    users:      "v1" as const,  // User profile management
+
+    // ── V2 Domains (Store-scoped, multi-tenant Redis architecture) ────────
+    stores:     "v2" as const,  // Store discovery & tenant resolution
+    products:   "v2" as const,  // Store-specific catalog with regional pricing
+    categories: "v2" as const,  // Categories scoped to active store
+    cart:       "v2" as const,  // Redis Hash cart (replaces Postgres carts table)
+    checkout:   "v2" as const,  // Idempotent checkout with pessimistic locking
+    promotions: "v2" as const,  // Store banners & time-limited promotions
+} as const;
+
 export const apiRequest = async <T = any>(
     endpoint: string,
     method: HttpMethod = "GET",
-    body?: any
+    body?: any,
+    version: "v1" | "v2" = "v1"
 ): Promise<ApiResponse<T>> => {
     const token = await getToken();
 
@@ -67,12 +107,20 @@ export const apiRequest = async <T = any>(
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1${endpoint}`, {
+        const url = `${API_BASE_URL}/api/${version}${endpoint}`;
+        
+        // Add a 10-second timeout to prevent the 'White Screen of Death' on network stalls
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        const response = await fetch(url, {
             method,
             headers,
             body: body ? JSON.stringify(body) : undefined,
+            signal: controller.signal,
         });
 
+        clearTimeout(timeoutId);
         const data = await response.json().catch(() => null);
 
         if (!response.ok) {
@@ -88,6 +136,19 @@ export const apiRequest = async <T = any>(
             error: error.message || "Network error. Please check your connection.",
             status: 0,
         };
+    }
+};
+
+// --- Store API (V2) ---
+export const storesApi = {
+    getAll: async () => {
+        return apiRequest("/stores", "GET", undefined, DOMAIN_VERSIONS.stores);
+    },
+    getBySlug: async (slug: string) => {
+        return apiRequest(`/stores/${slug}`, "GET", undefined, DOMAIN_VERSIONS.stores);
+    },
+    detect: async (lat: number, lng: number) => {
+        return apiRequest(`/stores/detect?lat=${lat}&lng=${lng}`, "GET", undefined, DOMAIN_VERSIONS.stores);
     }
 };
 
@@ -185,6 +246,27 @@ export const productsApi = {
     },
 };
 
+// --- Products API (V2) ---
+export const productsApiV2 = {
+    getAll: async (storeSlug: string) => {
+        return apiRequest(`/stores/${storeSlug}/products`, "GET", undefined, DOMAIN_VERSIONS.products);
+    },
+    getById: async (storeSlug: string, id: number) => {
+        return apiRequest(`/stores/${storeSlug}/products/${id}`, "GET", undefined, DOMAIN_VERSIONS.products);
+    },
+    getByCategory: async (storeSlug: string, categoryId: number) => {
+        return apiRequest(`/stores/${storeSlug}/products?category_id=${categoryId}`, "GET", undefined, DOMAIN_VERSIONS.products);
+    },
+    getByBarcode: async (storeSlug: string, barcode: string) => {
+        const res = await apiRequest(`/stores/${storeSlug}/products?barcode=${barcode}`, "GET", undefined, DOMAIN_VERSIONS.products);
+        if (res.data && Array.isArray(res.data)) {
+            // The service returns an array for index calls, but scanner expects single item or null
+            return { ...res, data: res.data[0] || null };
+        }
+        return res;
+    }
+};
+
 // --- Categories API ---
 
 export const categoriesApi = {
@@ -195,6 +277,16 @@ export const categoriesApi = {
     getById: async (id: number) => {
         return apiRequest(`/categories/${id}`);
     },
+    create: async (categoryData: { name: string; image_url?: string }) => {
+        return apiRequest("/categories", "POST", { category: categoryData });
+    }
+};
+
+// --- Categories API (V2) ---
+export const categoriesApiV2 = {
+    getAll: async (storeSlug: string) => {
+        return apiRequest(`/stores/${storeSlug}/categories`, "GET", undefined, DOMAIN_VERSIONS.categories);
+    }
 };
 
 // --- Brands API ---
@@ -207,6 +299,22 @@ export const brandsApi = {
     getById: async (id: number) => {
         return apiRequest(`/brands/${id}`);
     },
+};
+
+// --- Cart API (V2 - Redis) ---
+export const cartApi = {
+    get: async (storeSlug: string) => {
+        return apiRequest(`/stores/${storeSlug}/cart`, "GET", undefined, DOMAIN_VERSIONS.cart);
+    },
+    addItem: async (storeSlug: string, productId: number, quantity: number) => {
+        return apiRequest(`/stores/${storeSlug}/cart/add_item`, "POST", { product_id: productId, quantity }, DOMAIN_VERSIONS.cart);
+    },
+    removeItem: async (storeSlug: string, productId: number) => {
+        return apiRequest(`/stores/${storeSlug}/cart/items/${productId}`, "DELETE", undefined, DOMAIN_VERSIONS.cart);
+    },
+    clear: async (storeSlug: string) => {
+        return apiRequest(`/stores/${storeSlug}/cart`, "DELETE", undefined, DOMAIN_VERSIONS.cart);
+    }
 };
 
 // --- Orders API ---
@@ -234,6 +342,17 @@ export const ordersApi = {
     update: async (id: number, orderData: { score?: number; comments?: string; status?: string }) => {
         return apiRequest(`/orders/${id}`, "PATCH", { order: orderData });
     },
+};
+
+// --- Orders API (V2) ---
+export const ordersApiV2 = {
+    checkout: async (storeSlug: string, checkoutData: {
+        address_id: number;
+        payment_method?: string;
+        idempotency_key: string;
+    }) => {
+        return apiRequest(`/stores/${storeSlug}/orders/checkout`, "POST", checkoutData, DOMAIN_VERSIONS.checkout);
+    }
 };
 
 // --- Invoices API ---
@@ -298,3 +417,45 @@ export const addressesApi = {
     },
 };
 
+// --- Budget Profiles API (V1) ---
+
+export const budgetProfilesApi = {
+    getAll: async () => {
+        return apiRequest("/budget_profiles");
+    },
+
+    getById: async (id: number) => {
+        return apiRequest(`/budget_profiles/${id}`);
+    },
+
+    create: async (profileData: {
+        name: string;
+        total_budget: number;
+        category_budgets_attributes?: Array<{ category_id: number; amount: number }>;
+    }) => {
+        return apiRequest("/budget_profiles", "POST", { budget_profile: profileData });
+    },
+
+    update: async (id: number, profileData: {
+        name?: string;
+        total_budget?: number;
+        category_budgets_attributes?: Array<{
+            id?: number;
+            category_id: number;
+            amount: number;
+            _destroy?: boolean;
+        }>;
+    }) => {
+        return apiRequest(`/budget_profiles/${id}`, "PATCH", { budget_profile: profileData });
+    },
+
+    delete: async (id: number) => {
+        return apiRequest(`/budget_profiles/${id}`, "DELETE");
+    },
+
+    activate: async (id: number) => {
+        return apiRequest(`/budget_profiles/${id}/activate`, "PATCH");
+    },
+};
+
+export const budgetApi = budgetProfilesApi;

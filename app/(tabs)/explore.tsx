@@ -1,4 +1,5 @@
-import { brandsApi, categoriesApi } from "@/services/api";
+import { brandsApi, categoriesApiV2 } from "@/services/api";
+import { useStore } from "@/context/StoreContext";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -75,20 +76,22 @@ export default function ExploreScreen() {
       setActiveTab(tab as any);
     }
   }, [tab]);
+  const { availableStores: _s, selectedStore } = useStore();
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [selectedStore]);
 
   const fetchData = async () => {
+    if (!selectedStore) return;
     setLoading(true);
     try {
       const [catsRes, brandsRes] = await Promise.all([
-        categoriesApi.getAll(),
-        brandsApi.getAll(),
+        categoriesApiV2.getAll(selectedStore.slug),  // V2: store-scoped
+        brandsApi.getAll(),                          // V1: global catalog
       ]);
       if (catsRes.data) setCategories(catsRes.data);
       if (brandsRes.data) setBrands(brandsRes.data);

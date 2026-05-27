@@ -47,7 +47,7 @@ export default function LoginScreen() {
         if (userRole === "admin") {
           router.replace("/(admin)");
         } else {
-          router.replace("/(tabs)");
+          router.replace("/store-selector");
         }
       }
     } catch (error) {

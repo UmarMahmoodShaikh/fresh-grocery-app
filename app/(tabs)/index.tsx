@@ -1,13 +1,14 @@
 import { PersonalizedRecommendations } from "@/components/PersonalizedRecommendations";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
+import { useStore } from "@/context/StoreContext";
 import {
   addressesApi,
   brandsApi,
-  categoriesApi,
+  categoriesApiV2,
   getStoredUser,
   ordersApi,
-  productsApi,
+  productsApiV2,
 } from "@/services/api";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -17,6 +18,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   ImageBackground,
   Modal,
@@ -169,6 +171,7 @@ export default function HomeScreen() {
 
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
+  const { selectedStore } = useStore();
   const [userName, setUserName] = useState("User");
   const [defaultAddress, setDefaultAddress] = useState<string | null>(null);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
@@ -196,7 +199,7 @@ export default function HomeScreen() {
 
     const interval = setInterval(loadActiveOrders, 30_000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedStore]); // Re-fetch when store changes
 
   const loadActiveOrders = async () => {
     try {
@@ -236,16 +239,21 @@ export default function HomeScreen() {
   };
 
   const loadData = async () => {
+    if (!selectedStore) return;
     setLoading(true);
     try {
       const [catRes, brandRes, prodRes] = await Promise.all([
-        categoriesApi.getAll(),
-        brandsApi.getAll(),
-        productsApi.getAll(),
+        categoriesApiV2.getAll(selectedStore.slug),
+        brandsApi.getAll(), // Brands still use V1 global catalog
+        productsApiV2.getAll(selectedStore.slug),
       ]);
       if (catRes.data) setCategories(catRes.data as any[]);
       if (brandRes.data) setBrands(brandRes.data as any[]);
       if (prodRes.data) setProducts(prodRes.data as any[]);
+
+      // Trigger offline product cache prefetch in background
+      const { productCacheService } = await import("@/services/productCache");
+      productCacheService.prefetchStoreProducts(selectedStore.slug).catch(console.warn);
     } catch {
     } finally {
       setLoading(false);
@@ -650,8 +658,12 @@ export default function HomeScreen() {
 
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.welcomeText}>Bonjour,</Text>
-            <Text style={styles.userName}>{userName}</Text>
+            <Text style={styles.welcomeText}>Bonjour, {userName}</Text>
+            {selectedStore && (
+              <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '500', marginTop: 1 }}>
+                🏪 {selectedStore.name}
+              </Text>
+            )}
           </View>
           <TouchableOpacity
             style={styles.notificationButton}
@@ -700,6 +712,21 @@ export default function HomeScreen() {
               </View>
             </TouchableOpacity>
 
+            {/* Show Map Button */}
+            <TouchableOpacity
+              style={styles.mapButtonContainer}
+              onPress={() => Alert.alert("Coming Soon", "Stay tuned! 🗺️")}
+            >
+              <View style={styles.mapButton}>
+                <Ionicons
+                  name="map-outline"
+                  size={22}
+                  color={isDark ? "#3B82F6" : "#2563EB"}
+                />
+                <Text style={styles.mapButtonText}>Show Map</Text>
+              </View>
+            </TouchableOpacity>
+
             <ImageBackground
               source={{
                 uri: "https://images.unsplash.com/photo-1488459716781-31db52582fe9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
@@ -736,26 +763,6 @@ export default function HomeScreen() {
             </ImageBackground>
 
             <PersonalizedRecommendations />
-            {categories.length > 0 && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Categories</Text>
-                  <TouchableOpacity
-                    onPress={() =>
-                      router.push({
-                        pathname: "/explore",
-                        params: { tab: "categories" },
-                      } as any)
-                    }
-                  >
-                    <Text style={styles.seeAll}>See All</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.categoryGrid}>
-                  {categories.map((cat, i) => renderCategoryItem(cat, i))}
-                </View>
-              </View>
-            )}
 
             {false && brands.length > 0 && (
               <View style={styles.section}>
@@ -874,7 +881,7 @@ export default function HomeScreen() {
               </View>
             )}
 
-            <View style={{ height: 30 }} />
+            <View style={{ height: 100 }} />
           </View>
         )}
       </ScrollView>
@@ -997,6 +1004,27 @@ const getStyles = (isDark: boolean) =>
     },
     scanButtonText: {
       color: isDark ? "#10B981" : "#047857",
+      fontSize: 15,
+      fontWeight: "600",
+    },
+    mapButtonContainer: {
+      marginHorizontal: 20,
+      marginBottom: 16,
+    },
+    mapButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 12,
+      backgroundColor: isDark ? "#1F2937" : "#EFF6FF",
+      borderWidth: 1.5,
+      borderColor: isDark ? "#3B82F6" : "#BFDBFE",
+      gap: 10,
+    },
+    mapButtonText: {
+      color: isDark ? "#3B82F6" : "#2563EB",
       fontSize: 15,
       fontWeight: "600",
     },

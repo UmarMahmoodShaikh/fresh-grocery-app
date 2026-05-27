@@ -12,7 +12,7 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       resources :products
-      resources :categories, only: [:index, :show]
+      resources :categories, only: [:index, :show, :create]
       resources :brands, only: [:index, :show]
       resources :orders do
         member do
@@ -26,7 +26,18 @@ Rails.application.routes.draw do
         end
       end
       resources :invoices
+      resources :budget_profiles do
+        member do
+          patch :activate
+        end
+      end
       get 'reports', to: 'reports#index'
+
+      resources :budget_profiles do
+        member do
+          patch :activate
+        end
+      end
       
       post 'auth/login', to: 'auth#login'
       post 'auth/signup', to: 'auth#signup'
@@ -45,6 +56,10 @@ Rails.application.routes.draw do
     # V2 Multi-Tenant Architecture
     namespace :v2 do
       resources :stores, param: :slug, only: [:index, :show] do
+        collection do
+          get :detect
+        end
+        
         resources :products, only: [:index, :show]
         resources :categories, only: [:index]
         resources :promotions, only: [:index]

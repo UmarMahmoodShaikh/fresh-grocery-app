@@ -1,10 +1,16 @@
 # 1. Base Users (For Mobile App API Login)
-User.find_or_create_by!(email: 'user@example.com') do |user|
-  user.password = 'password'
-  user.password_confirmation = 'password'
-  user.first_name = 'Standard'
-  user.last_name = 'User'
-  user.phone = '+33612345678'
+[
+  { email: 'user@example.com', first_name: 'Standard', last_name: 'User' },
+  { email: 'test@example.com', first_name: 'Test', last_name: 'User' },
+  { email: 'umar@example.com', first_name: 'Umar', last_name: 'Mahmood' }
+].each do |user_data|
+  User.find_or_create_by!(email: user_data[:email]) do |user|
+    user.password = 'password'
+    user.password_confirmation = 'password'
+    user.first_name = user_data[:first_name]
+    user.last_name = user_data[:last_name]
+    user.phone = '+336' + rand(10000000..99999999).to_s
+  end
 end
 
 # 2. Global Super Admin (Has access to EVERYTHING in ActiveAdmin)
@@ -15,11 +21,26 @@ AdminUser.find_or_create_by!(email: 'admin@example.com') do |admin|
 end
 
 # 3. Create Demo Stores
+carrefour_kremlin = Store.find_or_create_by!(slug: 'carrefour-kremlin') do |store|
+  store.name = 'Carrefour - Kremlin Bicetre'
+  store.active = true
+  store.delivery_fee = 2.99
+  store.min_order_amount = 10.00
+  store.latitude = 48.8097
+  store.longitude = 2.3585
+  # A small rectangle around Kremlin Bicetre area
+  store.boundary = 'POLYGON((2.3570 48.8080, 2.3600 48.8080, 2.3600 48.8110, 2.3570 48.8110, 2.3570 48.8080))'
+end
+
 carrefour = Store.find_or_create_by!(slug: 'carrefour-paris') do |store|
   store.name = 'Carrefour Paris'
   store.active = true
   store.delivery_fee = 5.99
   store.min_order_amount = 20.00
+  store.latitude = 48.8738
+  store.longitude = 2.2950
+  # A small rectangle around the store area (Arc de Triomphe area for demo)
+  store.boundary = 'POLYGON((2.2940 48.8730, 2.2960 48.8730, 2.2960 48.8745, 2.2940 48.8745, 2.2940 48.8730))'
 end
 
 auchan = Store.find_or_create_by!(slug: 'auchan-lyon') do |store|
@@ -27,6 +48,10 @@ auchan = Store.find_or_create_by!(slug: 'auchan-lyon') do |store|
   store.active = true
   store.delivery_fee = 3.50
   store.min_order_amount = 15.00
+  store.latitude = 45.7640
+  store.longitude = 4.8357
+  # A small rectangle around the store area in Lyon
+  store.boundary = 'POLYGON((4.8340 45.7630, 4.8370 45.7630, 4.8370 45.7650, 4.8340 45.7650, 4.8340 45.7630))'
 end
 
 # 4. Create Categories
@@ -35,7 +60,7 @@ bakery = Category.find_or_create_by!(name: 'Bakery')
 dairy = Category.find_or_create_by!(name: 'Dairy & Eggs')
 
 # Associate Categories with Stores
-[carrefour, auchan].each do |store|
+[carrefour_kremlin, carrefour, auchan].each do |store|
   [fruits, bakery, dairy].each do |cat|
     StoreCategory.find_or_create_by!(store: store, category: cat)
   end
@@ -58,6 +83,11 @@ milk = Product.find_or_create_by!(name: 'Whole Milk 1L') do |p|
 end
 
 # 6. Associate Products with Stores (Store-specific pricing and stock)
+# Kremlin Bicetre Prices
+StoreProduct.find_or_create_by!(store: carrefour_kremlin, product: banana) { |sp| sp.price = 2.75; sp.stock = 120 }
+StoreProduct.find_or_create_by!(store: carrefour_kremlin, product: croissant) { |sp| sp.price = 1.10; sp.stock = 60 }
+StoreProduct.find_or_create_by!(store: carrefour_kremlin, product: milk) { |sp| sp.price = 1.45; sp.stock = 250 }
+
 # Carrefour Prices
 StoreProduct.find_or_create_by!(store: carrefour, product: banana) { |sp| sp.price = 2.99; sp.stock = 100 }
 StoreProduct.find_or_create_by!(store: carrefour, product: croissant) { |sp| sp.price = 1.20; sp.stock = 50 }

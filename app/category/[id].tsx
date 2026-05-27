@@ -1,5 +1,6 @@
 import { BasketLoader } from "@/components/BasketLoader";
-import { categoriesApi, productsApi } from "@/services/api";
+import { categoriesApiV2, productsApiV2 } from "@/services/api";
+import { useStore } from "@/context/StoreContext";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -73,24 +74,34 @@ export default function CategoryProductsScreen() {
 
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
   const router = useRouter();
+  const { selectedStore } = useStore();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [category, setCategory] = useState<Category | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (id) load(parseInt(id, 10));
-  }, [id]);
+    if (id && selectedStore) load(parseInt(id, 10));
+  }, [id, selectedStore]);
 
   const load = async (catId: number) => {
+    if (!selectedStore) return;
     setLoading(true);
-    const [prodRes, catRes] = await Promise.all([
-      productsApi.getByCategory(catId),
-      categoriesApi.getById(catId),
-    ]);
-    if (prodRes.data) setProducts(prodRes.data as Product[]);
-    if (catRes.data) setCategory(catRes.data as Category);
-    setLoading(false);
+    try {
+      const [prodRes, catRes] = await Promise.all([
+        productsApiV2.getByCategory(selectedStore.slug, catId),
+        categoriesApiV2.getAll(selectedStore.slug),
+      ]);
+      if (prodRes.data) setProducts(prodRes.data as Product[]);
+      if (catRes.data) {
+        const found = (catRes.data as Category[]).find((c) => c.id === catId);
+        if (found) setCategory(found);
+      }
+    } catch (e) {
+      console.error("Error loading category products:", e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const displayName = category?.name ?? name ?? "Category";

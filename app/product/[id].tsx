@@ -3,24 +3,25 @@ import NutritionCard from "@/components/NutritionCard";
 import { RecommendedProducts } from "@/components/RecommendedProducts";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
+import { useStore } from "@/context/StoreContext";
 import {
-  trackAddToCart,
-  trackProductView
+    trackAddToCart,
+    trackProductView
 } from "@/services/algolia";
-import { getStoredUser, productsApi } from "@/services/api";
+import { getStoredUser, productsApiV2 } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Animated,
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  useColorScheme,
+    Animated,
+    Image,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -157,6 +158,7 @@ export default function ProductDetails() {
 
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
+  const { selectedStore } = useStore();
   const [product, setProduct] = useState<DbProduct | null>(null);
   const [offProduct, setOffProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -165,11 +167,11 @@ export default function ProductDetails() {
   const [heartAnimations, setHeartAnimations] = useState<{ id: string; x: number; y: number }[]>([]);
   const [userToken, setUserToken] = useState<string>("anonymous");
 
-  // Normalize nutrition data from database (handles both old and new formats)
   const normalizeNutrition = (nutrition: any) => {
     if (!nutrition) return null;
     return {
       calories: nutrition.calories ?? nutrition.energy,
+      energy_kj: nutrition.energy_kj,
       fat: nutrition.fat,
       saturated_fat: nutrition.saturated_fat,
       trans_fat: nutrition.trans_fat,
@@ -182,6 +184,13 @@ export default function ProductDetails() {
       fiber: nutrition.fiber,
       calcium: nutrition.calcium,
       iron: nutrition.iron,
+      nutriscore: nutrition.nutriscore,
+      novascore: nutrition.novascore,
+      ecoscore: nutrition.ecoscore,
+      ingredients_text: nutrition.ingredients_text,
+      packaging: nutrition.packaging,
+      environment: nutrition.environment,
+      origins: nutrition.origins,
     };
   };
 
@@ -195,7 +204,7 @@ export default function ProductDetails() {
     fetchUser();
   }, []);
 
-  const handleAddCart = (e: any, item: any) => {
+  const handleAddCart = async (e: any, item: any) => {
     e.stopPropagation();
     if (e.nativeEvent) {
       const { pageX, pageY } = e.nativeEvent;
@@ -206,7 +215,7 @@ export default function ProductDetails() {
       }, 800);
     }
     trackAddToCart(userToken, item.id.toString());
-    addToCart(item);
+    await addToCart(item);
   };
 
   const handleToggleFavorite = (e: any, item: any) => {
@@ -233,13 +242,22 @@ export default function ProductDetails() {
   const fetchProduct = async (rawId: string) => {
     setLoading(true);
     setError(null);
+    const startTime = Date.now();
 
-    
-    
+    const ensureMinDelay = async () => {
+      const elapsed = Date.now() - startTime;
+      const remaining = 1200 - elapsed;
+      if (remaining > 0) {
+        await new Promise((resolve) => setTimeout(resolve, remaining));
+      }
+    };
+
     const numericId = parseInt(rawId, 10);
-    if (!isNaN(numericId)) {
-      const result = await productsApi.getById(numericId);
+    if (!isNaN(numericId) && selectedStore) {
+      // V2: fetch with store-specific pricing
+      const result = await productsApiV2.getById(selectedStore.slug, numericId);
       if (result.data && !result.error) {
+        await ensureMinDelay();
         setProduct(result.data as DbProduct);
         setLoading(false);
         trackProductView(userToken, numericId.toString());
@@ -247,7 +265,6 @@ export default function ProductDetails() {
       }
     }
 
-    
     try {
       const response = await fetch(
         `https://world.openfoodfacts.org/api/v0/product/${rawId}.json`,
@@ -261,6 +278,7 @@ export default function ProductDetails() {
     } catch {
       setError("Failed to load product. Please check your connection.");
     } finally {
+      await ensureMinDelay();
       setLoading(false);
     }
   };
@@ -387,7 +405,7 @@ export default function ProductDetails() {
           ) : null}
 
 
-          <RecommendedProducts objectID={product.id.toString()} userToken={userToken} />
+          <RecommendedProducts product={product} />
         </ScrollView>
 
         {/* Footer with Add to Cart Button */}
@@ -481,13 +499,7 @@ export default function ProductDetails() {
 
           {/* Badges */}
           <View style={styles.badgesContainer}>
-            {off.nutriscore_grade && (
-              <View style={[styles.badge, { backgroundColor: "#10B981" }]}>
-                <Text style={styles.badgeText}>
-                  Nutriscore: {off.nutriscore_grade.toUpperCase()}
-                </Text>
-              </View>
-            )}
+            {/* Nutriscore hidden */}
             {off.nova_group && (
               <View style={[styles.badge, { backgroundColor: "#F59E0B" }]}>
                 <Text style={styles.badgeText}>NOVA: {off.nova_group}</Text>
